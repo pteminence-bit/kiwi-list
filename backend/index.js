@@ -3,6 +3,8 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { db } from './config/firebase.js';
+import listingRoutes from './routes/listingRoutes.js';
+app.use('/api/listings', listingRoutes);
 
 dotenv.config();
 const app = express();
