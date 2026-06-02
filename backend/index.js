@@ -5,6 +5,12 @@ import dotenv from 'dotenv';
 import { db } from './config/firebase.js';
 import listingRoutes from './routes/listingRoutes.js';
 app.use('/api/listings', listingRoutes);
+import paymentController from './routes/paymentRoutes.js'; // create small router hook wrapper mapped to controller
+import webhookRoutes from './routes/webhookRoutes.js';
+
+// Flutterwave recommends webhooks hit unparsed or standard root routing early
+app.use('/api/webhooks', webhookRoutes); 
+app.use('/api/payments', paymentController);
 
 dotenv.config();
 const app = express();
