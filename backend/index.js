@@ -3,6 +3,8 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { db } from './config/firebase.js';
+import adminRoutes from './routes/adminRoutes.js';
+app.use('/api/admin', adminRoutes);
 import uploadRoutes from './routes/uploadRoutes.js';
 app.use('/api/upload', uploadRoutes);
 import listingRoutes from './routes/listingRoutes.js';
