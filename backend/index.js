@@ -3,6 +3,8 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { db } from './config/firebase.js';
+import uploadRoutes from './routes/uploadRoutes.js';
+app.use('/api/upload', uploadRoutes);
 import listingRoutes from './routes/listingRoutes.js';
 app.use('/api/listings', listingRoutes);
 import paymentController from './routes/paymentRoutes.js'; // create small router hook wrapper mapped to controller
