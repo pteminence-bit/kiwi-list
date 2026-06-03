@@ -73,5 +73,21 @@ router.get('/feed', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+router.get('/my-listings', verifyUser, async (req, res) => {
+  try {
+    const snapshots = await db.collection('listings')
+      .where('ownerId', '==', req.user.uid)
+      .get();
+
+    const myListings = snapshots.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    res.json(myListings);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 export default router;
