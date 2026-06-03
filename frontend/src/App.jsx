@@ -1,28 +1,36 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Sidebar from './components/Sidebar';
-import MarketplaceFeed from './pages/MarketplaceFeed';
-import ManageListings from './pages/ManageListings';
-import AdminPortal from './pages/AdminPortal';
-import { AuthProvider } from './context/AuthContext';
+// frontend/src/context/AuthContext.jsx
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { auth } from '../firebase'; 
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 
-function App() {
+const AuthContext = createContext(null); // Initialize with null
+
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const logout = () => signOut(auth);
+
   return (
-    <Router>
-      <div className="flex">
-        <Sidebar isAdmin={true} />
-        {/* Important: Add margin-left to the main content so it isn't hidden behind the fixed sidebar */}
-        <main className="flex-1 ml-64"> 
-          <Routes>
-            <Route path="/" element={<MarketplaceFeed />} />
-            <Route path="/manage" element={<ManageListings />} />
-            <Route path="/admin" element={<AdminPortal />} />
-            {/* If a route doesn't exist, show the feed */}
-            <Route path="*" element={<MarketplaceFeed />} />
-          </Routes>
-        </main>
-      </div>
-    </Router>
+    <AuthContext.Provider value={{ user, logout, loading }}>
+      {children}
+    </AuthContext.Provider>
   );
-}
+};
 
-export default App;
+// Add a safety check to the hook
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};

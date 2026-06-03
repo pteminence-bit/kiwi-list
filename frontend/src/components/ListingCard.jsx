@@ -1,9 +1,20 @@
-import { MapPin, Bed, Bath, Lock, Eye } from 'lucide-react';
+import { MapPin, Bed, Bath, Lock, Eye, AlertTriangle } from 'lucide-react';
 
-const ListingCard = ({ listing, onUnlock }) => {
+const ListingCard = ({ listing, onUnlock, onReport }) => {
   const isPremium = listing.tier === 'premium';
   const isUnlocked = listing.isUnlocked || !isPremium;
 
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden relative group">
+      {/* Report Button (Visible on Hover) */}
+      <button 
+        onClick={() => onReport(listing.id)}
+        className="absolute top-4 left-4 p-2 bg-white/90 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-full shadow-sm z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+        title="Report Listing"
+      >
+        <AlertTriangle size={16} />
+      </button>
+      
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden relative">
       {isPremium && (

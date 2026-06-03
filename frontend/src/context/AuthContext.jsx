@@ -1,8 +1,9 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import { auth } from '../firebase'; // You'll need to export auth from a local firebase.js
+// frontend/src/context/AuthContext.jsx
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { auth } from '../firebase'; 
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 
-const AuthContext = createContext();
+const AuthContext = createContext(null); // Initialize with null
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -16,11 +17,20 @@ export const AuthProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
+  const logout = () => signOut(auth);
+
   return (
-    <AuthContext.Provider value={{ user, logout: () => signOut(auth) }}>
-      {!loading && children}
+    <AuthContext.Provider value={{ user, logout, loading }}>
+      {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
+// Add a safety check to the hook
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};

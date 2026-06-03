@@ -1,20 +1,21 @@
 // frontend/src/firebase.js
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
-// Replace these placeholders with your actual Web App credentials 
-// found in your Firebase Console (Project Settings > General > Your Apps)
 const firebaseConfig = {
-  apiKey: "AIzaSyYourActualAPIKeyHere",
-  authDomain: "kiwi-list.firebaseapp.com",
-  projectId: "kiwi-list",
-  storageBucket: "kiwi-list.appspot.com",
-  messagingSenderId: "1234567890",
-  appId: "1:1234567890:web:abcdef123456"
+  apiKey: "AIzaSyBvy_Qr-4yryox-tChNzuaVKA4tnl_smHg",
+  authDomain: "kiwi-list-78172.firebaseapp.com",
+  projectId: "kiwi-list-78172",
+  storageBucket: "kiwi-list-78172.firebasestorage.app",
+  messagingSenderId: "804700642603",
+  appId: "1:804700642603:web:40a6b08b0aeba5488f396e"
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Export the Auth instance for your AuthContext to consume
+// Export services to be used in your components
 export const auth = getAuth(app);
+export const db = getFirestore(app);
+export default app;
