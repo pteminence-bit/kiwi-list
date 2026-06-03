@@ -6,17 +6,24 @@ const MarketplaceFeed = ({ token }) => {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchFeed = () => {
-    fetch('/api/listings/feed', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
-      .then(res => res.json())
-      .then(data => {
-        setListings(data);
-        setLoading(false);
-      })
-      .catch(err => console.error("Error loading feed:", err));
-  };
+// Inside MarketplaceFeed.jsx
+const fetchFeed = () => {
+  fetch('/api/listings/feed', { // This will now be proxied to http://localhost:5000/api/listings/feed
+    headers: { 
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json' 
+    }
+  })
+  .then(res => {
+    if (!res.ok) throw new Error('Server responded with an error');
+    return res.json();
+  })
+  .then(data => {
+    setListings(data);
+    setLoading(false);
+  })
+  .catch(err => console.error("Error loading feed:", err));
+};
 
   useEffect(() => {
     fetchFeed();
