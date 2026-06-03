@@ -6,24 +6,22 @@ import AdminPortal from './pages/AdminPortal';
 import { AuthProvider } from './context/AuthContext';
 
 function App() {
-  // Assume we get the token from our AuthContext
-  const token = "YOUR_FIREBASE_TOKEN"; 
-
   return (
-    <AuthProvider>
-      <Router>
-        <div className="flex bg-slate-50 min-h-screen">
-          <Sidebar isAdmin={true} /> {/* Pass actual admin status from auth */}
-          <main className="flex-1">
-            <Routes>
-              <Route path="/" element={<MarketplaceFeed token={token} />} />
-              <Route path="/manage" element={<ManageListings token={token} />} />
-              <Route path="/admin" element={<AdminPortal token={token} />} />
-            </Routes>
-          </main>
-        </div>
-      </Router>
-    </AuthProvider>
+    <Router>
+      <div className="flex">
+        <Sidebar isAdmin={true} />
+        {/* Important: Add margin-left to the main content so it isn't hidden behind the fixed sidebar */}
+        <main className="flex-1 ml-64"> 
+          <Routes>
+            <Route path="/" element={<MarketplaceFeed />} />
+            <Route path="/manage" element={<ManageListings />} />
+            <Route path="/admin" element={<AdminPortal />} />
+            {/* If a route doesn't exist, show the feed */}
+            <Route path="*" element={<MarketplaceFeed />} />
+          </Routes>
+        </main>
+      </div>
+    </Router>
   );
 }
 

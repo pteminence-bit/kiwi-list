@@ -6,24 +6,65 @@ const ManageListings = ({ token }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/listings/my-listings', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
-      .then(res => res.json())
-      .then(data => {
-        setMyListings(data);
+    const fetchMyListings = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/listings/my-listings', {
+          headers: { 
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (!response.ok) throw new Error('Failed to fetch data');
+        
+        const data = await response.json();
+        
+        // Safety check: ensure your UI doesn't crash if backend doesn't send an array
+        setMyListings(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Fetch error:", err);
+        setMyListings([]); // Fallback to safe array
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+
+    if (token) {
+      fetchMyListings();
+    } else {
+      setLoading(false);
+    }
   }, [token]);
 
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to remove this property listing?")) return;
     
-    // We can call an admin or basic deletion handler endpoint
-    setMyListings(myListings.filter(item => item.id !== id));
+    try {
+      // Send the request to your database to remove it permanently
+      const response = await fetch(`/api/listings/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) throw new Error('Failed to delete on server');
+
+      // Optimistically/Successfully remove from local UI layout state
+      setMyListings(prevListings => prevListings.filter(item => item.id !== id));
+    } catch (err) {
+      console.error("Delete error:", err);
+      alert("Could not remove the listing from the server. Please try again.");
+    }
   };
 
-  if (loading) return <div className="p-8 text-center text-slate-500">Accessing listings vault...</div>;
+  if (loading) {
+    return (
+      <div className="p-8 text-center text-slate-500 min-h-screen ml-64 flex items-center justify-center">
+        Accessing listings vault...
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 bg-slate-50 min-h-screen ml-64">
@@ -54,17 +95,17 @@ const ManageListings = ({ token }) => {
                   </td>
                   <td className="p-4">
                     <span className={`px-2 py-1 rounded text-xs font-bold ${property.tier === 'premium' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>
-                      {property.tier.toUpperCase()}
+                      {(property.tier || 'free').toUpperCase()}
                     </span>
                   </td>
                   <td className="p-4 font-semibold text-slate-700">
-                    ₦{property.price?.toLocaleString()}
+                    ₦{property.price ? property.price.toLocaleString() : '0'}
                   </td>
                   <td className="p-4">
                     <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${
                       property.status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
                     }`}>
-                      {property.status}
+                      {property.status || 'pending'}
                     </span>
                   </td>
                   <td className="p-4 text-center text-slate-500 font-medium">
@@ -84,8 +125,9 @@ const ManageListings = ({ token }) => {
               ))}
             </tbody>
           </table>
+          
           {myListings.length === 0 && (
-            <div className="p-8 text-center text-slate-400 italic">
+            <div className="p-12 text-center text-slate-400 italic">
               You haven't posted any properties yet.
             </div>
           )}
