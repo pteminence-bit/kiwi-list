@@ -90,4 +90,25 @@ router.get('/my-listings', verifyUser, async (req, res) => {
   }
 });
 
+// --- FLAG/REPORT A LISTING ---
+router.patch('/:id/report', verifyUser, async (req, res) => {
+  const { id } = req.params;
+  const { reason } = req.body;
+
+  try {
+    const listingRef = db.collection('listings').doc(id);
+    
+    await listingRef.update({
+      isFlagged: true,
+      reportReason: reason || "No reason provided",
+      reportedBy: req.user.uid,
+      reportedAt: new Date().toISOString()
+    });
+
+    res.json({ message: "Listing has been reported to admins for review." });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
