@@ -2,24 +2,28 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+
 import { db } from './config/firebase.js';
 import adminRoutes from './routes/adminRoutes.js';
-app.use('/api/admin', adminRoutes);
 import uploadRoutes from './routes/uploadRoutes.js';
-app.use('/api/upload', uploadRoutes);
-import listingRoutes from './routes/listingRoutes.js';
-app.use('/api/listings', listingRoutes);
-import paymentController from './routes/paymentRoutes.js'; // create small router hook wrapper mapped to controller
 import webhookRoutes from './routes/webhookRoutes.js';
+import listingRoutes from './routes/listingRoutes.js';
+import paymentController from './routes/paymentRoutes.js'; // create small router hook wrapper mapped to controller
 
+dotenv.config();
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+app.use('/api/listings', listingRoutes);
+app.use('/api/upload', uploadRoutes);
+app.use('/api/admin', adminRoutes);
 // Flutterwave recommends webhooks hit unparsed or standard root routing early
 app.use('/api/webhooks', webhookRoutes); 
 app.use('/api/payments', paymentController);
 
-dotenv.config();
-const app = express();
-app.use(cors());
-app.use(express.json());
 
 // Test route to verify database connection
 app.get('/api/test-db', async (req, res) => {
