@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Wallet, 
@@ -6,98 +7,75 @@ import {
   Settings, 
   LogOut, 
   ShieldCheck,
-  Search
+  Home
 } from 'lucide-react';
-import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const Sidebar = ({ isAdmin }) => {
   const { logout } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
 
   const menuItems = [
-    { icon: <Search size={20}/>, label: 'Marketplace', path: '/' },
-    { icon: <LayoutDashboard size={20}/>, label: 'Manage Posts', path: '/manage' },
+    { icon: <Home size={20}/>, label: 'Marketplace', path: '/' },
+    { icon: <LayoutDashboard size={20}/>, label: 'My Listings', path: '/manage' },
     { icon: <Wallet size={20}/>, label: 'My Wallet', path: '/wallet' },
-    { icon: <ListPlus size={20}/>, label: 'Create New', path: '/add' },
+    { icon: <ListPlus size={20}/>, label: 'Post Property', path: '/add' },
+    { icon: <Settings size={20}/>, label: 'Settings', path: '/settings' },
   ];
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/login');
-    } catch (error) {
-      console.error("Logout failed", error);
-    }
-  };
-
   return (
-    <div className="w-64 h-screen bg-[#0f172a] text-slate-300 flex flex-col p-4 fixed left-0 top-0 border-r border-slate-800 shadow-2xl z-50">
-      {/* Logo Section */}
-      <div className="flex items-center gap-2 px-2 mb-10 mt-2">
-        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">K</div>
-        <span className="text-xl font-extrabold text-white tracking-tight">KIWI-list</span>
+    <div className="w-64 h-screen bg-[#0f172a] text-white flex flex-col p-4 fixed left-0 top-0 z-50">
+      <div className="text-2xl font-bold text-blue-400 mb-10 px-4 tracking-tight">
+        KIWI-list
       </div>
       
-      {/* Main Navigation */}
       <nav className="flex-1 space-y-1">
-        <p className="px-3 text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-4">Main Menu</p>
         {menuItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
-            <button
-              key={item.label}
-              onClick={() => navigate(item.path)}
-              className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group ${
+            <Link 
+              key={item.label} 
+              to={item.path}
+              className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
                 isActive 
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' 
-                  : 'hover:bg-slate-800 hover:text-white'
+                  ? 'bg-blue-600 text-white' 
+                  : 'text-slate-400 hover:bg-slate-800 hover:text-white'
               }`}
             >
-              <span className={`${isActive ? 'text-white' : 'text-slate-500 group-hover:text-blue-400'}`}>
-                {item.icon}
-              </span>
-              <span className="font-medium text-sm">{item.label}</span>
-            </button>
+              {item.icon} 
+              <span className="font-medium">{item.label}</span>
+            </Link>
           );
         })}
 
-        {/* Admin Section - Only visible if isAdmin is true */}
         {isAdmin && (
           <div className="mt-8 pt-8 border-t border-slate-800">
-            <p className="px-3 text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-4">Administration</p>
-            <button
-              onClick={() => navigate('/admin')}
-              className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${
+            <p className="text-[10px] uppercase text-slate-500 font-bold px-4 mb-2 tracking-widest">Admin Control</p>
+            <Link 
+              to="/admin"
+              className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
                 location.pathname === '/admin' 
                   ? 'bg-orange-600 text-white' 
-                  : 'hover:bg-slate-800 text-orange-400 hover:text-orange-300'
+                  : 'text-orange-400 hover:bg-orange-950/30'
               }`}
             >
-              <ShieldCheck size={20}/>
-              <span className="font-medium text-sm">Review Portal</span>
-            </button>
+              <ShieldCheck size={20}/> 
+              <span className="font-medium">Moderate Activities</span>
+            </Link>
           </div>
         )}
       </nav>
 
-      {/* Bottom Actions */}
-      <div className="pt-4 border-t border-slate-800">
-        <button className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all mb-2">
-          <Settings size={20}/>
-          <span className="font-medium text-sm">Settings</span>
-        </button>
-        <button 
-          onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-red-400 hover:bg-red-900/20 hover:text-red-300 transition-all"
-        >
-          <LogOut size={20}/>
-          <span className="font-medium text-sm">Logout</span>
-        </button>
-      </div>
+      <button 
+        onClick={logout} 
+        className="flex items-center gap-3 p-3 text-slate-400 hover:bg-red-900/20 hover:text-red-400 rounded-lg transition-all mt-auto"
+      >
+        <LogOut size={20}/> 
+        <span className="font-medium">Logout</span>
+      </button>
     </div>
   );
 };
 
-export default Sidebar; // CRITICAL: This fixes your SyntaxError
+// CRITICAL: This was likely missing or misspelled
+export default Sidebar;

@@ -9,6 +9,7 @@ import uploadRoutes from './routes/uploadRoutes.js';
 import webhookRoutes from './routes/webhookRoutes.js';
 import listingRoutes from './routes/listingRoutes.js';
 import paymentController from './routes/paymentRoutes.js'; // create small router hook wrapper mapped to controller
+import userRoutes from './routes/userRoutes.js';
 
 dotenv.config();
 
@@ -20,6 +21,7 @@ app.use(express.json());
 app.use('/api/listings', listingRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/users', userRoutes);
 // Flutterwave recommends webhooks hit unparsed or standard root routing early
 app.use('/api/webhooks', webhookRoutes); 
 app.use('/api/payments', paymentController);
