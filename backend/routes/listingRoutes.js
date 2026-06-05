@@ -89,6 +89,30 @@ router.get('/my-listings', verifyUser, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+// --- DELETE OWNED LISTING ---
+router.delete('/:id', verifyUser, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const listingRef = db.collection('listings').doc(id);
+    const doc = await listingRef.get();
+
+    if (!doc.exists) {
+      return res.status(404).json({ error: "Listing not found" });
+    }
+
+    // Guard rails: Check if the logged-in user actually owns this post
+    if (doc.data().ownerId !== req.user.uid) {
+      return res.status(403).json({ error: "Unauthorized. You do not own this listing." });
+    }
+
+    // If verification passes, delete the document
+    await listingRef.delete();
+    res.json({ message: "Listing successfully removed from KIWI-list." });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // --- FLAG/REPORT A LISTING ---
 router.patch('/:id/report', verifyUser, async (req, res) => {

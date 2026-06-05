@@ -35,9 +35,7 @@ const Sidebar = ({ isAdmin, isOpen, setIsOpen }) => {
       )}
 
       {/* Sidebar Box Container */}
-      <div className={`w-64 h-screen bg-[#0f172a] text-white flex flex-col p-4 fixed left-0 top-0 z-50 transition-transform duration-300 ease-in-out transform 
-        ${isOpen ? 'translate-x-0' : '-translate-x-full'} 
-        lg:translate-x-0`}
+      <div className="w-64 h-screen bg-[#0f172a] text-white flex flex-col p-4 fixed hidden md:flex"
       >
         <div className="flex items-center justify-between mb-10 px-4">
           <div className="text-2xl font-bold text-blue-400 tracking-tight">

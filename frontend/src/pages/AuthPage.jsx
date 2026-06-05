@@ -2,13 +2,21 @@ import React, { useState } from 'react';
 import { auth } from '../firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { LogIn, UserPlus } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { Navigate } from 'react-router-dom';
 
 const AuthPage = () => {
+  const { user } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // If the user session is active, instantly redirect to the main layout engine feed
+  if (user) {
+    return <Navigate to="/" replace />;
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();

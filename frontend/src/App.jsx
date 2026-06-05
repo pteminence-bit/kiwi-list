@@ -13,6 +13,7 @@ import ManageListings from './pages/ManageListings';
 import AdminPortal from './pages/AdminPortal';
 import WalletCard from './components/WalletCard';
 import Settings from './pages/Settings'; // Ensure this file exists in your pages directory
+import AuthPage from './pages/AuthPage'; // Imported your authentication page component safely
 
 const DashboardLayout = () => {
   const { user, loading } = useAuth();
@@ -92,8 +93,8 @@ export default function App() {
     <AuthProvider>
       <Router>
         <Routes>
-          {/* If you build a login page later, put its standalone route here */}
-          {/* <Route path="/login" element={<Login />} /> */}
+          {/* Handled standalone login route wrapper mapping directly to AuthPage */}
+          <Route path="/login" element={<AuthPage />} />
           
           {/* All dashboard views match inside DashboardLayout */}
           <Route path="/*" element={<DashboardLayout />} />
