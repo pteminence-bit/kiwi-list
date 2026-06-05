@@ -87,7 +87,8 @@ router.put('/settings', verifyUser, async (req, res) => {
     if (bankName !== undefined) updateData.bankName = bankName;
     if (accountNumber !== undefined) updateData.accountNumber = accountNumber;
 
-    await userRef.update(updateData);
+    // Fixed to use set with merge: true to guarantee the write commits seamlessly
+    await userRef.set(updateData, { merge: true });
     res.json({ message: "Settings saved successfully" });
   } catch (error) {
     res.status(500).json({ error: error.message });

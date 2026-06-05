@@ -11,7 +11,7 @@ const ListingCard = ({ listing, onUnlock, onReport }) => {
       {/* Report Button (Visible on Hover) */}
       <button 
         onClick={() => onReport(listing.id)}
-        className="absolute top-4 left-4 p-2 bg-white/90 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-full shadow-sm z-20 opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute top-4 left-4 p-2 bg-white/90 hover:bg-red-50 text-red-600 hover:text-red-700 rounded-full shadow-sm z-20 opacity-0 group-hover:opacity-100 transition-opacity"
         title="Report Listing"
       >
         <AlertTriangle size={16} />
@@ -33,31 +33,31 @@ const ListingCard = ({ listing, onUnlock, onReport }) => {
 
       <div className="p-4">
         <div className="flex justify-between items-start mb-2">
-          <h3 className="text-xl font-bold text-slate-800">₦{listing.price?.toLocaleString()}</h3>
-          <div className="flex items-center gap-1 text-slate-500 text-xs">
+          <h3 className="text-xl font-bold text-black">₦{listing.price?.toLocaleString()}</h3>
+          <div className="flex items-center gap-1 text-black text-xs font-bold">
             <Eye size={14} /> {listing.views || 0}
           </div>
         </div>
 
-        <p className="text-sm text-slate-600 flex items-center gap-1 mb-4">
-          <MapPin size={14} /> {listing.address || 'Address hidden'}
+        <p className="text-sm text-black font-semibold flex items-center gap-1 mb-4">
+          <MapPin size={14} className="text-slate-900" /> {listing.address || 'Address hidden'}
         </p>
 
-        <div className="flex gap-4 mb-6 border-y border-slate-50 py-2">
-          <span className="text-xs text-slate-500 flex items-center gap-1"><Bed size={14}/> {listing.beds || 0} Beds</span>
-          <span className="text-xs text-slate-500 flex items-center gap-1"><Bath size={14}/> {listing.baths || 0} Baths</span>
+        <div className="flex gap-4 mb-6 border-y border-slate-200 py-2">
+          <span className="text-xs text-black font-bold flex items-center gap-1"><Bed size={14}/> {listing.beds || 0} Beds</span>
+          <span className="text-xs text-black font-bold flex items-center gap-1"><Bath size={14}/> {listing.baths || 0} Baths</span>
         </div>
 
         {/* Paywall Logic Block */}
         {isUnlocked ? (
-          <div className="bg-slate-50 p-3 rounded-lg border border-dashed border-blue-200">
-            <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">Contact Details</p>
-            <p className="text-sm font-semibold text-blue-600">{listing.contactDetails?.phone || 'Contact Info Available'}</p>
+          <div className="bg-slate-50 p-3 rounded-lg border border-dashed border-blue-400">
+            <p className="text-xs text-black uppercase font-black tracking-wider">Contact Details</p>
+            <p className="text-sm font-bold text-blue-700">{listing.contactDetails?.phone || 'Contact Info Available'}</p>
           </div>
         ) : (
           <button 
             onClick={() => onUnlock(listing.id)}
-            className="w-full py-3 bg-slate-900 text-white rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-slate-800 transition"
+            className="w-full py-3 bg-black text-white rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-slate-900 transition"
           >
             <Lock size={16} /> Unlock Contact (₦500)
           </button>

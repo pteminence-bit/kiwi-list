@@ -23,6 +23,7 @@ const AuthPage = () => {
         // Register new user profile account
         await createUserWithEmailAndPassword(auth, email, password);
       }
+      // Note: onAuthStateChanged in AuthContext will catch this and automatically log them in!
     } catch (err) {
       // Format common Firebase error messages nicely
       const cleanError = err.message.replace('Firebase: ', '').replace(/auth\/|-/g, ' ');
@@ -33,12 +34,12 @@ const AuthPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4 w-full fixed inset-0 z-50">
       <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl text-white">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-extrabold tracking-tight text-blue-400">KIWI-list</h1>
           <p className="text-sm text-slate-400 mt-2">
-            {isLogin ? 'Welcome back! Log into your account' : 'Create your marketplace developer profile'}
+            {isLogin ? 'Welcome back! Log into your account' : 'Create your marketplace account'}
           </p>
         </div>
 

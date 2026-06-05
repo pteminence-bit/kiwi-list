@@ -30,13 +30,13 @@ const ImageUploader = ({ onImagesSelected }) => {
         
         {previews.length < 4 && (
           <label className="aspect-square flex flex-col items-center justify-center border-2 border-dashed border-slate-700 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-slate-800 transition">
-            <ImagePlus className="text-slate-500" />
-            <span className="text-xs text-slate-500 mt-2">Add Image</span>
+            <ImagePlus className="text-black" />
+            <span className="text-xs text-black font-semibold mt-2">Add Image</span>
             <input type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
           </label>
         )}
       </div>
-      <p className="text-xs text-slate-500">Upload 2 to 4 high-resolution photos of the property.</p>
+      <p className="text-xs text-black font-medium">Upload 2 to 4 high-resolution photos of the property.</p>
     </div>
   );
 };

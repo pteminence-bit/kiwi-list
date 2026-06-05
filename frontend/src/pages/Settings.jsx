@@ -55,43 +55,43 @@ const Settings = ({ token }) => {
   };
 
   return (
-    <div className="p-6 bg-slate-50 min-h-screen ml-64">
+    <div className="p-6 bg-slate-50 min-h-screen ml-64 text-black">
       <div className="max-w-3xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-800">Account Settings</h1>
-          <p className="text-sm text-slate-500">Manage your profile metadata and settlement bank accounts.</p>
+          <h1 className="text-2xl font-black text-black">Account Settings</h1>
+          <p className="text-sm text-black font-medium">Manage your profile metadata and settlement bank accounts.</p>
         </div>
 
         {message && (
-          <div className={`p-4 mb-6 rounded-lg text-sm font-medium ${message.includes('successfully') ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+          <div className={`p-4 mb-6 rounded-lg text-sm font-bold ${message.includes('successfully') ? 'bg-emerald-50 text-emerald-900 border border-emerald-400' : 'bg-red-50 text-red-900 border border-red-400'}`}>
             {message}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Profile Card */}
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
-              <User size={18} className="text-blue-500" /> Basic Information
+          <div className="bg-white p-6 rounded-xl border border-slate-300 shadow-sm">
+            <h2 className="text-lg font-bold text-black mb-4 flex items-center gap-2">
+              <User size={18} className="text-blue-600" /> Basic Information
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase mb-2">Full Name / Company</label>
+                <label className="block text-xs font-black text-black uppercase mb-2">Full Name / Company</label>
                 <input 
                   type="text" 
                   value={formData.displayName}
                   onChange={e => setFormData({...formData, displayName: e.target.value})}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 text-sm"
+                  className="w-full px-3 py-2 bg-white border-2 border-slate-400 text-black rounded-lg focus:outline-none focus:border-blue-600 text-sm font-semibold placeholder-slate-500"
                   placeholder="e.g. Jane Doe Properties"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase mb-2">Contact Number</label>
+                <label className="block text-xs font-black text-black uppercase mb-2">Contact Number</label>
                 <input 
                   type="text" 
                   value={formData.phoneNumber}
                   onChange={e => setFormData({...formData, phoneNumber: e.target.value})}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 text-sm"
+                  className="w-full px-3 py-2 bg-white border-2 border-slate-400 text-black rounded-lg focus:outline-none focus:border-blue-600 text-sm font-semibold placeholder-slate-500"
                   placeholder="e.g. +234..."
                 />
               </div>
@@ -99,35 +99,35 @@ const Settings = ({ token }) => {
           </div>
 
           {/* Payout Banking Card */}
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
-              <CreditCard size={18} className="text-amber-500" /> Flutterwave Payout Method
+          <div className="bg-white p-6 rounded-xl border border-slate-300 shadow-sm">
+            <h2 className="text-lg font-bold text-black mb-4 flex items-center gap-2">
+              <CreditCard size={18} className="text-amber-600" /> Flutterwave Payout Method
             </h2>
-            <p className="text-xs text-slate-400 mb-4">Specify the Nigerian bank account where accumulated premium contact unlock splits (70%) will be automatically paid out.</p>
+            <p className="text-xs text-black font-medium mb-4">Specify the Nigerian bank account where accumulated premium contact unlock splits (70%) will be automatically paid out.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase mb-2">Bank Name</label>
+                <label className="block text-xs font-black text-black uppercase mb-2">Bank Name</label>
                 <select 
                   value={formData.bankName}
                   onChange={e => setFormData({...formData, bankName: e.target.value})}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 text-sm"
+                  className="w-full px-3 py-2 bg-white border-2 border-slate-400 text-black rounded-lg focus:outline-none focus:border-blue-600 text-sm font-bold"
                 >
-                  <option value="">Select Bank</option>
-                  <option value="Access Bank">Access Bank</option>
-                  <option value="GTBank">Guaranty Trust Bank (GTB)</option>
-                  <option value="Zenith Bank">Zenith Bank</option>
-                  <option value="UBA">United Bank for Africa (UBA)</option>
-                  <option value="Sterling Bank">Sterling Bank</option>
+                  <option value="" className="text-black">Select Bank</option>
+                  <option value="Access Bank" className="text-black">Access Bank</option>
+                  <option value="GTBank" className="text-black">Guaranty Trust Bank (GTB)</option>
+                  <option value="Zenith Bank" className="text-black">Zenith Bank</option>
+                  <option value="UBA" className="text-black">United Bank for Africa (UBA)</option>
+                  <option value="Sterling Bank" className="text-black">Sterling Bank</option>
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase mb-2">Account Number (NUBAN)</label>
+                <label className="block text-xs font-black text-black uppercase mb-2">Account Number (NUBAN)</label>
                 <input 
                   type="text" 
                   maxLength={10}
                   value={formData.accountNumber}
                   onChange={e => setFormData({...formData, accountNumber: e.target.value})}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 text-sm"
+                  className="w-full px-3 py-2 bg-white border-2 border-slate-400 text-black rounded-lg focus:outline-none focus:border-blue-600 text-sm font-semibold placeholder-slate-500"
                   placeholder="10-digit NUBAN"
                 />
               </div>
@@ -138,7 +138,7 @@ const Settings = ({ token }) => {
             <button 
               type="submit" 
               disabled={saving}
-              className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white font-medium rounded-lg text-sm flex items-center gap-2 shadow transition"
+              className="px-6 py-2.5 bg-black hover:bg-slate-900 disabled:bg-slate-400 text-white font-bold rounded-lg text-sm flex items-center gap-2 shadow conversion-btn transition"
             >
               <Save size={16} /> {saving ? 'Saving...' : 'Save Changes'}
             </button>
