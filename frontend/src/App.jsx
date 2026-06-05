@@ -8,7 +8,51 @@ import ImageUploader from './components/ImageUploader';
 import AdminPortal from './pages/AdminPortal';
 import Settings from './pages/Settings';
 import { AuthProvider, useAuth } from './context/AuthContext';
+// Import your Firebase Auth sign-in method here if needed
+// import { signInWithEmailAndPassword } from 'firebase/auth'; 
+// import { auth } from './firebase';
 
+// --- TEMPORARY LOGIN VIEW ---
+const LoginPage = () => {
+  const { user } = useAuth();
+  
+  // If the user logs in successfully, immediately bounce them out to the feed
+  if (user) {
+    return <Navigate to="/" />;
+  }
+
+  const handleDemoLogin = () => {
+    alert("Hook your Firebase email/password login functions up here to authenticate.");
+  };
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-950 text-white p-4">
+      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-extrabold text-blue-400">KIWI-list</h2>
+          <p className="text-sm text-slate-400 mt-2">Real Estate Marketplace Portal</p>
+        </div>
+        
+        <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Email Address</label>
+            <input type="email" placeholder="you@example.com" className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Password</label>
+            <input type="password" placeholder="••••••••" className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500" />
+          </div>
+          
+          <button onClick={handleDemoLogin} className="w-full py-3 bg-blue-600 hover:bg-blue-700 font-medium rounded-lg transition mt-6">
+            Sign In
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// --- CORE DASHBOARD LAYOUT HULL ---
 const DashboardLayout = () => {
   const { user, loading } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
@@ -18,9 +62,7 @@ const DashboardLayout = () => {
     const checkAdminStatus = async () => {
       if (user) {
         try {
-          // Force refresh token to get the latest custom claims from Firebase
           const idTokenResult = await user.getIdTokenResult(true);
-          // Check if the custom claim 'admin' is true
           setIsAdmin(!!idTokenResult.claims.admin);
         } catch (error) {
           console.error("Error checking admin claims:", error);
@@ -35,31 +77,24 @@ const DashboardLayout = () => {
     }
   }, [user, loading]);
 
-  // 1. Wait for Firebase to check auth status and claims
   if (loading || checkingRole) {
-    return <div className="flex h-screen items-center justify-center bg-slate-900 text-white">Loading session...</div>;
+    return <div className="flex h-screen items-center justify-center bg-slate-950 text-white">Loading session...</div>;
   }
 
-  // 2. Redirect to Login if not authenticated
   if (!user) {
-    return <Navigate to="/login" />; 
+    return <Navigate to="/login" replace />; 
   }
 
-  // Note: user.accessToken is standard for Firebase User objects
   const token = user.accessToken;
 
   return (
     <div className="flex bg-slate-950 min-h-screen text-white">
-      {/* Sidebar now receives the true real-time admin status */}
       <Sidebar isAdmin={isAdmin} /> 
-      
-      {/* Main content area shifted to the right to accommodate sidebar */}
       <main className="flex-1 ml-64 p-8">
         <Routes>
           <Route path="/" element={<MarketplaceFeed token={token} />} />
           <Route path="/manage" element={<ManageListings token={token} />} />
-          {/* Protect the actual view route as an extra security layer */}
-          <Route path="/admin" element={isAdmin ? <AdminPortal token={token} /> : <Navigate to="/" />} />
+          <Route path="/admin" element={isAdmin ? <AdminPortal token={token} /> : <Navigate to="/" replace />} />
           <Route path="/wallet" element={<WalletCard token={token} />} />
           <Route path="/settings" element={<Settings token={token} />} />
           <Route path="/add" element={
@@ -74,13 +109,14 @@ const DashboardLayout = () => {
   );
 };
 
+// --- MAIN ROUTER ENTRY POINT ---
 function App() {
   return (
     <AuthProvider>
       <Router>
         <Routes>
-          {/* If you add a dedicated login page later, it goes right here: */}
-          {/* <Route path="/login" element={<Login />} /> */}
+          {/* Explicitly mapping out the login path breaks the infinite loop */}
+          <Route path="/login" element={<LoginPage />} />
           <Route path="/*" element={<DashboardLayout />} />
         </Routes>
       </Router>
