@@ -8,21 +8,44 @@ import ImageUploader from './components/ImageUploader';
 import AdminPortal from './pages/AdminPortal';
 import Settings from './pages/Settings';
 import { AuthProvider, useAuth } from './context/AuthContext';
-// Import your Firebase Auth sign-in method here if needed
-// import { signInWithEmailAndPassword } from 'firebase/auth'; 
-// import { auth } from './firebase';
 
-// --- TEMPORARY LOGIN VIEW ---
+// Import Firebase Client SDK SDK drivers
+import { signInWithEmailAndPassword } from 'firebase/auth'; 
+import { auth } from './firebase'; 
+
+// --- PRODUCTION LOGIN VIEW ---
 const LoginPage = () => {
   const { user } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   
   // If the user logs in successfully, immediately bounce them out to the feed
   if (user) {
     return <Navigate to="/" />;
   }
 
-  const handleDemoLogin = () => {
-    alert("Hook your Firebase email/password login functions up here to authenticate.");
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (err) {
+      console.error("Authentication Error:", err.code);
+      // Clean fallback human error mapping responses
+      if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
+        setError('Invalid email or password credential credentials.');
+      } else if (err.code === 'auth/invalid-email') {
+        setError('Please format your email address correctly.');
+      } else {
+        setError('Failed to securely establish connection session.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -33,18 +56,42 @@ const LoginPage = () => {
           <p className="text-sm text-slate-400 mt-2">Real Estate Marketplace Portal</p>
         </div>
         
-        <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
+        {error && (
+          <div className="mb-4 p-3 bg-red-900/30 border border-red-500/50 rounded-lg text-red-400 text-xs font-medium">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Email Address</label>
-            <input type="email" placeholder="you@example.com" className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500" />
+            <input 
+              type="email" 
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com" 
+              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500 text-slate-200" 
+            />
           </div>
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Password</label>
-            <input type="password" placeholder="••••••••" className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500" />
+            <input 
+              type="password" 
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••" 
+              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500 text-slate-200" 
+            />
           </div>
           
-          <button onClick={handleDemoLogin} className="w-full py-3 bg-blue-600 hover:bg-blue-700 font-medium rounded-lg transition mt-6">
-            Sign In
+          <button 
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-800 disabled:text-slate-500 font-medium rounded-lg transition mt-6 flex items-center justify-center"
+          >
+            {loading ? "Authenticating Session Vault..." : "Sign In"}
           </button>
         </form>
       </div>
@@ -85,6 +132,7 @@ const DashboardLayout = () => {
     return <Navigate to="/login" replace />; 
   }
 
+  // Access user's active session web token directly via the payload instance property
   const token = user.accessToken;
 
   return (
@@ -112,15 +160,14 @@ const DashboardLayout = () => {
 // --- MAIN ROUTER ENTRY POINT ---
 function App() {
   return (
-    <AuthProvider>
-      <Router>
+    <Router>
+      <AuthProvider>
         <Routes>
-          {/* Explicitly mapping out the login path breaks the infinite loop */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/*" element={<DashboardLayout />} />
         </Routes>
-      </Router>
-    </AuthProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 
