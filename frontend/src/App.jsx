@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import MarketplaceFeed from './pages/MarketplaceFeed';
@@ -11,9 +11,32 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 
 const DashboardLayout = () => {
   const { user, loading } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [checkingRole, setCheckingRole] = useState(true);
 
-  // 1. Wait for Firebase to check auth status
-  if (loading) {
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (user) {
+        try {
+          // Force refresh token to get the latest custom claims from Firebase
+          const idTokenResult = await user.getIdTokenResult(true);
+          // Check if the custom claim 'admin' is true
+          setIsAdmin(!!idTokenResult.claims.admin);
+        } catch (error) {
+          console.error("Error checking admin claims:", error);
+          setIsAdmin(false);
+        }
+      }
+      setCheckingRole(false);
+    };
+
+    if (!loading) {
+      checkAdminStatus();
+    }
+  }, [user, loading]);
+
+  // 1. Wait for Firebase to check auth status and claims
+  if (loading || checkingRole) {
     return <div className="flex h-screen items-center justify-center bg-slate-900 text-white">Loading session...</div>;
   }
 
@@ -27,15 +50,16 @@ const DashboardLayout = () => {
 
   return (
     <div className="flex bg-slate-950 min-h-screen text-white">
-      {/* Sidebar remains fixed */}
-      <Sidebar isAdmin={true} /> 
+      {/* Sidebar now receives the true real-time admin status */}
+      <Sidebar isAdmin={isAdmin} /> 
       
       {/* Main content area shifted to the right to accommodate sidebar */}
       <main className="flex-1 ml-64 p-8">
         <Routes>
           <Route path="/" element={<MarketplaceFeed token={token} />} />
           <Route path="/manage" element={<ManageListings token={token} />} />
-          <Route path="/admin" element={<AdminPortal token={token} />} />
+          {/* Protect the actual view route as an extra security layer */}
+          <Route path="/admin" element={isAdmin ? <AdminPortal token={token} /> : <Navigate to="/" />} />
           <Route path="/wallet" element={<WalletCard token={token} />} />
           <Route path="/settings" element={<Settings token={token} />} />
           <Route path="/add" element={
