@@ -114,6 +114,20 @@ router.delete('/:id', verifyUser, async (req, res) => {
   }
 });
 
+router.post('/api/users/submit-kyc', verifyUser, async (req, res) => {
+  const { kycDocumentUrl } = req.body;
+  try {
+    await db.collection('users').doc(req.user.uid).update({
+      verificationStatus: 'pending',
+      kycDocumentUrl: kycDocumentUrl,
+      kycSubmittedAt: new Date().toISOString()
+    });
+    res.json({ message: "KYC credentials queued successfully." });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // --- FLAG/REPORT A LISTING ---
 router.patch('/:id/report', verifyUser, async (req, res) => {
   const { id } = req.params;
