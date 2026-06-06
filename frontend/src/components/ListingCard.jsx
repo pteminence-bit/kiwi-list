@@ -1,228 +1,229 @@
-import React, { useState } from 'react';
-import { MapPin, Bed, Bath, Lock, Eye, AlertTriangle, ChevronLeft, ChevronRight, Heart, MessageCircle, Send } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { db } from '../config/firebase.js';
+import { doc, onSnapshot, updateDoc, increment, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { MapPin, Bed, Bath, Lock, Eye, AlertTriangle, ChevronLeft, ChevronRight, Heart } from 'lucide-react';
 
-const ListingCard = ({ listing, onUnlock, onReport }) => {
+const ListingCard = ({ listing, onUnlock, onReport, currentUserId }) => {
   const isPremium = listing.tier === 'premium';
   const isUnlocked = listing.isUnlocked || !isPremium;
   
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  // Real-time synchronization states
+  const [liveMetrics, setLiveMetrics] = useState({ views: listing.views || 0, likes: listing.likesCount || 0 });
   const [isLiked, setIsLiked] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
-  // State variables to track touch points for mobile swiping
-  const [touchStart, setTouchStart] = useState(null);
-  const [touchEnd, setTouchEnd] = useState(null);
-
   const images = listing.images || [];
+  const scrollContainerRef = useRef(null);
 
-  const handlePrevSlide = (e) => {
-    if (e) e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
-  };
+  // 1. Establish Real-Time Listener connection to Firestore for views & likes
+  useEffect(() => {
+    if (!listing.id) return;
 
-  const handleNextSlide = (e) => {
-    if (e) e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
-  };
+    const docRef = doc(db, 'listings', listing.id);
+    
+    // Listen for data shifts instantly
+    const unsubscribe = onSnapshot(docRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        setLiveMetrics({
+          views: data.views || 0,
+          likes: data.likesCount || 0
+        });
+        
+        // Track if this explicit authenticated user has liked this asset before
+        if (currentUserId && data.likedBy) {
+          setIsLiked(data.likedBy.includes(currentUserId));
+        }
+      }
+    });
 
-  // --- SWIPE LOGIC HANDLERS ---
-  const minSwipeDistance = 50;
+    // Auto-increment public counter view tally via server-side updates on component init
+    updateDoc(docRef, { views: increment(1) }).catch(err => console.error(err));
 
-  const onTouchStart = (e) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-  };
+    return () => unsubscribe();
+  }, [listing.id, currentUserId]);
 
-  const onTouchMove = (e) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
-
-    if (isLeftSwipe) {
-      handleNextSlide();
-    } else if (isRightSwipe) {
-      handlePrevSlide();
+  // 2. Handle Real-time Likes Mutation updates atomically
+  const handleLikeToggle = async (e) => {
+    e.stopPropagation();
+    if (!currentUserId) return alert("Please log in to save listings.");
+    
+    const docRef = doc(db, 'listings', listing.id);
+    try {
+      if (isLiked) {
+        await updateDoc(docRef, {
+          likesCount: increment(-1),
+          likedBy: arrayRemove(currentUserId)
+        });
+      } else {
+        await updateDoc(docRef, {
+          likesCount: increment(1),
+          likedBy: arrayUnion(currentUserId)
+        });
+      }
+    } catch (err) {
+      console.error("Failed to update like metrics gracefully:", err);
     }
   };
 
+  // 3. Keep Desktop carousel sync dots updated during responsive swipe transitions
+  const handleMobileScroll = () => {
+    if (!scrollContainerRef.current) return;
+    const { scrollLeft, clientWidth } = scrollContainerRef.current;
+    const newIndex = Math.round(scrollLeft / clientWidth);
+    setCurrentImageIndex(newIndex);
+  };
+
+  const executeScrollTo = (index) => {
+    if (!scrollContainerRef.current) return;
+    const clientWidth = scrollContainerRef.current.clientWidth;
+    scrollContainerRef.current.scrollTo({
+      left: index * clientWidth,
+      behavior: 'smooth'
+    });
+    setCurrentImageIndex(index);
+  };
+
   return (
-    <div className="bg-white rounded-none md:rounded-xl border border-slate-200 overflow-hidden w-full mx-auto shadow-sm max-w-md lg:max-w-4xl flex flex-col lg:flex-row">
+    <div className="bg-white rounded-none md:rounded-xl border border-slate-200 overflow-hidden w-full max-w-md md:max-w-xl lg:max-w-2xl mx-auto shadow-sm flex flex-col h-full">
       
-      {/* LEFT COLUMN / TOP SECTION: Media Canvas (Swipeable) */}
-      <div className="w-full lg:w-1/2 flex flex-col bg-slate-950 relative">
-        
-        {/* Mobile Header (Hidden on Desktop split view) */}
-        <div className="flex items-center justify-between p-3 border-b border-slate-100 bg-white lg:hidden">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 to-blue-500 p-[2px]">
-              <div className="w-full h-full bg-white rounded-full flex items-center justify-center font-black text-xs text-slate-800">
-                KIWI
-              </div>
-            </div>
-            <div>
-              <div className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                Verified Agent
-                {isPremium && <span className="inline-block w-2 h-2 rounded-full bg-amber-500" />}
-              </div>
-              <p className="text-[11px] text-slate-500 font-medium">Lagos, Nigeria</p>
+      {/* Card Header */}
+      <div className="flex items-center justify-between p-3 border-b border-slate-100 shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-amber-500 p-[2px]">
+            <div className="w-full h-full bg-white rounded-full flex items-center justify-center font-black text-xs text-slate-800">
+              KW
             </div>
           </div>
-          <button onClick={() => onReport(listing.id)} className="p-1 text-slate-400 hover:text-red-600 rounded-full transition">
-            <AlertTriangle size={18} />
-          </button>
+          <div>
+            <div className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+              Verified Agent
+              {isPremium && <span className="w-2 h-2 rounded-full bg-amber-500" />}
+            </div>
+            <p className="text-[11px] text-slate-500 font-medium">{listing.address?.split(',').pop() || 'Nigeria'}</p>
+          </div>
+        </div>
+        
+        <button 
+          onClick={() => onReport(listing.id)}
+          className="p-1 text-slate-400 hover:text-red-600 rounded-full transition"
+        >
+          <AlertTriangle size={18} />
+        </button>
+      </div>
+
+      {/* Media Canvas Area: Touch Swipe Carousel Engine */}
+      <div className="relative aspect-square w-full bg-slate-950 group shrink-0">
+        <div 
+          ref={scrollContainerRef}
+          onScroll={handleMobileScroll}
+          className="w-full h-full flex overflow-x-auto snap-x snap-mandatory scrollbar-none touch-pan-x"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
+          {images.map((img, idx) => (
+            <div key={idx} className="w-full h-full flex-shrink-0 snap-start snap-always">
+              <img 
+                src={img} 
+                className="w-full h-full object-cover pointer-events-none select-none" 
+                alt="Property View Portfolio" 
+              />
+            </div>
+          ))}
         </div>
 
-        {/* Swipe Container Canvas */}
-        <div 
-          className="relative aspect-square w-full bg-slate-950 group overflow-hidden flex-1"
-          onTouchStart={onTouchStart}
-          onTouchMove={onTouchMove}
-          onTouchEnd={onTouchEnd}
-        >
-          {images.length > 0 ? (
-            <img 
-              src={images[currentImageIndex]} 
-              className="w-full h-full object-cover transition-all duration-300 select-none" 
-              alt={`Property visual view ${currentImageIndex + 1}`} 
-              draggable="false"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-slate-600 bg-slate-900 text-sm">
-              No Images Available
-            </div>
-          )}
+        {/* Desktop Explicit Navigation Chevrons */}
+        {images.length > 1 && (
+          <>
+            <button 
+              onClick={(e) => { e.stopPropagation(); executeScrollTo(currentImageIndex === 0 ? images.length - 1 : currentImageIndex - 1); }}
+              className="absolute left-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-white/80 text-slate-800 hover:bg-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 hidden md:flex z-10"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <button 
+              onClick={(e) => { e.stopPropagation(); executeScrollTo(currentImageIndex === images.length - 1 ? 0 : currentImageIndex + 1); }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-white/80 text-slate-800 hover:bg-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 hidden md:flex z-10"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </>
+        )}
 
-          {/* Desktop Chevron Toggles */}
-          {images.length > 1 && (
-            <>
-              <button 
-                onClick={handlePrevSlide}
-                className="absolute left-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-white/80 text-slate-800 hover:bg-white shadow-md backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 hidden md:flex"
-              >
-                <ChevronLeft size={18} />
-              </button>
-              <button 
-                onClick={handleNextSlide}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-white/80 text-slate-800 hover:bg-white shadow-md backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 hidden md:flex"
-              >
-                <ChevronRight size={18} />
-              </button>
-            </>
-          )}
+        {isPremium && (
+          <span className="absolute top-3 right-3 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-amber-950 bg-amber-400 rounded-full shadow-md z-10">
+            Premium
+          </span>
+        )}
 
-          {/* Premium Badge Flag overlay */}
-          {isPremium && (
-            <span className="absolute top-3 right-3 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-amber-950 bg-amber-400 rounded-full shadow-md z-10">
-              Premium Post
-            </span>
-          )}
+        {/* Carousel Position Tracking Indicator Dots */}
+        {images.length > 1 && (
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1 z-10">
+            {images.map((_, i) => (
+              <span 
+                key={i} 
+                className={`w-1.5 h-1.5 rounded-full transition-all ${i === currentImageIndex ? 'bg-white scale-110' : 'bg-white/50'}`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
-          {/* Carousel Tracking Dots */}
-          {images.length > 1 && (
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1 z-10">
-              {images.map((_, i) => (
-                <span 
-                  key={i} 
-                  className={`w-1.5 h-1.5 rounded-full transition-all ${i === currentImageIndex ? 'bg-white scale-110' : 'bg-white/50'}`}
-                />
-              ))}
-            </div>
-          )}
+      {/* Simplified Analytics Bar (Stripped Comment/Share) */}
+      <div className="px-3 pt-3 pb-1 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-2">
+          <button onClick={handleLikeToggle} className="hover:opacity-70 transition p-1">
+            <Heart size={24} className={isLiked ? "fill-red-500 text-red-500" : "text-slate-800"} />
+          </button>
+          <span className="text-xs font-bold text-slate-700">{liveMetrics.likes.toLocaleString()} likes</span>
+        </div>
+        <div className="flex items-center gap-1 text-slate-500 text-xs font-bold bg-slate-100 px-2.5 py-1 rounded-full">
+          <Eye size={14} className="text-slate-700" /> {liveMetrics.views.toLocaleString()} views
         </div>
       </div>
 
-      {/* RIGHT COLUMN: Details & Interactions Content Block (Fits desktop screens) */}
-      <div className="w-full lg:w-1/2 flex flex-col justify-between p-4 bg-white">
-        <div>
-          {/* Desktop Exclusive Layout Header */}
-          <div className="hidden lg:flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-amber-500 to-blue-500 p-[2px]">
-                <div className="w-full h-full bg-white rounded-full flex items-center justify-center font-black text-xs text-slate-800">
-                  KIWI
-                </div>
-              </div>
-              <div>
-                <div className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                  Verified Agent
-                  {isPremium && <span className="inline-block w-2 h-2 rounded-full bg-amber-500" />}
-                </div>
-                <p className="text-[11px] text-slate-500 font-medium">Lagos, Nigeria</p>
-              </div>
-            </div>
-            <button onClick={() => onReport(listing.id)} className="p-1 text-slate-400 hover:text-red-600 rounded-full transition">
-              <AlertTriangle size={18} />
-            </button>
+      {/* Technical Detail Overlays */}
+      <div className="px-3 pb-4 space-y-2 flex-grow flex flex-col justify-between">
+        <div className="space-y-2">
+          <div className="font-black text-slate-900 text-lg pt-1">
+            ₦{listing.price?.toLocaleString()}
           </div>
 
-          {/* Pricing & Metric Rows */}
-          <div className="flex items-center justify-between mb-3">
-            <span className="font-black text-slate-900 text-xl tracking-tight">
-              ₦{listing.price?.toLocaleString()}
-            </span>
-            <div className="flex items-center gap-1 text-slate-500 text-xs font-bold bg-slate-100 px-2.5 py-1 rounded-full">
-              <Eye size={14} className="text-slate-700" /> {listing.views || 0} views
-            </div>
-          </div>
-
-          {/* Structural Descriptions */}
-          <p className="text-sm text-slate-800 leading-relaxed mb-4">
-            <span className="font-extrabold mr-2">{listing.title || 'Spacious Apartment'}</span>
-            Discover premium dwelling selections tailored for comfort and modern lifestyle living dynamics.
+          <p className="text-sm text-slate-800 leading-snug">
+            <span className="font-extrabold mr-2">{listing.title || 'Spacious Unit'}</span>
+            Marketed by authenticated broker networks.
           </p>
 
-          {/* Property Structural Parameter Badges */}
-          <div className="flex flex-wrap gap-2 mb-6">
-            <span className="flex items-center gap-1 bg-slate-100 px-2.5 py-1.5 rounded-md font-semibold text-xs text-slate-700">
-              <Bed size={14} className="text-slate-800" /> {listing.beds || 0} Beds
+          <div className="flex flex-wrap gap-2 text-slate-600 text-xs pt-1">
+            <span className="flex items-center gap-1 bg-slate-100 px-2.5 py-1 rounded-md font-semibold">
+              <Bed size={13} className="text-slate-800" /> {listing.beds || 0} Beds
             </span>
-            <span className="flex items-center gap-1 bg-slate-100 px-2.5 py-1.5 rounded-md font-semibold text-xs text-slate-700">
-              <Bath size={14} className="text-slate-800" /> {listing.baths || 0} Baths
+            <span className="flex items-center gap-1 bg-slate-100 px-2.5 py-1 rounded-md font-semibold">
+              <Bath size={13} className="text-slate-800" /> {listing.baths || 0} Baths
             </span>
-            <span className="flex items-center gap-1 bg-slate-100 px-2.5 py-1.5 rounded-md font-semibold text-xs text-slate-700 truncate max-w-full">
-              <MapPin size={14} className="text-slate-800 shrink-0" /> {listing.address || 'Lagos'}
+            <span className="flex items-center gap-1 bg-slate-100 px-2.5 py-1 rounded-md font-semibold truncate max-w-[180px]">
+              <MapPin size={13} className="text-slate-800 shrink-0" /> {listing.address || 'Lagos'}
             </span>
           </div>
         </div>
 
-        {/* Interaction Ribbons & Paywalls Footer Wrapper */}
-        <div className="space-y-4 border-t border-slate-100 pt-4">
-          <div className="flex items-center gap-4 text-slate-800">
-            <button onClick={() => setIsLiked(!isLiked)} className="hover:opacity-60 transition">
-              <Heart size={24} className={isLiked ? "fill-red-500 text-red-500" : ""} />
+        {/* Contact Access Management Footer Panel */}
+        <div className="pt-4">
+          {isUnlocked ? (
+            <div className="bg-blue-50 border border-blue-100 rounded-lg p-2.5 text-center">
+              <p className="text-[10px] text-blue-600 font-extrabold tracking-wider uppercase mb-0.5">Contact Line</p>
+              <a href={`tel:${listing.contactDetails?.phone}`} className="text-sm font-black text-blue-800 hover:underline">
+                {listing.contactDetails?.phone || '0803 123 4567'}
+              </a>
+            </div>
+          ) : (
+            <button 
+              onClick={() => onUnlock(listing.id)}
+              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black rounded-lg flex items-center justify-center gap-2 tracking-wide uppercase transition"
+            >
+              <Lock size={14} /> Unlock Contact (₦500)
             </button>
-            <button className="hover:opacity-60 transition" onClick={() => !isUnlocked && onUnlock(listing.id)}>
-              <MessageCircle size={24} />
-            </button>
-            <button className="hover:opacity-60 transition">
-              <Send size={24} />
-            </button>
-          </div>
-
-          {/* Native Monetized Paywall Access Action Area */}
-          <div>
-            {isUnlocked ? (
-              <div className="bg-blue-50/70 border border-blue-100 rounded-lg p-3 text-center">
-                <p className="text-[10px] text-blue-600 font-extrabold tracking-wider uppercase mb-0.5">Unlocked Contact Access</p>
-                <a href={`tel:${listing.contactDetails?.phone}`} className="text-base font-black text-blue-800 hover:underline">
-                  {listing.contactDetails?.phone || '0803 123 4567'}
-                </a>
-              </div>
-            ) : (
-              <button 
-                onClick={() => onUnlock(listing.id)}
-                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black rounded-lg flex items-center justify-center gap-2 tracking-wide uppercase shadow-sm transition"
-              >
-                <Lock size={14} /> Unlock Contact Information (₦500)
-              </button>
-            )}
-          </div>
+          )}
         </div>
-
       </div>
     </div>
   );
