@@ -6,7 +6,6 @@ const AdminPortal = ({ token }) => {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Mocked platform changelogs matching the visual panel on the left of your blueprint
   const platformUpdates = [
     { date: "Jun 06, 2026", title: "Automated Multi-Queue Engine", body: "Admin dashboards now isolate KYC proofs, reported asset portfolios, and text reviews into explicit separate arrays.", tag: "System Core" },
     { date: "May 18, 2026", title: "Cloudflare R2 Storage Active", body: "Asset media arrays now route cleanly via optimized chunked streams direct to global storage edges.", tag: "Media Pipeline" }
@@ -75,7 +74,6 @@ const AdminPortal = ({ token }) => {
     );
   }
 
-  // Calculate global summary aggregations for top performance metrics
   const totalInboundItems = queues.properties.length + queues.kyc.length + queues.reviews.length;
 
   return (
@@ -101,10 +99,10 @@ const AdminPortal = ({ token }) => {
         </div>
       </div>
 
-      {/* Main Structural Twin Columns Pane (Matches Image Blueprint Layout) */}
+      {/* Main Structural Twin Columns Pane */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
-        {/* LEFT COLUMN: System Changelogs & Platform Updates */}
+        {/* LEFT COLUMN: System Changelogs */}
         <div className="lg:col-span-5 bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
             <Newspaper size={18} className="text-blue-600" />
@@ -124,7 +122,7 @@ const AdminPortal = ({ token }) => {
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Interactive Multi-Queue Action Lists */}
+        {/* RIGHT COLUMN: Action Lists */}
         <div className="lg:col-span-7 bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-6">
           <div className="flex items-center justify-between pb-2 border-b border-slate-100">
             <div className="flex items-center gap-2">
@@ -153,17 +151,17 @@ const AdminPortal = ({ token }) => {
                   </div>
                 </div>
                 <div className="flex gap-2 shrink-0 self-end sm:self-center">
-                  <button onClick={() => handleAction(item.id, 'property', 'approve')} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-md transition shadow-sm">
+                  <button onClick={() => handleAction(item.id, 'properties', 'approve')} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-md transition shadow-sm">
                     Approve
                   </button>
-                  <button onClick={() => handleAction(item.id, 'property', 'decline')} className="px-3 py-1.5 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-md transition">
+                  <button onClick={() => handleAction(item.id, 'properties', 'decline')} className="px-3 py-1.5 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-md transition">
                     Decline
                   </button>
                 </div>
               </div>
             ))}
 
-            {/* B. KYC Documents Loop (Agent Verification Requests) */}
+            {/* B. KYC Documents Loop */}
             {queues.kyc.map(item => (
               <div key={item.id} className="bg-slate-50 border border-slate-200 p-3.5 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                 <div className="flex gap-3 items-start">
@@ -204,10 +202,10 @@ const AdminPortal = ({ token }) => {
                   </div>
                 </div>
                 <div className="flex gap-2 shrink-0 self-end sm:self-center">
-                  <button onClick={() => handleAction(item.id, 'review', 'approve')} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-md transition shadow-sm">
+                  <button onClick={() => handleAction(item.id, 'reviews', 'approve')} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-md transition shadow-sm">
                     Approve
                   </button>
-                  <button onClick={() => handleAction(item.id, 'review', 'decline')} className="px-3 py-1.5 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-md transition">
+                  <button onClick={() => handleAction(item.id, 'reviews', 'decline')} className="px-3 py-1.5 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-md transition">
                     Decline
                   </button>
                 </div>
