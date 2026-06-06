@@ -18,29 +18,31 @@ const verifyAdmin = async (req, res, next) => {
   }
 };
 
+// --- ADMINISTRATIVE STATUS DEBUGGER ---
 router.get('/debug-my-status', verifyUser, async (req, res) => {
   try {
+    // Fetch the user's document from Firestore
     const userRef = await db.collection('users').doc(req.user.uid).get();
     
     if (!userRef.exists) {
       return res.status(404).json({
+        message: "Firebase authentication token is valid, but no corresponding user document was found in your Firestore 'users' collection.",
         uid: req.user.uid,
-        email: req.user.email || "No email bound to token",
-        firestoreRecordFound: false,
-        message: "No user document found in Firestore 'users' collection. Please register first."
+        email: req.user.email
       });
     }
 
     const userData = userRef.data();
+
     res.json({
-      uid: req.user.uid,
-      firestoreRecordFound: true,
-      currentAssignedRole: userData.role || "none",
+      message: "Authentication and database handshake successful!",
+      firebaseUid: req.user.uid,
+      firestoreRole: userData.role || "No role assigned",
       isVerifiedAgent: userData.isVerifiedAgent || false,
-      fullProfileDump: userData
+      fullFirestorePayload: userData
     });
   } catch (error) {
-    res.status(500).json({ error: "Debug helper loop failure: " + error.message });
+    res.status(500).json({ error: "Debug engine route error: " + error.message });
   }
 });
 
