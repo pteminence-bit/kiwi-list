@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { doc, onSnapshot, updateDoc, increment, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { MapPin, Bed, Bath, Lock, Eye, AlertTriangle, ChevronLeft, ChevronRight, Heart } from 'lucide-react';
+// IMPORT FIXED HERE: Point this path directly to where your frontend initialized firebase "db" object is saved
+import { db } from './firebase'; 
 
 const ListingCard = ({ listing, onUnlock, onReport, currentUserId }) => {
   const isPremium = listing.tier === 'premium';
