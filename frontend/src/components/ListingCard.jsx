@@ -1,73 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { doc, onSnapshot, updateDoc, increment, arrayUnion, arrayRemove } from 'firebase/firestore';
-import { MapPin, Bed, Bath, Lock, Eye, AlertTriangle, ChevronLeft, ChevronRight, Heart } from 'lucide-react';
-// IMPORT FIXED HERE: Point this path directly to where your frontend initialized firebase "db" object is saved
-import { db } from '../firebase'; 
+import React, { useState, useRef } from 'react';
+import { MapPin, Bed, Bath, Lock, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 
-const ListingCard = ({ listing, onUnlock, onReport, currentUserId }) => {
+const ListingCard = ({ listing, onUnlock, onReport }) => {
   const isPremium = listing.tier === 'premium';
   const isUnlocked = listing.isUnlocked || !isPremium;
   
-  // Real-time synchronization states
-  const [liveMetrics, setLiveMetrics] = useState({ views: listing.views || 0, likes: listing.likesCount || 0 });
-  const [isLiked, setIsLiked] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  
   const images = listing.images || [];
   const scrollContainerRef = useRef(null);
 
-  // 1. Establish Real-Time Listener connection to Firestore for views & likes
-  useEffect(() => {
-    if (!listing.id) return;
-
-    const docRef = doc(db, 'listings', listing.id);
-    
-    // Listen for data shifts instantly
-    const unsubscribe = onSnapshot(docRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const data = snapshot.data();
-        setLiveMetrics({
-          views: data.views || 0,
-          likes: data.likesCount || 0
-        });
-        
-        // Track if this explicit authenticated user has liked this asset before
-        if (currentUserId && data.likedBy) {
-          setIsLiked(data.likedBy.includes(currentUserId));
-        }
-      }
-    });
-
-    // Auto-increment public counter view tally via server-side updates on component init
-    updateDoc(docRef, { views: increment(1) }).catch(err => console.error(err));
-
-    return () => unsubscribe();
-  }, [listing.id, currentUserId]);
-
-  // 2. Handle Real-time Likes Mutation updates atomically
-  const handleLikeToggle = async (e) => {
-    e.stopPropagation();
-    if (!currentUserId) return alert("Please log in to save listings.");
-    
-    const docRef = doc(db, 'listings', listing.id);
-    try {
-      if (isLiked) {
-        await updateDoc(docRef, {
-          likesCount: increment(-1),
-          likedBy: arrayRemove(currentUserId)
-        });
-      } else {
-        await updateDoc(docRef, {
-          likesCount: increment(1),
-          likedBy: arrayUnion(currentUserId)
-        });
-      }
-    } catch (err) {
-      console.error("Failed to update like metrics gracefully:", err);
-    }
-  };
-
-  // 3. Keep Desktop carousel sync dots updated during responsive swipe transitions
+  // Keep Desktop carousel sync dots updated during responsive swipe transitions
   const handleMobileScroll = () => {
     if (!scrollContainerRef.current) return;
     const { scrollLeft, clientWidth } = scrollContainerRef.current;
@@ -169,21 +111,8 @@ const ListingCard = ({ listing, onUnlock, onReport, currentUserId }) => {
         )}
       </div>
 
-      {/* Simplified Analytics Bar (Stripped Comment/Share) */}
-      <div className="px-3 pt-3 pb-1 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2">
-          <button onClick={handleLikeToggle} className="hover:opacity-70 transition p-1">
-            <Heart size={24} className={isLiked ? "fill-red-500 text-red-500" : "text-slate-800"} />
-          </button>
-          <span className="text-xs font-bold text-slate-700">{liveMetrics.likes.toLocaleString()} likes</span>
-        </div>
-        <div className="flex items-center gap-1 text-slate-500 text-xs font-bold bg-slate-100 px-2.5 py-1 rounded-full">
-          <Eye size={14} className="text-slate-700" /> {liveMetrics.views.toLocaleString()} views
-        </div>
-      </div>
-
       {/* Technical Detail Overlays */}
-      <div className="px-3 pb-4 space-y-2 flex-grow flex flex-col justify-between">
+      <div className="px-3 py-4 space-y-2 flex-grow flex flex-col justify-between">
         <div className="space-y-2">
           <div className="font-black text-slate-900 text-lg pt-1">
             ₦{listing.price?.toLocaleString()}
