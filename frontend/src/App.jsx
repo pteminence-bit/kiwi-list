@@ -14,7 +14,7 @@ import CreateListing from './pages/CreateListing';
 import ManageListings from './pages/ManageListings';
 import AdminPortal from './pages/AdminPortal';
 import WalletCard from './components/WalletCard';
-import Settings from './pages/SettingsPage'; 
+import Settings from './pages/Settings'; 
 import AuthPage from './pages/AuthPage'; 
 
 const DashboardLayout = () => {

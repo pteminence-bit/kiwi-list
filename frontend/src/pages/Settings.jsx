@@ -3,7 +3,8 @@ import { User, Phone, FileText, UserCheck, Upload, Loader2, CheckCircle, Save } 
 
 const BACKEND_BASE_URL = 'https://kiwi-list-api.onrender.com';
 
-const SettingsPage = ({ token, isVerified, onProfileUpdate }) => {
+// Changed from SettingsPage to Settings to match your export default
+const Settings = ({ token, isVerified, onProfileUpdate }) => {
   const [profile, setProfile] = useState({
     displayName: '',
     phoneNumber: '',
