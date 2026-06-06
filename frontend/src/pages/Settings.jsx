@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Building2, Save, CreditCard } from 'lucide-react';
+import { User, Save, CreditCard } from 'lucide-react';
 
 const Settings = ({ token }) => {
   const [formData, setFormData] = useState({
@@ -55,26 +55,26 @@ const Settings = ({ token }) => {
   };
 
   return (
-    <div className="p-6 bg-slate-50 min-h-screen ml-64 text-black">
+    <div className="p-4 md:p-6 bg-slate-50 min-h-screen ml-0 md:ml-64 text-black transition-all duration-300">
       <div className="max-w-3xl mx-auto">
         <div className="mb-6">
           <h1 className="text-2xl font-black text-black">Account Settings</h1>
-          <p className="text-sm text-black font-medium">Manage your profile metadata and settlement bank accounts.</p>
+          <p className="text-sm text-slate-600 font-medium">Manage your profile metadata and settlement bank accounts.</p>
         </div>
 
         {message && (
-          <div className={`p-4 mb-6 rounded-lg text-sm font-bold ${message.includes('successfully') ? 'bg-emerald-50 text-emerald-900 border border-emerald-400' : 'bg-red-50 text-red-900 border border-red-400'}`}>
+          <div className={`p-4 mb-6 rounded-lg text-sm font-bold border ${message.includes('successfully') ? 'bg-emerald-50 text-emerald-900 border border-emerald-400' : 'bg-red-50 text-red-900 border border-red-400'}`}>
             {message}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Profile Card */}
-          <div className="bg-white p-6 rounded-xl border border-slate-300 shadow-sm">
+          <div className="bg-white p-4 md:p-6 rounded-xl border border-slate-300 shadow-sm">
             <h2 className="text-lg font-bold text-black mb-4 flex items-center gap-2">
               <User size={18} className="text-blue-600" /> Basic Information
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-black text-black uppercase mb-2">Full Name / Company</label>
                 <input 
@@ -99,12 +99,12 @@ const Settings = ({ token }) => {
           </div>
 
           {/* Payout Banking Card */}
-          <div className="bg-white p-6 rounded-xl border border-slate-300 shadow-sm">
-            <h2 className="text-lg font-bold text-black mb-4 flex items-center gap-2">
+          <div className="bg-white p-4 md:p-6 rounded-xl border border-slate-300 shadow-sm">
+            <h2 className="text-lg font-bold text-black mb-2 flex items-center gap-2">
               <CreditCard size={18} className="text-amber-600" /> Flutterwave Payout Method
             </h2>
-            <p className="text-xs text-black font-medium mb-4">Specify the Nigerian bank account where accumulated premium contact unlock splits (70%) will be automatically paid out.</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <p className="text-xs text-slate-500 font-medium mb-4 leading-relaxed">Specify the Nigerian bank account where accumulated premium contact unlock splits (70%) will be automatically paid out.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-black text-black uppercase mb-2">Bank Name</label>
                 <select 
@@ -138,7 +138,7 @@ const Settings = ({ token }) => {
             <button 
               type="submit" 
               disabled={saving}
-              className="px-6 py-2.5 bg-black hover:bg-slate-900 disabled:bg-slate-400 text-white font-bold rounded-lg text-sm flex items-center gap-2 shadow conversion-btn transition"
+              className="w-full sm:w-auto px-6 py-2.5 bg-black hover:bg-slate-900 disabled:bg-slate-400 text-white font-bold rounded-lg text-sm flex items-center justify-center gap-2 shadow transition"
             >
               <Save size={16} /> {saving ? 'Saving...' : 'Save Changes'}
             </button>
