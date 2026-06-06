@@ -2,6 +2,8 @@ import express from 'express';
 import { db } from '../config/firebase.js';
 import { verifyUser } from '../middleware/authMiddleware.js';
 
+const router = express.Router();
+
 // --- ADMIN DEBUGGER STATUS ENDPOINT ---
 router.get('/debug-my-status', verifyUser, async (req, res) => {
   try {
@@ -33,7 +35,7 @@ router.get('/debug-my-status', verifyUser, async (req, res) => {
     res.status(500).json({ error: "Debug helper crashed: " + error.message });
   }
 });
-const router = express.Router();
+
 
 // Middleware to check if user is admin
 const verifyAdmin = async (req, res, next) => {
