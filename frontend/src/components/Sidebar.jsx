@@ -1,9 +1,11 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom'; // 1. Added useNavigate
+import { getAuth, signOut } from 'firebase/auth'; // 2. Imported Firebase Auth methods
 import { LayoutDashboard, Wallet, Building2, ClipboardList, Settings, LogOut, X } from 'lucide-react';
 
 const Sidebar = ({ isAdmin, isOpen, setIsOpen }) => {
   const location = useLocation();
+  const navigate = useNavigate(); // Hook to redirect user after logging out
 
   const navigationItems = [
     { name: 'Marketplace', path: '/', icon: LayoutDashboard },
@@ -12,12 +14,26 @@ const Sidebar = ({ isAdmin, isOpen, setIsOpen }) => {
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
 
-  // If the user has an admin profile role, inject the portal link into the sidebar stack
   if (isAdmin) {
     navigationItems.splice(1, 0, { name: 'Admin Portal', path: '/admin', icon: ClipboardList });
   }
 
   const isActive = (path) => location.pathname === path;
+
+  // 3. Handle Logout Trigger Event
+  const handleLogout = async () => {
+    const auth = getAuth();
+    try {
+      if (window.confirm("Are you sure you want to log out of KIWI-list?")) {
+        await signOut(auth);
+        setIsOpen(false); // Close mobile menu drawer if open
+        navigate('/');    // Redirect back to home page or login screen
+      }
+    } catch (error) {
+      console.error("Error signing out:", error);
+      alert("Failed to close session securely. Please try again.");
+    }
+  };
 
   return (
     <>
@@ -70,7 +86,11 @@ const Sidebar = ({ isAdmin, isOpen, setIsOpen }) => {
 
         {/* Footer Actions block section */}
         <div className="pt-4 border-t border-slate-800">
-          <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-bold tracking-wide uppercase text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+          {/* 4. Connected the handler function to the click action */}
+          <button 
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-bold tracking-wide uppercase text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+          >
             <LogOut size={16} />
             Logout
           </button>

@@ -4,6 +4,22 @@ import { verifyUser } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
+// TEMPORARY DEBUG ROUTE
+router.get('/debug-my-status', verifyUser, async (req, res) => {
+  try {
+    const userRef = await db.collection('users').doc(req.user.uid).get();
+    
+    res.json({
+      authenticatedUid: req.user.uid,
+      firestoreDocumentExists: userRef.exists,
+      firestoreDataFound: userRef.exists ? userRef.data() : null,
+      message: "Compare your authenticatedUid with your Firestore Document ID!"
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Middleware to check if user is admin
 const verifyAdmin = async (req, res, next) => {
   try {
