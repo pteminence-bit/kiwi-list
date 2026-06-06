@@ -58,8 +58,7 @@ const MarketplaceFeed = ({ token }) => {
   if (loading) return <div className="p-8 text-center text-slate-500">Loading KIWI-list Feed...</div>;
 
   return (
-    // Fixed ml-64 to a responsive padding-left setup: md:pl-72
-    <div className="p-4 md:p-6 bg-slate-50 min-h-screen w-full md:pl-72 pt-20 md:pt-6">
+    <div className="p-4 md:p-6 bg-slate-50 min-h-screen w-full md:pl-72">
       
       {/* Top Search & Filter Bar: Stacked on mobile, row layout on desktop */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-200">

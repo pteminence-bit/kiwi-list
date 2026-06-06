@@ -34,10 +34,11 @@ const Sidebar = ({ isAdmin, isOpen, setIsOpen }) => {
         />
       )}
 
-      {/* Sidebar Box Container */}
-      <div className="w-64 h-screen bg-[#0f172a] text-white flex flex-col p-4 fixed hidden md:flex"
-      >
-        <div className="flex items-center justify-between mb-10 px-4">
+      {/* Sidebar Box Container - Fixed Sliding Mobile Drawer Engine */}
+      <div className={`w-64 h-screen bg-[#0f172a] text-white flex flex-col p-4 fixed top-0 left-0 z-50 transform lg:transform-none lg:opacity-100 transition-transform duration-300 ease-in-out ${
+        isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      }`}>
+        <div className="flex items-center justify-between mb-10 px-4 pt-2">
           <div className="text-2xl font-bold text-blue-400 tracking-tight">
             KIWI-list
           </div>

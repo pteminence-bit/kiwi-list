@@ -52,8 +52,7 @@ const ManageListings = ({ token }) => {
   }
 
   return (
-    // Fixed ml-64 to a responsive padding-left: md:pl-72
-    <div className="p-4 md:p-8 bg-slate-50 min-h-screen w-full md:pl-72 pt-20 md:pt-8">
+    <div className="p-4 md:p-6 bg-slate-50 min-h-screen w-full md:pl-72">
       <div className="mb-6">
         <h1 className="text-xl md:text-2xl font-bold text-slate-800">Manage My Listings</h1>
         <p className="text-xs md:text-sm text-slate-500">Sort, edit, and keep track of your active marketplace placements.</p>
