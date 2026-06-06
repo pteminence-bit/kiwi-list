@@ -2,6 +2,37 @@ import express from 'express';
 import { db } from '../config/firebase.js';
 import { verifyUser } from '../middleware/authMiddleware.js';
 
+// --- ADMIN DEBUGGER STATUS ENDPOINT ---
+router.get('/debug-my-status', verifyUser, async (req, res) => {
+  try {
+    const userRef = await db.collection('users').doc(req.user.uid).get();
+    
+    if (!userRef.exists) {
+      return res.json({
+        authenticated: true,
+        uid: req.user.uid,
+        email: req.user.email,
+        firestoreDocumentFound: false,
+        role: 'none',
+        message: "Firebase auth token is valid, but no matching document exists in your Firestore 'users' collection."
+      });
+    }
+
+    const userData = userRef.data();
+
+    res.json({
+      authenticated: true,
+      uid: req.user.uid,
+      email: req.user.email,
+      firestoreDocumentFound: true,
+      role: userData.role || 'user',
+      isVerifiedAgent: userData.isVerifiedAgent || false,
+      rawDocumentData: userData
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Debug helper crashed: " + error.message });
+  }
+});
 const router = express.Router();
 
 // Middleware to check if user is admin
