@@ -61,4 +61,15 @@ app.get('/api/test-db', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
+
+app.use((req, res, next) => {
+  console.log(`Incoming Unmatched Request: ${req.method} ${req.url}`);
+  res.status(404).json({
+    error: `Route not found on engine.`,
+    requestedPath: req.url,
+    requestedMethod: req.method,
+    hint: "Verify if your endpoint prefix matches the route router mapping."
+  });
+});
+
 app.listen(PORT, () => console.log(`Kiwi-List Engine live on port ${PORT}`));

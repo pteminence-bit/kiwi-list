@@ -153,5 +153,3 @@ router.post('/submit-kyc', verifyUser, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-
-export default router;
