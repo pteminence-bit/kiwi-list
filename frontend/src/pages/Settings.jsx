@@ -4,7 +4,6 @@ import { User, Phone, FileText, UserCheck, Upload, Loader2, CheckCircle, Save } 
 const BACKEND_BASE_URL = 'https://kiwi-list-api.onrender.com';
 
 const SettingsPage = ({ token, isVerified, onProfileUpdate }) => {
-  // --- Profile State Management ---
   const [profile, setProfile] = useState({
     displayName: '',
     phoneNumber: '',
@@ -14,7 +13,6 @@ const SettingsPage = ({ token, isVerified, onProfileUpdate }) => {
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMsg, setProfileMsg] = useState({ type: '', text: '' });
 
-  // --- KYC State Management ---
   const [kycData, setKycData] = useState({
     fullName: '',
     idType: 'NIN',
@@ -25,7 +23,6 @@ const SettingsPage = ({ token, isVerified, onProfileUpdate }) => {
   const [submitting, setSubmitting] = useState(false);
   const [kycMsg, setKycMsg] = useState({ type: '', text: '' });
 
-  // --- Pre-fetch Existing Profile Records on Mount ---
   useEffect(() => {
     if (!token) return;
 
@@ -52,7 +49,6 @@ const SettingsPage = ({ token, isVerified, onProfileUpdate }) => {
     fetchProfileData();
   }, [token]);
 
-  // --- Profile Form Submission Handler ---
   const handleProfileSave = async (e) => {
     e.preventDefault();
     setProfileSaving(true);
@@ -71,7 +67,7 @@ const SettingsPage = ({ token, isVerified, onProfileUpdate }) => {
 
       if (res.ok) {
         setProfileMsg({ type: 'success', text: 'Profile changes applied cleanly!' });
-        if (onProfileUpdate) onProfileUpdate(); // Optional callback to refresh parent shell state
+        if (onProfileUpdate) onProfileUpdate();
       } else {
         throw new Error(data.error || 'Failed to update profile settings.');
       }
@@ -82,7 +78,6 @@ const SettingsPage = ({ token, isVerified, onProfileUpdate }) => {
     }
   };
 
-  // --- KYC File Upload Handler (Cloudflare R2 Stream) ---
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -112,7 +107,6 @@ const SettingsPage = ({ token, isVerified, onProfileUpdate }) => {
     }
   };
 
-  // --- KYC Payload Router Submission ---
   const handleKycSubmit = async (e) => {
     e.preventDefault();
     if (!kycData.documentUrl) {
@@ -145,20 +139,17 @@ const SettingsPage = ({ token, isVerified, onProfileUpdate }) => {
   };
 
   if (profileLoading) {
-    return <div className="p-8 text-center text-slate-500 text-xs font-bold tracking-wide">Syncing account parameter variables...</div>;
+    return <div className="p-8 text-center text-slate-500 text-xs font-bold tracking-wide bg-slate-50 min-h-screen flex items-center justify-center">Syncing account parameter variables...</div>;
   }
 
   return (
-    <div className="p-4 md:p-8 bg-slate-50 min-h-screen text-slate-800 ml-0 md:ml-64">
+    <div className="p-4 md:p-8 bg-slate-50 min-h-screen text-slate-800 w-full">
       <div className="mb-6">
         <h1 className="text-2xl font-black tracking-tight text-slate-900">Account Settings</h1>
         <p className="text-xs text-slate-500 font-medium">Keep your broker credentials updated and manage security metrics</p>
       </div>
 
-      {/* Two-Column Responsive Grid Layout split */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        
-        {/* COLUMN ONE: Profile Configurations Form Card */}
         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
           <div className="flex items-center gap-2 pb-3 mb-4 border-b border-slate-100">
             <User className="text-blue-600" size={18} />
@@ -227,10 +218,8 @@ const SettingsPage = ({ token, isVerified, onProfileUpdate }) => {
           </form>
         </div>
 
-        {/* COLUMN TWO: Conditional Access Token Governance KYC Panel */}
         <div className="space-y-4">
           {isVerified ? (
-            /* Condition A: User has document verification privileges active */
             <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-5 shadow-sm flex items-start gap-4">
               <CheckCircle className="text-emerald-600 shrink-0 mt-0.5" size={24} />
               <div>
@@ -244,7 +233,6 @@ const SettingsPage = ({ token, isVerified, onProfileUpdate }) => {
               </div>
             </div>
           ) : (
-            /* Condition B: User is unverified; output active capture inputs */
             <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
               <div className="flex items-center gap-2 pb-3 mb-4 border-b border-slate-100">
                 <UserCheck className="text-amber-500" size={18} />
@@ -329,10 +317,9 @@ const SettingsPage = ({ token, isVerified, onProfileUpdate }) => {
             </div>
           )}
         </div>
-
       </div>
     </div>
   );
 };
 
-export default SettingsPage;
+export default Settings;

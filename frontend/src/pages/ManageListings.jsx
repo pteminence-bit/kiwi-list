@@ -41,14 +41,14 @@ const ManageListings = ({ token }) => {
 
   if (loading) {
     return (
-      <div className="p-6 text-center text-slate-500 min-h-screen w-full md:pl-72 flex items-center justify-center">
+      <div className="p-6 text-center text-slate-500 min-h-screen w-full flex items-center justify-center bg-slate-50">
         <span className="font-medium animate-pulse">Accessing listings vault...</span>
       </div>
     );
   }
 
   return (
-    <div className="p-4 md:p-8 bg-slate-50 min-h-screen w-full md:pl-72 flex flex-col items-center">
+    <div className="p-4 md:p-8 bg-slate-50 min-h-screen w-full flex flex-col items-center">
       <div className="w-full max-w-5xl">
         <div className="mb-6 self-start w-full text-left">
           <h1 className="text-xl md:text-2xl font-bold text-slate-800">Manage My Listings</h1>

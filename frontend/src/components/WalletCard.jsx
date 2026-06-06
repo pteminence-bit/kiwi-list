@@ -30,7 +30,7 @@ const WalletCard = ({ token, isVerified }) => {
 
   if (loading) {
     return (
-      <div className="p-6 text-center text-slate-500 min-h-screen w-full md:pl-72 flex items-center justify-center">
+      <div className="p-6 text-center text-slate-500 min-h-screen w-full flex items-center justify-center bg-slate-50">
         <span className="font-medium animate-pulse">Accessing secured ledger...</span>
       </div>
     );
@@ -39,8 +39,8 @@ const WalletCard = ({ token, isVerified }) => {
   const canWithdraw = isVerified && wallet.balance > 0;
 
   return (
-    <div className="p-4 md:p-8 bg-slate-50 min-h-screen w-full md:pl-72 flex flex-col items-center justify-start">
-      <div className="w-full max-w-md mt-6">
+    <div className="p-4 md:p-8 bg-slate-50 min-h-screen w-full flex flex-col items-center justify-start">
+      <div className="w-full max-w-md mt-4">
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-white shadow-xl w-full">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
