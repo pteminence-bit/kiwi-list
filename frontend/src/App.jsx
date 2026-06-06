@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Menu } from 'lucide-react';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from './firebase'; // Ensure this points to your client-side firebase config initialization file
 
 // Context & Component Imports
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -8,12 +10,12 @@ import Sidebar from './components/Sidebar';
 
 // Pages/Views Imports
 import MarketplaceFeed from './pages/MarketplaceFeed';
-import CreateListing from './pages/CreateListing'; // Ensure this file exists in your pages directory
+import CreateListing from './pages/CreateListing'; 
 import ManageListings from './pages/ManageListings';
 import AdminPortal from './pages/AdminPortal';
 import WalletCard from './components/WalletCard';
-import Settings from './pages/Settings'; // Ensure this file exists in your pages directory
-import AuthPage from './pages/AuthPage'; // Imported your authentication page component safely
+import Settings from './pages/Settings'; 
+import AuthPage from './pages/AuthPage'; 
 
 const DashboardLayout = () => {
   const { user, loading } = useAuth();
@@ -25,10 +27,17 @@ const DashboardLayout = () => {
     const checkAdminStatus = async () => {
       if (user) {
         try {
-          const idTokenResult = await user.getIdTokenResult(true);
-          setIsAdmin(!!idTokenResult.claims.admin);
+          // Fetch directly from Firestore users collection to find role field mutations instantly
+          const userDocRef = doc(db, 'users', user.uid);
+          const userDocSnap = await getDoc(userDocRef);
+          
+          if (userDocSnap.exists() && userDocSnap.data().role === 'admin') {
+            setIsAdmin(true);
+          } else {
+            setIsAdmin(false);
+          }
         } catch (error) {
-          console.error("Error checking admin claims:", error);
+          console.error("Error checking Firestore admin role status field configuration:", error);
           setIsAdmin(false);
         }
       }
