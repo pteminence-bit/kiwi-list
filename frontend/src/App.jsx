@@ -20,6 +20,7 @@ import AuthPage from './pages/AuthPage';
 const DashboardLayout = () => {
   const { user, loading } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isVerified, setIsVerified] = useState(false); // New dynamic security verification hook state
   const [checkingRole, setCheckingRole] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -31,14 +32,30 @@ const DashboardLayout = () => {
           const userDocRef = doc(db, 'users', user.uid);
           const userDocSnap = await getDoc(userDocRef);
           
-          if (userDocSnap.exists() && userDocSnap.data().role === 'admin') {
-            setIsAdmin(true);
+          if (userDocSnap.exists()) {
+            const userData = userDocSnap.data();
+            
+            // Check Admin Status
+            if (userData.role === 'admin') {
+              setIsAdmin(true);
+            } else {
+              setIsAdmin(false);
+            }
+
+            // Check Identity Verification Status
+            if (userData.isVerifiedAgent === true || userData.role === 'agent') {
+              setIsVerified(true);
+            } else {
+              setIsVerified(false);
+            }
           } else {
             setIsAdmin(false);
+            setIsVerified(false);
           }
         } catch (error) {
           console.error("Error checking Firestore admin role status field configuration:", error);
           setIsAdmin(false);
+          setIsVerified(false);
         }
       }
       setCheckingRole(false);
@@ -86,8 +103,8 @@ const DashboardLayout = () => {
           <Route path="/add" element={<CreateListing token={token} />} />
           <Route path="/manage" element={<ManageListings token={token} />} />
           <Route path="/admin" element={isAdmin ? <AdminPortal token={token} /> : <Navigate to="/" replace />} />
-          <Route path="/wallet" element={<WalletCard token={token} />} />
-          <Route path="/settings" element={<Settings token={token} />} />
+          <Route path="/wallet" element={<WalletCard token={token} isVerified={isVerified} />} />
+          <Route path="/settings" element={<Settings token={token} isVerified={isVerified} />} />
           {/* Catch-all fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

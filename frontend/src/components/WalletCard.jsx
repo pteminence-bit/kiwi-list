@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Wallet, ArrowDownRight, ArrowUpRight } from 'lucide-react';
+import { Wallet, ArrowDownRight, ArrowUpRight, ShieldAlert } from 'lucide-react';
 
-const WalletCard = ({ token }) => {
-  // --- ALL HOOKS MUST BE INSIDE HERE ---
+const WalletCard = ({ token, isVerified }) => {
   const [wallet, setWallet] = useState({ balance: 0, totalEarned: 0 });
   const [loading, setLoading] = useState(true);
 
@@ -11,7 +10,7 @@ const WalletCard = ({ token }) => {
 
     const fetchWalletData = async () => {
       try {
-        const res = await fetch('/api/users/me/wallet', {
+        const res = await fetch('https://kiwi-list-api.onrender.com/api/users/me/wallet', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
@@ -30,10 +29,14 @@ const WalletCard = ({ token }) => {
   }, [token]);
 
   const handleWithdrawal = () => {
+    if (!isVerified) return; // Hard structural safeguard
     alert('Withdrawal request initialized.');
   };
 
   if (loading) return <div className="text-slate-400 p-6">Accessing secured ledger...</div>;
+
+  // Button state logic condition
+  const canWithdraw = isVerified && wallet.balance > 0;
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 text-white max-w-md shadow-xl">
@@ -65,12 +68,19 @@ const WalletCard = ({ token }) => {
         </div>
       </div>
 
+      {!isVerified && (
+        <div className="flex items-center gap-2 mb-4 bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-xs text-amber-400">
+          <ShieldAlert size={16} className="shrink-0" />
+          <span>Payouts locked. Complete your KYC Verification in Settings to withdraw.</span>
+        </div>
+      )}
+
       <button 
         onClick={handleWithdrawal}
-        disabled={wallet.balance <= 0}
+        disabled={!canWithdraw}
         className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-800 disabled:text-slate-600 text-white font-medium rounded-lg transition"
       >
-        Withdraw Funds
+        {!isVerified ? 'Verification Required' : 'Withdraw Funds'}
       </button>
     </div>
   );
