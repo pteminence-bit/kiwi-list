@@ -4,22 +4,6 @@ import { verifyUser } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// TEMPORARY DEBUG ROUTE
-router.get('/debug-my-status', verifyUser, async (req, res) => {
-  try {
-    const userRef = await db.collection('users').doc(req.user.uid).get();
-    
-    res.json({
-      authenticatedUid: req.user.uid,
-      firestoreDocumentExists: userRef.exists,
-      firestoreDataFound: userRef.exists ? userRef.data() : null,
-      message: "Compare your authenticatedUid with your Firestore Document ID!"
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
 // Middleware to check if user is admin
 const verifyAdmin = async (req, res, next) => {
   try {
@@ -33,6 +17,32 @@ const verifyAdmin = async (req, res, next) => {
     res.status(500).json({ error: "Authorization loop failure: " + error.message });
   }
 };
+
+router.get('/debug-my-status', verifyUser, async (req, res) => {
+  try {
+    const userRef = await db.collection('users').doc(req.user.uid).get();
+    
+    if (!userRef.exists) {
+      return res.status(404).json({
+        uid: req.user.uid,
+        email: req.user.email || "No email bound to token",
+        firestoreRecordFound: false,
+        message: "No user document found in Firestore 'users' collection. Please register first."
+      });
+    }
+
+    const userData = userRef.data();
+    res.json({
+      uid: req.user.uid,
+      firestoreRecordFound: true,
+      currentAssignedRole: userData.role || "none",
+      isVerifiedAgent: userData.isVerifiedAgent || false,
+      fullProfileDump: userData
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Debug helper loop failure: " + error.message });
+  }
+});
 
 // --- GET ALL ADMINISTRATIVE REVIEW QUEUES (PROPERTIES, KYC, & USER REVIEWS) ---
 router.get('/review-queue', verifyUser, verifyAdmin, async (req, res) => {
