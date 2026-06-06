@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { db } from '../config/firebase.js';
 import { doc, onSnapshot, updateDoc, increment, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { MapPin, Bed, Bath, Lock, Eye, AlertTriangle, ChevronLeft, ChevronRight, Heart } from 'lucide-react';
 
