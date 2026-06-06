@@ -6,11 +6,8 @@ import { API_BASE_URL } from '../config';
 const MarketplaceFeed = ({ token }) => {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  // Lightbox Modal State management tracking variables
   const [activeImage, setActiveImage] = useState(null);
 
-  // Fisher-Yates Randomization Shuffling Algorithm Function
   const shuffleArray = (array) => {
     let shuffled = [...array];
     for (let i = shuffled.length - 1; i > 0; i--) {
@@ -32,12 +29,14 @@ const MarketplaceFeed = ({ token }) => {
       return res.json();
     })
     .then(data => {
-      // Randomizes listing positions cleanly before mapping into state arrays
       const randomizedData = shuffleArray(data || []);
       setListings(randomizedData);
       setLoading(false);
     })
-    .catch(err => console.error("Error loading feed:", err));
+    .catch(err => {
+      console.error("Error loading feed:", err);
+      setLoading(false);
+    });
   };
 
   useEffect(() => {
@@ -52,36 +51,31 @@ const MarketplaceFeed = ({ token }) => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          amount: 500,
-          purpose: 'unlock_contact',
-          listingId: listingId
-        })
+        body: JSON.stringify({ amount: 500, purpose: 'unlock_contact', listingId })
       });
-      
       const data = await response.json();
-      if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
-      } else {
-        alert("Could not initialize unlock payment.");
-      }
+      if (data.checkoutUrl) window.location.href = data.checkoutUrl;
     } catch (error) {
       console.error("Payment error:", error);
     }
   };
 
-  // Safe Interception catch for image element pointer selection clicks inside feed tracks
   const handleImageLightboxCapture = (e) => {
     if (e.target.tagName === 'IMG' && e.target.src) {
       setActiveImage(e.target.src);
     }
   };
 
-  if (loading) return <div className="p-8 text-center text-slate-500">Loading KIWI-list Feed...</div>;
+  if (loading) {
+    return (
+      <div className="p-6 text-center text-slate-500 min-h-screen w-full md:pl-72 flex items-center justify-center">
+        <span className="font-medium animate-pulse">Loading KIWI-list Feed...</span>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-4 md:p-6 bg-slate-50 min-h-screen w-full md:pl-72 flex flex-col items-center">
-      
+    <div className="p-4 md:p-8 bg-slate-50 min-h-screen w-full md:pl-72 flex flex-col items-center">
       <div className="w-full max-w-4xl space-y-6">
         
         {/* Top Search & Filter Bar */}
@@ -91,7 +85,7 @@ const MarketplaceFeed = ({ token }) => {
             <input 
               type="text" 
               placeholder="Search listings by location, price, or keywords..." 
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 text-sm"
+              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 text-sm text-slate-800"
             />
           </div>
           <button className="flex items-center justify-center gap-2 px-5 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition w-full sm:w-auto shrink-0">
@@ -99,61 +93,38 @@ const MarketplaceFeed = ({ token }) => {
           </button>
         </div>
 
-        {/* Instagram-Style Feed Track (With Event Listener Delegation Added for Image Click Interceptions) */}
-        <div onClick={handleImageLightboxCapture} className="flex flex-col gap-6 w-full pb-12 cursor-pointer">
+        {/* Feed Track */}
+        <div onClick={handleImageLightboxCapture} className="flex flex-col gap-6 w-full pb-12">
           {listings.map(listing => (
-            <div key={listing.id} className="w-full relative group">
-              {/* Contextual indicator to signal image expandability on hover */}
+            <div key={listing.id} className="w-full relative group cursor-zoom-in">
               <div className="absolute top-4 right-4 z-10 bg-slate-900/60 backdrop-blur-xs text-white p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none duration-200">
                 <Maximize2 size={14} />
               </div>
-              <ListingCard 
-                listing={listing} 
-                onUnlock={handleUnlockContact} 
-              />
+              <ListingCard listing={listing} onUnlock={handleUnlockContact} />
             </div>
           ))}
           
           {listings.length === 0 && (
-            <div className="p-12 text-center text-slate-400 bg-white rounded-xl border border-slate-200 italic">
+            <div className="p-12 text-center text-slate-400 bg-white rounded-xl border border-slate-200 italic shadow-sm w-full">
               No real estate properties listed on the market matching this view.
             </div>
           )}
         </div>
-
       </div>
 
-      {/* --- LIVE LIGHTBOX ENLARGEMENT PORTAL OVERLAY --- */}
+      {/* Lightbox Modal */}
       {activeImage && (
-        <div 
-          className="fixed inset-0 z-50 bg-slate-950/95 flex flex-col items-center justify-center p-4 transition-all duration-300 backdrop-blur-sm"
-          onClick={() => setActiveImage(null)} // Dismiss when background is clicked
-        >
-          {/* Top Control Bar Ribbon */}
-          <div className="absolute top-4 right-4 flex items-center gap-4">
-            <button 
-              onClick={() => setActiveImage(null)}
-              className="p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-full transition shadow-lg border border-white/10"
-            >
+        <div className="fixed inset-0 z-50 bg-slate-950/95 flex flex-col items-center justify-center p-4 backdrop-blur-sm" onClick={() => setActiveImage(null)}>
+          <div className="absolute top-4 right-4">
+            <button onClick={() => setActiveImage(null)} className="p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-full transition border border-white/10">
               <X size={20} />
             </button>
           </div>
-
-          {/* High-Res Scale Enlarge Container Box Frame */}
           <div className="relative max-w-5xl max-h-[85vh] w-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-            <img 
-              src={activeImage} 
-              alt="Enlarged Showcase View" 
-              className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl border border-slate-800 animate-in zoom-in-95 duration-200" 
-            />
+            <img src={activeImage} alt="Enlarged View" className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl border border-slate-800" />
           </div>
-          
-          <p className="mt-4 text-xs text-slate-400 font-medium select-none tracking-wide">
-            Click outside the image window container timeline boundaries to slide down/close portal frame.
-          </p>
         </div>
       )}
-
     </div>
   );
 };
