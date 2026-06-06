@@ -1,105 +1,56 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Wallet, 
-  ListPlus, 
-  Settings, 
-  LogOut, 
-  ShieldCheck,
-  Home,
-  X
-} from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { useState } from 'react';
+import Sidebar from './components/Sidebar';
+import MarketplaceFeed from './pages/MarketplaceFeed';
+import ManageListings from './pages/ManageListings';
+import AdminPortal from './pages/AdminPortal';
+import { useAuth } from './context/AuthContext'; // Access your auth context
+import { Menu } from 'lucide-react'; // For mobile view toggles
 
-const Sidebar = ({ isAdmin, isOpen, setIsOpen }) => {
-  const { logout } = useAuth();
-  const location = useLocation();
+function App() {
+  const { user, token, loading } = useAuth();
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-  const menuItems = [
-    { icon: <Home size={20}/>, label: 'Marketplace', path: '/' },
-    { icon: <LayoutDashboard size={20}/>, label: 'My Listings', path: '/manage' },
-    { icon: <Wallet size={20}/>, label: 'My Wallet', path: '/wallet' },
-    { icon: <ListPlus size={20}/>, label: 'Post Property', path: '/add' },
-    { icon: <Settings size={20}/>, label: 'Settings', path: '/settings' },
-  ];
+  if (loading) return <div className="p-8 text-center text-slate-500">Loading Session...</div>;
+
+  // Determine if the user is an admin dynamically based on Firestore data profiles
+  const isAdminUser = user && user.role === 'admin';
 
   return (
-    <>
-      {/* Mobile Dark Backdrop Overlay */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black/60 z-40 lg:hidden"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
-
-      {/* Sidebar Box Container - Fixed Sliding Mobile Drawer Engine */}
-      <div className={`w-64 h-screen bg-[#0f172a] text-white flex flex-col p-4 fixed top-0 left-0 z-50 transform lg:transform-none lg:opacity-100 transition-transform duration-300 ease-in-out ${
-        isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-      }`}>
-        <div className="flex items-center justify-between mb-10 px-4 pt-2">
-          <div className="text-2xl font-bold text-blue-400 tracking-tight">
-            KIWI-list
-          </div>
-          {/* Close Menu Button - Mobile Only */}
+    <Router>
+      <div className="flex bg-slate-50 min-h-screen">
+        
+        {/* Mobile Header Menu Button Bar */}
+        <div className="lg:hidden fixed top-4 left-4 z-50">
           <button 
-            onClick={() => setIsOpen(false)}
-            className="p-1 text-slate-400 hover:text-white lg:hidden"
+            onClick={() => setIsMobileSidebarOpen(true)}
+            className="p-2 bg-slate-900 text-white rounded-md shadow-md"
           >
-            <X size={20} />
+            <Menu size={20} />
           </button>
         </div>
+
+        {/* SIDEBAR COMPONENT LINKED HERE WITH DYNAMIC VALUES */}
+        <Sidebar 
+          isAdmin={isAdminUser} 
+          isOpen={isMobileSidebarOpen} 
+          setIsOpen={setIsMobileSidebarOpen} 
+        />
         
-        <nav className="flex-1 space-y-1">
-          {menuItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <Link 
-                key={item.label} 
-                to={item.path}
-                onClick={() => setIsOpen(false)} // Auto-close drawer on mobile link tap
-                className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
-                  isActive 
-                    ? 'bg-blue-600 text-white' 
-                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                }`}
-              >
-                {item.icon} 
-                <span className="font-medium">{item.label}</span>
-              </Link>
-            );
-          })}
-
-          {isAdmin && (
-            <div className="mt-8 pt-8 border-t border-slate-800">
-              <p className="text-[10px] uppercase text-slate-500 font-bold px-4 mb-2 tracking-widest">Admin Control</p>
-              <Link 
-                to="/admin"
-                onClick={() => setIsOpen(false)}
-                className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                  location.pathname === '/admin' 
-                    ? 'bg-orange-600 text-white' 
-                    : 'text-orange-400 hover:bg-orange-950/30'
-                }`}
-              >
-                <ShieldCheck size={20}/> 
-                <span className="font-medium">Moderate Activities</span>
-              </Link>
-            </div>
-          )}
-        </nav>
-
-        <button 
-          onClick={logout} 
-          className="flex items-center gap-3 p-3 text-slate-400 hover:bg-red-900/20 hover:text-red-400 rounded-lg transition-all mt-auto"
-        >
-          <LogOut size={20}/> 
-          <span className="font-medium">Logout</span>
-        </button>
+        <main className="flex-1 w-full">
+          <Routes>
+            <Route path="/" element={<MarketplaceFeed token={token} />} />
+            <Route path="/manage" element={<ManageListings token={token} />} />
+            
+            {/* Secure Route Rendering Safeguard */}
+            {isAdminUser && (
+              <Route path="/admin" element={<AdminPortal token={token} />} />
+            )}
+          </Routes>
+        </main>
       </div>
-    </>
+    </Router>
   );
-};
+}
 
-export default Sidebar;
+export default App;
