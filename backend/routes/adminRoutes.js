@@ -4,39 +4,6 @@ import { verifyUser } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// --- ADMIN DEBUGGER STATUS ENDPOINT ---
-router.get('/debug-my-status', verifyUser, async (req, res) => {
-  try {
-    const userRef = await db.collection('users').doc(req.user.uid).get();
-    
-    if (!userRef.exists) {
-      return res.json({
-        authenticated: true,
-        uid: req.user.uid,
-        email: req.user.email,
-        firestoreDocumentFound: false,
-        role: 'none',
-        message: "Firebase auth token is valid, but no matching document exists in your Firestore 'users' collection."
-      });
-    }
-
-    const userData = userRef.data();
-
-    res.json({
-      authenticated: true,
-      uid: req.user.uid,
-      email: req.user.email,
-      firestoreDocumentFound: true,
-      role: userData.role || 'user',
-      isVerifiedAgent: userData.isVerifiedAgent || false,
-      rawDocumentData: userData
-    });
-  } catch (error) {
-    res.status(500).json({ error: "Debug helper crashed: " + error.message });
-  }
-});
-
-
 // Middleware to check if user is admin
 const verifyAdmin = async (req, res, next) => {
   try {
@@ -54,12 +21,13 @@ const verifyAdmin = async (req, res, next) => {
 // --- ADMINISTRATIVE STATUS DEBUGGER ---
 router.get('/debug-my-status', verifyUser, async (req, res) => {
   try {
-    // Fetch the user's document from Firestore
     const userRef = await db.collection('users').doc(req.user.uid).get();
     
     if (!userRef.exists) {
-      return res.status(404).json({
+      return res.status(200).json({
         message: "Firebase authentication token is valid, but no corresponding user document was found in your Firestore 'users' collection.",
+        authenticated: true,
+        firestoreDocumentFound: false,
         uid: req.user.uid,
         email: req.user.email
       });
@@ -69,6 +37,8 @@ router.get('/debug-my-status', verifyUser, async (req, res) => {
 
     res.json({
       message: "Authentication and database handshake successful!",
+      authenticated: true,
+      firestoreDocumentFound: true,
       firebaseUid: req.user.uid,
       firestoreRole: userData.role || "No role assigned",
       isVerifiedAgent: userData.isVerifiedAgent || false,
@@ -82,14 +52,9 @@ router.get('/debug-my-status', verifyUser, async (req, res) => {
 // --- GET ALL ADMINISTRATIVE REVIEW QUEUES (PROPERTIES, KYC, & USER REVIEWS) ---
 router.get('/review-queue', verifyUser, verifyAdmin, async (req, res) => {
   try {
-    // 1. Fetch Property Listings needing attention
     const flaggedListings = await db.collection('listings').where('isFlagged', '==', true).get();
     const pendingListings = await db.collection('listings').where('status', '==', 'needs_review').get();
-    
-    // 2. Fetch Agent Verification KYC Documents
     const kycRequests = await db.collection('kyc_submissions').where('status', '==', 'pending').get();
-    
-    // 3. Fetch Flagged User Profile Reviews
     const flaggedReviews = await db.collection('user_reviews').where('status', '==', 'pending_moderation').get();
 
     const propertiesQueue = [...flaggedListings.docs, ...pendingListings.docs].map(doc => ({
@@ -110,7 +75,6 @@ router.get('/review-queue', verifyUser, verifyAdmin, async (req, res) => {
       ...doc.data()
     }));
 
-    // Respond with a structured multi-queue bundle matching the UI blueprint layout
     res.json({
       properties: propertiesQueue,
       kyc: kycQueue,
@@ -123,7 +87,7 @@ router.get('/review-queue', verifyUser, verifyAdmin, async (req, res) => {
 
 // --- COMPREHENSIVE MODERATION DECISION PORTAL ---
 router.post('/moderate', verifyUser, verifyAdmin, async (req, res) => {
-  const { targetId, queueType, action } = req.body; // action: 'approve', 'decline', or 'delete'
+  const { targetId, queueType, action } = req.body;
 
   try {
     const batch = db.batch();
@@ -133,10 +97,9 @@ router.post('/moderate', verifyUser, verifyAdmin, async (req, res) => {
       if (action === 'approve') {
         batch.update(docRef, { isFlagged: false, status: 'active' });
       } else {
-        batch.delete(docRef); // Clean wipe off marketplace feed entirely
+        batch.delete(docRef);
       }
     } 
-    
     else if (queueType === 'kyc') {
       const kycRef = db.collection('kyc_submissions').doc(targetId);
       const kycSnap = await kycRef.get();
@@ -153,7 +116,6 @@ router.post('/moderate', verifyUser, verifyAdmin, async (req, res) => {
         }
       }
     } 
-    
     else if (queueType === 'review') {
       const reviewRef = db.collection('user_reviews').doc(targetId);
       if (action === 'approve') {
@@ -170,7 +132,7 @@ router.post('/moderate', verifyUser, verifyAdmin, async (req, res) => {
   }
 });
 
-// --- SUBMIT KYC PROOF PIPELINE (USED BY REGULAR AGENTS) ---
+// --- SUBMIT KYC PROOF PIPELINE ---
 router.post('/submit-kyc', verifyUser, async (req, res) => {
   const { fullName, idType, idNumber, documentUrl } = req.body;
 
@@ -181,7 +143,7 @@ router.post('/submit-kyc', verifyUser, async (req, res) => {
       fullName,
       idType,
       idNumber,
-      documentUrl, // Cloudflare R2 uploaded link
+      documentUrl,
       status: 'pending',
       createdAt: new Date().toISOString()
     });
