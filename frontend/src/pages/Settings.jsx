@@ -3,7 +3,6 @@ import { User, Phone, FileText, UserCheck, Upload, Loader2, CheckCircle, Save } 
 
 const BACKEND_BASE_URL = 'https://kiwi-list-api.onrender.com';
 
-// Changed from SettingsPage to Settings to match your export default
 const Settings = ({ token, isVerified, onProfileUpdate }) => {
   const [profile, setProfile] = useState({
     displayName: '',
@@ -64,6 +63,14 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
         },
         body: JSON.stringify(profile)
       });
+
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const textError = await res.text();
+        console.error("Server HTML response breakdown:", textError);
+        throw new Error(`Server returned status ${res.status}. Route update initialization error.`);
+      }
+
       const data = await res.json();
 
       if (res.ok) {
@@ -94,6 +101,12 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
         headers: { 'Authorization': `Bearer ${token}` },
         body: data
       });
+      
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Upload service returned non-JSON response.');
+      }
+
       const result = await res.json();
       if (res.ok) {
         setKycData(prev => ({ ...prev, documentUrl: result.url }));
@@ -126,6 +139,12 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
         },
         body: JSON.stringify(kycData)
       });
+
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('KYC service endpoint did not return JSON parameters.');
+      }
+
       const result = await res.json();
       if (res.ok) {
         setKycMsg({ type: 'success', text: 'KYC routing complete! Your agent badges are pending evaluation.' });
