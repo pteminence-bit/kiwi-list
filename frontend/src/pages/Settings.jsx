@@ -1,6 +1,8 @@
+// src/components/Settings.jsx
 import React, { useState, useEffect } from 'react';
 import { User, Phone, FileText, UserCheck, Upload, Loader2, CheckCircle, Save } from 'lucide-react';
 
+// CRITICAL ACTION REQUIRED: Verify if your active backend is 'kiwi-list-api' or your instance 'kiwi-list-ifnr'
 const BACKEND_BASE_URL = 'https://kiwi-list-api.onrender.com';
 
 const Settings = ({ token, isVerified, onProfileUpdate }) => {
@@ -67,8 +69,7 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
       const contentType = res.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         const textError = await res.text();
-        console.error("Server HTML response breakdown:", textError);
-        throw new Error(`Server returned status ${res.status}. Route update initialization error.`);
+        throw new Error(`Server returned status ${res.status}. Route update configuration error.`);
       }
 
       const data = await res.json();
@@ -101,10 +102,11 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
         headers: { 'Authorization': `Bearer ${token}` },
         body: data
       });
-      
+
       const contentType = res.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('Upload service returned non-JSON response.');
+        const rawTextResponse = await res.text();
+        throw new Error(`Upload server engine returned non-JSON structure (${res.status}). Check server logs.`);
       }
 
       const result = await res.json();
@@ -131,7 +133,8 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
     setSubmitting(true);
     setKycMsg({ type: '', text: '' });
     try {
-      const res = await fetch(`${BACKEND_BASE_URL}/api/admin/submit-kyc`, {
+      // FIXED: Corrected target route parameters to cleanly map to core unified userRoutes endpoint
+      const res = await fetch(`${BACKEND_BASE_URL}/api/users/submit-kyc`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -162,15 +165,16 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
     return <div className="p-8 text-center text-slate-500 text-xs font-bold tracking-wide bg-slate-50 min-h-screen flex items-center justify-center">Syncing account parameter variables...</div>;
   }
 
+  // FIXED: Injected 'w-full max-w-full min-w-0 overflow-hidden' safety utilities into the canvas root
   return (
-    <div className="p-4 md:p-8 bg-slate-50 min-h-screen text-slate-800 w-full">
+    <div className="p-4 md:p-8 bg-slate-50 min-h-screen text-slate-800 w-full max-w-full min-w-0 overflow-hidden">
       <div className="mb-6">
         <h1 className="text-2xl font-black tracking-tight text-slate-900">Account Settings</h1>
         <p className="text-xs text-slate-500 font-medium">Keep your broker credentials updated and manage security metrics</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start w-full class-grid-overflow-guard">
+        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm min-w-0 w-full">
           <div className="flex items-center gap-2 pb-3 mb-4 border-b border-slate-100">
             <User className="text-blue-600" size={18} />
             <h3 className="font-bold text-slate-900 text-sm">Basic Marketplace Identity</h3>
@@ -238,9 +242,9 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
           </form>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4 min-w-0 w-full">
           {isVerified ? (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-5 shadow-sm flex items-start gap-4">
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-5 shadow-sm flex items-start gap-4 w-full">
               <CheckCircle className="text-emerald-600 shrink-0 mt-0.5" size={24} />
               <div>
                 <h4 className="font-extrabold text-emerald-900 text-sm">Identity Verification Active</h4>
@@ -253,7 +257,7 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
               </div>
             </div>
           ) : (
-            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm w-full">
               <div className="flex items-center gap-2 pb-3 mb-4 border-b border-slate-100">
                 <UserCheck className="text-amber-500" size={18} />
                 <h3 className="font-bold text-slate-900 text-sm">Agent Verification (KYC)</h3>
@@ -275,7 +279,7 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3 w-full">
                   <div>
                     <label className="block text-slate-500 font-bold mb-1 uppercase tracking-wider">ID Type</label>
                     <select 
@@ -303,7 +307,7 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
 
                 <div>
                   <label className="block text-slate-500 font-bold mb-1 uppercase tracking-wider">Upload Verification Document</label>
-                  <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 hover:border-blue-400 bg-slate-50 rounded-lg p-5 cursor-pointer text-slate-500 transition-colors">
+                  <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 hover:border-blue-400 bg-slate-50 rounded-lg p-5 cursor-pointer text-slate-500 transition-colors w-full">
                     {uploading ? (
                       <Loader2 size={22} className="animate-spin text-blue-600" />
                     ) : (

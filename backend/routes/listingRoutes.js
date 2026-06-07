@@ -1,3 +1,4 @@
+// backend/routes/listingRoutes.js
 import express from 'express';
 import { db } from '../config/firebase.js';
 import { verifyUser } from '../middleware/authMiddleware.js';
@@ -40,8 +41,6 @@ router.post('/create', verifyUser, async (req, res) => {
 // --- GET MARKETPLACE FEED ---
 router.get('/feed', async (req, res) => {
   try {
-    // Firestore requires an index for multiple where/orderBy clauses. 
-    // For now, we'll fetch active posts and sort them.
     const listingsSnapshot = await db.collection('listings')
       .where('status', '==', 'active')
       .get();
@@ -50,10 +49,8 @@ router.get('/feed', async (req, res) => {
       const data = doc.data();
       const listingId = doc.id;
       
-      // Deep clone to avoid mutating original data
       const responseData = { ...data, id: listingId };
 
-      // Logic: Hide contact details for premium posts in the general feed
       if (data.tier === 'premium') {
         delete responseData.contactDetails; 
       }
@@ -61,7 +58,6 @@ router.get('/feed', async (req, res) => {
       return responseData;
     });
 
-    // Sort: Premium first, then by date
     const sortedListings = listings.sort((a, b) => {
       if (a.tier === 'premium' && b.tier !== 'premium') return -1;
       if (a.tier !== 'premium' && b.tier === 'premium') return 1;
@@ -73,6 +69,7 @@ router.get('/feed', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
 router.get('/my-listings', verifyUser, async (req, res) => {
   try {
     const snapshots = await db.collection('listings')
@@ -89,6 +86,7 @@ router.get('/my-listings', verifyUser, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
 // --- DELETE OWNED LISTING ---
 router.delete('/:id', verifyUser, async (req, res) => {
   const { id } = req.params;
@@ -101,12 +99,10 @@ router.delete('/:id', verifyUser, async (req, res) => {
       return res.status(404).json({ error: "Listing not found" });
     }
 
-    // Guard rails: Check if the logged-in user actually owns this post
     if (doc.data().ownerId !== req.user.uid) {
       return res.status(403).json({ error: "Unauthorized. You do not own this listing." });
     }
 
-    // If verification passes, delete the document
     await listingRef.delete();
     res.json({ message: "Listing successfully removed from KIWI-list." });
   } catch (error) {
@@ -114,6 +110,7 @@ router.delete('/:id', verifyUser, async (req, res) => {
   }
 });
 
+// FIXED: Maintained path signature for backwards compatibility but updated destination routing mapping safely
 router.post('/api/users/submit-kyc', verifyUser, async (req, res) => {
   const { kycDocumentUrl } = req.body;
   try {

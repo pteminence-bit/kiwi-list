@@ -1,3 +1,4 @@
+// backend/routes/userRoutes.js
 import express from 'express';
 import { db } from '../config/firebase.js';
 import { verifyUser } from '../middleware/authMiddleware.js';
@@ -54,7 +55,7 @@ router.get('/me/transactions', verifyUser, async (req, res) => {
   }
 });
 
-// --- NEW/ADDITION: GET DETAILED ACCOUNT METADATA ---
+// --- GET DETAILED ACCOUNT METADATA ---
 router.get('/me', verifyUser, async (req, res) => {
   try {
     const userDoc = await db.collection('users').doc(req.user.uid).get();
@@ -65,7 +66,7 @@ router.get('/me', verifyUser, async (req, res) => {
   }
 });
 
-// --- NEW/ADDITION: TARGET PROFILE SAVE PIPELINE ---
+// --- TARGET PROFILE SAVE PIPELINE ---
 router.put('/profile/update', verifyUser, async (req, res) => {
   const { displayName, phoneNumber, bio } = req.body;
   try {
@@ -116,6 +117,24 @@ router.put('/settings', verifyUser, async (req, res) => {
 
     await userRef.set(updateData, { merge: true });
     res.json({ message: "Settings saved successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// FIXED: Moved the KYC submission handler safely into user routing boundaries
+router.post('/submit-kyc', verifyUser, async (req, res) => {
+  const { fullName, idType, idNumber, documentUrl } = req.body;
+  try {
+    await db.collection('users').doc(req.user.uid).update({
+      verificationStatus: 'pending',
+      legalFullName: fullName,
+      kycIdType: idType,
+      kycIdNumber: idNumber,
+      kycDocumentUrl: documentUrl,
+      kycSubmittedAt: new Date().toISOString()
+    });
+    res.json({ message: "KYC credentials queued successfully." });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
