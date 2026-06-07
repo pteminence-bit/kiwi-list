@@ -124,18 +124,25 @@ router.put('/settings', verifyUser, async (req, res) => {
 
 // --- SUBMIT KYC CREDENTIALS PIPELINE ---
 router.post('/submit-kyc', verifyUser, async (req, res) => {
-  const { fullName, idType, idNumber, documentUrl } = req.body;
+  // FIXED: Destructured documentUrls array instead of documentUrl string link
+  const { fullName, idType, idNumber, documentUrls } = req.body;
+
   try {
+    // Basic structural input boundary data guard verification checks
+    if (!Array.isArray(documentUrls) || documentUrls.length === 0) {
+      return res.status(400).json({ error: "At least one verification document asset URL is required." });
+    }
+
     await db.collection('users').doc(req.user.uid).set({
       verificationStatus: 'pending',
       legalFullName: fullName,
       kycIdType: idType,
       kycIdNumber: idNumber,
-      kycDocumentUrl: documentUrl,
+      kycDocumentUrls: documentUrls, // FIXED: Array written to database storage layer directly
       kycSubmittedAt: new Date().toISOString()
     }, { merge: true });
     
-    res.json({ message: "KYC credentials queued successfully." });
+    res.json({ message: "KYC credentials packet queued successfully." });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
