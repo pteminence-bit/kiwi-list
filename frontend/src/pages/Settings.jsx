@@ -55,7 +55,7 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
     setProfileMsg({ type: '', text: '' });
 
     try {
-      const res = await fetch(`${BACKEND_BASE_URL}/api/users/profile/update`, {
+      const res = await fetch(`${BACKEND_BASE_URL}/api/users/settings`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
