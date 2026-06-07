@@ -1,3 +1,4 @@
+// backend/routes/adminRoutes.js
 import express from 'express';
 import { db } from '../config/firebase.js';
 import { verifyUser } from '../middleware/authMiddleware.js';
@@ -54,7 +55,9 @@ router.get('/review-queue', verifyUser, verifyAdmin, async (req, res) => {
   try {
     const flaggedListings = await db.collection('listings').where('isFlagged', '==', true).get();
     const pendingListings = await db.collection('listings').where('status', '==', 'needs_review').get();
-    const kycRequests = await db.collection('kyc_submissions').where('status', '==', 'pending').get();
+    
+    // Updated collection query to match the user document mutation style
+    const kycRequests = await db.collection('users').where('verificationStatus', '==', 'pending').get();
     const flaggedReviews = await db.collection('user_reviews').where('status', '==', 'pending_moderation').get();
 
     const propertiesQueue = [...flaggedListings.docs, ...pendingListings.docs].map(doc => ({
@@ -66,6 +69,7 @@ router.get('/review-queue', verifyUser, verifyAdmin, async (req, res) => {
     const kycQueue = kycRequests.docs.map(doc => ({
       id: doc.id,
       queueType: 'kyc',
+      userId: doc.id,
       ...doc.data()
     }));
 
@@ -101,19 +105,21 @@ router.post('/moderate', verifyUser, verifyAdmin, async (req, res) => {
       }
     } 
     else if (queueType === 'kyc') {
-      const kycRef = db.collection('kyc_submissions').doc(targetId);
-      const kycSnap = await kycRef.get();
+      // targetId represents the user's UID in this pipeline configuration
+      const userRef = db.collection('users').doc(targetId);
       
-      if (kycSnap.exists) {
-        const { userId } = kycSnap.data();
-        const userRef = db.collection('users').doc(userId);
-        
-        if (action === 'approve') {
-          batch.update(kycRef, { status: 'verified', reviewedAt: new Date().toISOString() });
-          batch.update(userRef, { isVerifiedAgent: true, role: 'agent' });
-        } else {
-          batch.update(kycRef, { status: 'declined', reviewedAt: new Date().toISOString() });
-        }
+      if (action === 'approve') {
+        batch.update(userRef, { 
+          verificationStatus: 'verified', 
+          isVerifiedAgent: true, 
+          role: 'agent',
+          kycReviewedAt: new Date().toISOString()
+        });
+      } else {
+        batch.update(userRef, { 
+          verificationStatus: 'declined',
+          kycReviewedAt: new Date().toISOString()
+        });
       }
     } 
     else if (queueType === 'review') {
@@ -132,24 +138,4 @@ router.post('/moderate', verifyUser, verifyAdmin, async (req, res) => {
   }
 });
 
-// --- SUBMIT KYC PROOF PIPELINE ---
-router.post('/submit-kyc', verifyUser, async (req, res) => {
-  const { fullName, idType, idNumber, documentUrl } = req.body;
-
-  try {
-    const kycDocRef = db.collection('kyc_submissions').doc(req.user.uid);
-    await kycDocRef.set({
-      userId: req.user.uid,
-      fullName,
-      idType,
-      idNumber,
-      documentUrl,
-      status: 'pending',
-      createdAt: new Date().toISOString()
-    });
-
-    res.status(201).json({ message: "KYC documentation securely routed to admin validation queues." });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+export default router;

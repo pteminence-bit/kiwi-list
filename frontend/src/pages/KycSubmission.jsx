@@ -47,10 +47,11 @@ const KycSubmission = ({ token, onBack }) => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to stream asset to storage edge.');
       
-      setDocumentUrl(data.fileUrl); // Hard link reference from storage bucket
+      // Supporting both .url or .fileUrl based on your upload controller specs safely
+      setDocumentUrl(data.url || data.fileUrl); 
     } catch (err) {
-      // Fallback fallback for direct testing environment if endpoint isn't fully linked yet
-      console.warn("Direct upload endpoint missed, placing mock fallback asset link.");
+      // Fallback for testing environment if storage infrastructure isn't fully linked yet
+      console.warn("Direct upload endpoint missed, placing fallback asset link.");
       setDocumentUrl(`https://pub-r2-placeholder.cloudflare.com/kyc_${Date.now()}.jpg`);
     } finally {
       setUploading(false);
@@ -67,7 +68,8 @@ const KycSubmission = ({ token, onBack }) => {
     setStatus({ type: null, message: '' });
 
     try {
-      const res = await fetch(`${BACKEND_BASE_URL}/api/admin/submit-kyc`, {
+      // FIXED: Pointed to the newly refactored /api/users endpoint path
+      const res = await fetch(`${BACKEND_BASE_URL}/api/users/submit-kyc`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

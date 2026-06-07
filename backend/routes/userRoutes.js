@@ -49,7 +49,7 @@ router.get('/me/transactions', verifyUser, async (req, res) => {
       console.warn("⚠️ Missing Firestore Composite Index. Sorting client-side for now.");
       const fallbackSnapshot = await db.collection('transactions').where('userId', '==', req.user.uid).get();
       const fallbackTxs = fallbackSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      return res.json(fallbackTxs.sort((a,b) => b.createdAt - a.createdAt));
+      return res.json(fallbackTxs.sort((a,b) => new Date(b.createdAt || b.timestamp) - new Date(a.createdAt || a.timestamp)));
     }
     res.status(500).json({ error: error.message });
   }
@@ -122,18 +122,19 @@ router.put('/settings', verifyUser, async (req, res) => {
   }
 });
 
-// FIXED: Moved the KYC submission handler safely into user routing boundaries
+// --- SUBMIT KYC CREDENTIALS PIPELINE ---
 router.post('/submit-kyc', verifyUser, async (req, res) => {
   const { fullName, idType, idNumber, documentUrl } = req.body;
   try {
-    await db.collection('users').doc(req.user.uid).update({
+    await db.collection('users').doc(req.user.uid).set({
       verificationStatus: 'pending',
       legalFullName: fullName,
       kycIdType: idType,
       kycIdNumber: idNumber,
       kycDocumentUrl: documentUrl,
       kycSubmittedAt: new Date().toISOString()
-    });
+    }, { merge: true });
+    
     res.json({ message: "KYC credentials queued successfully." });
   } catch (error) {
     res.status(500).json({ error: error.message });
