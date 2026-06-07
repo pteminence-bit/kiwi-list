@@ -21,11 +21,15 @@ const allowedOrigins = [
   'http://localhost:5173'                 // Keep local development working
 ];
 
-// FIXED: Properly closed the CORS middleware block
+// FIXED: Added regex matching to automatically allow local network Wi-Fi IPs for mobile testing
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    
+    const isAllowed = allowedOrigins.indexOf(origin) !== -1;
+    const isLocalNetwork = /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:\d+$/.test(origin) || /^http:\/\/10\.\d{1,3}\.\d{1,3}:\d+$/.test(origin);
+
+    if (isAllowed || isLocalNetwork) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS policy'));
@@ -34,7 +38,9 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(express.json());
+// FIXED: Increased data thresholds to 50MB to handle large mobile image uploads and payloads
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Routes
 app.use('/api/listings', listingRoutes);
@@ -60,8 +66,7 @@ app.get('/api/test-db', async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 5000;
-
+// 404 Route Not Found Handling
 app.use((req, res, next) => {
   console.log(`Incoming Unmatched Request: ${req.method} ${req.url}`);
   res.status(404).json({
@@ -72,4 +77,20 @@ app.use((req, res, next) => {
   });
 });
 
+// FIXED: Catch-All Global Error Handler Middleware
+// Prevents Express from ever serving raw HTML crash pages to your frontend components
+app.use((err, req, res, next) => {
+  console.error("❌ Engine Error Intercepted:", err.message);
+  
+  // Gracefully normalize typical crash signatures to application/json
+  const statusCode = err.status || (err.message.includes('CORS') ? 403 : 500);
+  
+  res.status(statusCode).json({
+    success: false,
+    error: err.message || "An unhandled engine operational failure occurred.",
+    code: err.code || "BACKEND_CRASH_GUARD"
+  });
+});
+
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Kiwi-List Engine live on port ${PORT}`));
