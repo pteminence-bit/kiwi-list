@@ -68,14 +68,15 @@ const MarketplaceFeed = ({ token }) => {
 
   if (loading) {
     return (
-      <div className="p-6 text-center text-slate-500 min-h-screen w-full md:pl-72 flex items-center justify-center">
+      <div className="p-6 text-center text-slate-500 min-h-screen w-full flex items-center justify-center">
         <span className="font-medium animate-pulse">Loading KIWI-list Feed...</span>
       </div>
     );
   }
 
   return (
-    <div className="p-4 md:p-8 bg-slate-50 min-h-screen w-full md:pl-72 flex flex-col items-center">
+    /* Completely dropped layout blocking class md:pl-72 to maximize viewport layout tracking */
+    <div className="p-4 md:p-6 bg-slate-50 min-h-screen w-full flex flex-col items-center">
       <div className="w-full max-w-4xl space-y-6">
         
         {/* Top Search & Filter Bar */}

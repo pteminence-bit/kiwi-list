@@ -13,7 +13,7 @@ const CreateListing = ({ token }) => {
     address: '',
     beds: '',
     baths: '',
-    tier: 'free', // default tier
+    tier: 'free', 
     phone: '',
     email: ''
   });
@@ -33,7 +33,6 @@ const CreateListing = ({ token }) => {
     setLoading(true);
 
     try {
-      // 1. Upload files first to Cloudflare R2 via our backend multipart route
       const filePayload = new FormData();
       images.forEach(file => filePayload.append('images', file));
 
@@ -46,7 +45,6 @@ const CreateListing = ({ token }) => {
       const uploadData = await uploadResponse.json();
       if (!uploadResponse.ok) throw new Error(uploadData.error || "Image deployment failed");
 
-      // 2. Submit structural metadata details along with R2 URLs
       const listingPayload = {
         title: formData.title,
         description: formData.description,
@@ -55,7 +53,7 @@ const CreateListing = ({ token }) => {
         beds: Number(formData.beds),
         baths: Number(formData.baths),
         tier: formData.tier,
-        images: uploadData.urls, // URLs returned from R2
+        images: uploadData.urls, 
         contactDetails: {
           phone: formData.phone,
           email: formData.email
@@ -74,7 +72,6 @@ const CreateListing = ({ token }) => {
       const listingData = await listingResponse.json();
       
       if (listingResponse.ok) {
-        // If it's a premium post, forward them to Flutterwave checkpoint immediately
         if (formData.tier === 'premium') {
           initializePremiumPayment(listingData.id);
         } else {
@@ -113,8 +110,8 @@ const CreateListing = ({ token }) => {
   };
 
   return (
-    <div className="p-6 bg-slate-50 min-h-screen ml-64">
-      <div className="max-w-3xl bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+    <div className="w-full flex flex-col items-center">
+      <div className="w-full max-w-3xl bg-white border border-slate-200 rounded-xl p-6 shadow-sm text-slate-800">
         <div className="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
           <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
             <Landmark size={22} />
@@ -126,7 +123,6 @@ const CreateListing = ({ token }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Form Grid Layout */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-slate-700 mb-1">Property Title</label>
@@ -166,7 +162,6 @@ const CreateListing = ({ token }) => {
               <input required type="number" name="baths" value={formData.baths} onChange={handleInputChange} placeholder="0" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-black focus:outline-none focus:border-blue-500" />
             </div>
 
-            {/* Paywalled Secure Contact Elements */}
             <div className="md:col-span-2 p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
               <h3 className="text-xs font-bold text-slate-600 tracking-wider flex items-center gap-1.5 uppercase">
                 <ShieldCheck size={14} className="text-blue-500" /> Secure Contact Card Details
@@ -184,13 +179,11 @@ const CreateListing = ({ token }) => {
             </div>
           </div>
 
-          {/* Connected R2 Image Upload Workspace Row */}
           <div className="space-y-2">
             <label className="block text-sm font-medium text-slate-700">Media Workspace Attachments</label>
             <ImageUploader onImagesSelected={setImages} />
           </div>
 
-          {/* Submission Control Core Button */}
           <button 
             type="submit" 
             disabled={loading}
