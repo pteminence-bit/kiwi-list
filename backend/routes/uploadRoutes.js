@@ -9,9 +9,14 @@ const router = express.Router();
 const storage = multer.memoryStorage();
 const upload = multer({ 
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit per image
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit per document/image
 });
 
+// 1. Multiple images upload route for marketplace listings
 router.post('/listings', verifyUser, upload.array('images', 4), uploadImagesToR2);
+
+// 2. Single file upload route for Profile Pictures & KYC Verification Documents
+// This fixes the Multer field name mismatch by explicitly listening for the 'file' key
+router.post('/', verifyUser, upload.single('file'), uploadImagesToR2);
 
 export default router;
