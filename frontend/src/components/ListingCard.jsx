@@ -30,17 +30,24 @@ const ListingCard = ({ listing, onUnlock, onReport }) => {
     return () => unsubscribe();
   }, [listing.id]);
 
+  // FIXED: Explicit container bounds calculation fallback to prevent tracking drops across mobile layers
   const handleMobileScroll = () => {
     if (!scrollContainerRef.current) return;
-    const { scrollLeft, clientWidth } = scrollContainerRef.current;
-    if (clientWidth === 0) return;
+    const { scrollLeft } = scrollContainerRef.current;
+    const clientWidth = scrollContainerRef.current.getBoundingClientRect().width || scrollContainerRef.current.clientWidth;
+    if (clientWidth <= 0) return;
+    
     const newIndex = Math.round(scrollLeft / clientWidth);
-    setCurrentImageIndex(newIndex);
+    if (newIndex !== currentImageIndex && newIndex >= 0 && newIndex < images.length) {
+      setCurrentImageIndex(newIndex);
+    }
   };
 
+  // FIXED: Smooth explicit coordinate animation execution structure
   const executeScrollTo = (index) => {
     if (!scrollContainerRef.current) return;
-    const clientWidth = scrollContainerRef.current.clientWidth;
+    const clientWidth = scrollContainerRef.current.getBoundingClientRect().width || scrollContainerRef.current.clientWidth;
+    
     scrollContainerRef.current.scrollTo({
       left: index * clientWidth,
       behavior: 'smooth'
@@ -68,7 +75,6 @@ const ListingCard = ({ listing, onUnlock, onReport }) => {
           </div>
         </div>
         
-        {/* FIXED: Destructured safe fallback execute method wrapper check */}
         <button 
           onClick={() => onReport && onReport(listing.id)}
           className="p-1.5 text-slate-400 hover:text-red-600 rounded-full transition"
@@ -78,7 +84,8 @@ const ListingCard = ({ listing, onUnlock, onReport }) => {
       </div>
 
       {/* Media Canvas Area */}
-      <div className="relative w-full aspect-[4/5] sm:aspect-square overflow-hidden bg-slate-100 shrink-0 group">
+      {/* FIXED: Added 'isolate pointer-events-auto' parameters to cleanly handle cross-device canvas layers */}
+      <div className="relative w-full aspect-[4/5] sm:aspect-square overflow-hidden bg-slate-100 shrink-0 group isolate pointer-events-auto">
         <div 
           ref={scrollContainerRef}
           onScroll={handleMobileScroll}
@@ -120,11 +127,11 @@ const ListingCard = ({ listing, onUnlock, onReport }) => {
         )}
 
         {images.length > 1 && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-10 bg-black/20 px-2 py-1 rounded-full backdrop-blur-xs">
             {images.map((_, i) => (
               <span 
                 key={i} 
-                className={`w-1.5 h-1.5 rounded-full transition-all ${i === currentImageIndex ? 'bg-white scale-125' : 'bg-white/40'}`}
+                className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${i === currentImageIndex ? 'bg-white scale-125' : 'bg-white/40'}`}
               />
             ))}
           </div>
@@ -138,7 +145,7 @@ const ListingCard = ({ listing, onUnlock, onReport }) => {
         </div>
       </div>
 
-      {/* Technical Detail Overlays */}
+      {/* Detail Overlays */}
       <div className="px-4 pb-4 space-y-3 flex-grow flex flex-col justify-between">
         <div className="space-y-2">
           <div className="font-black text-slate-900 text-xl pt-1">

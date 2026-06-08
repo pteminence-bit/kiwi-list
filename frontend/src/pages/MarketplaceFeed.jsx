@@ -60,7 +60,6 @@ const MarketplaceFeed = ({ token }) => {
     }
   };
 
-  // 👇 ADDED: Handle flagging/reporting scam or bad listings
   const handleReportListing = async (listingId) => {
     const reason = window.prompt("Reason for reporting this listing (e.g., Fake Agent, Incorrect Price, Sold):");
     if (!reason) return;
@@ -82,9 +81,11 @@ const MarketplaceFeed = ({ token }) => {
     }
   };
 
+  // FIXED: Cleaned event capturing criteria filter to completely skip structural layouts
   const handleImageLightboxCapture = (e) => {
-    if (e.target.tagName === 'IMG' && e.target.src) {
-      setActiveImage(e.target.src);
+    const target = e.target;
+    if (target && target.tagName === 'IMG' && target.src && !target.closest('button')) {
+      setActiveImage(target.src);
     }
   };
 
@@ -131,7 +132,6 @@ const MarketplaceFeed = ({ token }) => {
                 <Maximize2 size={12} />
               </div>
               
-              {/* FIXED: Passed handleReportListing prop cleanly here */}
               <ListingCard 
                 listing={listing} 
                 onUnlock={handleUnlockContact} 
@@ -151,7 +151,7 @@ const MarketplaceFeed = ({ token }) => {
       {/* Immersive Instagram Style Lightbox Modal */}
       {activeImage && (
         <div 
-          className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-between py-6 px-4"
+          className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-between py-6 px-4 touch-none"
           onClick={() => setActiveImage(null)}
         >
           <div className="w-full max-w-lg flex items-center justify-between text-white z-10 px-2">
