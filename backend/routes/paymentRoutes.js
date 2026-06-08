@@ -1,3 +1,4 @@
+// backend/routes/paymentRoutes.js
 import express from 'express';
 import { initializePayment } from '../controllers/paymentController.js';
 import { verifyUser } from '../middleware/authMiddleware.js';

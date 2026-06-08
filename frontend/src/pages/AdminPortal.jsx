@@ -1,6 +1,6 @@
 // src/pages/AdminPortal.jsx
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, CheckCircle, Trash2, ShieldX, UserCheck, MessageSquare, Newspaper, ExternalLink, Users, Ban, Landmark, ShieldCheck } from 'lucide-react';
+import { AlertCircle, CheckCircle, Trash2, ShieldX, UserCheck, MessageSquare, Newspaper, ExternalLink, Users, Ban, Landmark, ShieldCheck, X, Eye } from 'lucide-react';
 
 // Hardcoded live target address pointing to your active Render Web Service
 const BACKEND_BASE_URL = 'https://kiwi-list-api.onrender.com';
@@ -12,6 +12,9 @@ const AdminPortal = ({ token }) => {
   
   // NEW VIEW SWITCH STATE: Toggles layout space between operational queues and user directory controls
   const [activeTab, setActiveTab] = useState('moderation'); 
+
+  // NEW STATE TRACKER: Handles active targeted viewing injection mapping data payloads for the KYC modal panel
+  const [selectedKyc, setSelectedKyc] = useState(null);
 
   const platformUpdates = [
     { date: "Jun 08, 2026", title: "Financial Governance Framework", body: "Admins can now revoke withdrawal permissions and disable compromised user/broker portfolios globally.", tag: "Wallets Guard" },
@@ -70,6 +73,11 @@ const AdminPortal = ({ token }) => {
       });
       
       if (res.ok) {
+        // Close modal if the currently reviewed KYC item gets processed
+        if (queueType === 'kyc' && selectedKyc?.id === targetId) {
+          setSelectedKyc(null);
+        }
+
         // NEW IMPLEMENTATION: For account updates, perform local inline data state mapping mutations
         if (queueType === 'users') {
           setQueues(prev => ({
@@ -246,11 +254,21 @@ const AdminPortal = ({ token }) => {
                     <div className="w-full min-w-0">
                       <div className="font-black text-slate-900 mb-0.5 truncate">Agent KYC: {item.fullName || "Anonymous Broker"}</div>
                       <p className="text-slate-500 font-medium truncate">ID: {item.idType || "NIN"} • #{item.idNumber || "XXXX"}</p>
-                      {item.documentUrl && (
-                        <a href={item.documentUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] text-blue-600 hover:underline mt-1.5 font-bold">
-                          View KYC Document File <ExternalLink size={10} />
-                        </a>
-                      )}
+                      
+                      <div className="flex items-center gap-3 mt-2">
+                        <button 
+                          onClick={() => setSelectedKyc(item)}
+                          className="inline-flex items-center gap-1 text-[11px] bg-blue-50 text-blue-700 border border-blue-100 px-2 py-1 rounded hover:bg-blue-100 transition font-bold"
+                        >
+                          <Eye size={12} /> Review Details & Logs
+                        </button>
+                        
+                        {item.documentUrl && (
+                          <a href={item.documentUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-800 hover:underline font-bold">
+                            Open Direct File <ExternalLink size={10} />
+                          </a>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="flex gap-2 w-full sm:w-auto shrink-0 justify-end">
@@ -368,6 +386,96 @@ const AdminPortal = ({ token }) => {
             {queues.users.length === 0 && (
               <p className="text-center text-slate-400 italic text-xs col-span-2 py-8">No users found registered in cluster nodes.</p>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* NEW PANEL OVERLAY: Comprehensive Slide-Out KYC Document Viewer Modal */}
+      {selectedKyc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-end bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300">
+          <div className="bg-white w-full max-w-xl h-full shadow-2xl p-6 overflow-y-auto flex flex-col justify-between animate-slideLeft">
+            
+            <div>
+              {/* Modal Top Branding Elements */}
+              <div className="flex items-center justify-between pb-4 border-b border-slate-200 mb-6">
+                <div className="flex items-center gap-2">
+                  <UserCheck className="text-blue-600" size={22} />
+                  <div>
+                    <h3 className="font-black text-slate-900 text-base">KYC Dossier Review</h3>
+                    <p className="text-xs text-slate-400">UID: <span className="font-mono">{selectedKyc.id}</span></p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setSelectedKyc(null)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Broker Information Fields */}
+              <div className="space-y-4 mb-6">
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2 text-xs">
+                  <h4 className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Broker Metadata Profile</h4>
+                  <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-slate-700 pt-1">
+                    <p className="font-medium">Full Legal Name:</p>
+                    <p className="font-black text-slate-900 text-right">{selectedKyc.fullName || "N/A"}</p>
+                    
+                    <p className="font-medium">Account Email:</p>
+                    <p className="font-mono text-slate-900 text-right truncate">{selectedKyc.email || "N/A"}</p>
+
+                    <p className="font-medium">Document Type:</p>
+                    <p className="font-bold text-slate-900 text-right uppercase">{selectedKyc.idType || "NIN"}</p>
+
+                    <p className="font-medium">Document Number:</p>
+                    <p className="font-mono text-slate-900 text-right font-bold">{selectedKyc.idNumber || "N/A"}</p>
+                  </div>
+                </div>
+
+                {/* Secure Document Iframe Preview Window */}
+                <div className="space-y-2">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Uploaded Proof Attachment</span>
+                  {selectedKyc.documentUrl ? (
+                    <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-100 relative aspect-[4/3] flex flex-col items-center justify-center">
+                      {selectedKyc.documentUrl.match(/\.(jpeg|jpg|gif|png)$/i) ? (
+                        <img 
+                          src={selectedKyc.documentUrl} 
+                          alt="KYC Identification Proof" 
+                          className="w-full h-full object-contain bg-slate-900" 
+                        />
+                      ) : (
+                        <iframe 
+                          src={`https://docs.google.com/gview?url=${encodeURIComponent(selectedKyc.documentUrl)}&embedded=true`} 
+                          title="KYC Proof Frame"
+                          className="w-full h-full border-0"
+                        />
+                      )}
+                    </div>
+                  ) : (
+                    <div className="border border-dashed border-slate-200 rounded-xl p-6 text-center text-slate-400 text-xs italic bg-slate-50">
+                      No document attachment present in this profile node payload.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Bottom Operational Controls */}
+            <div className="flex gap-3 pt-4 border-t border-slate-200 bg-white">
+              <button 
+                onClick={() => handleAction(selectedKyc.id, 'kyc', 'approve')}
+                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition shadow-sm flex items-center justify-center gap-1"
+              >
+                <ShieldCheck size={14} /> Approve & Grant Agent Role
+              </button>
+              <button 
+                onClick={() => handleAction(selectedKyc.id, 'kyc', 'decline')}
+                className="px-4 py-3 bg-white border border-red-200 text-red-600 hover:bg-red-50 text-xs font-bold rounded-xl transition"
+              >
+                Decline Proof
+              </button>
+            </div>
+
           </div>
         </div>
       )}

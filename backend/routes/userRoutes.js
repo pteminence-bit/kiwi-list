@@ -16,7 +16,9 @@ router.get('/me/wallet', verifyUser, async (req, res) => {
     res.json({
       walletBalance: userData.balance ?? userData.walletBalance ?? 0,
       totalEarned: userData.totalEarned ?? 0,
-      platformTier: userData.platformTier || "KIWI Premium Split"
+      platformTier: userData.platformTier || "KIWI Premium Split",
+      // FIXED: Added payout status flag so WalletCard.jsx button blocks correctly
+      isPayoutBlocked: userData.isPayoutBlocked === true
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
