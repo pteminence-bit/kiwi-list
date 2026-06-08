@@ -4,7 +4,6 @@ import { Wallet, ArrowUpRight, ShieldAlert } from 'lucide-react';
 const WalletCard = ({ token, isVerified }) => {
   const [wallet, setWallet] = useState({ balance: 0, totalEarned: 0 });
   const [loading, setLoading] = useState(true);
-  // Added state to hold the user profile data needed for the layout logic
   const [userProfileData, setUserProfileData] = useState({ isPayoutBlocked: false });
 
   useEffect(() => {
@@ -17,7 +16,6 @@ const WalletCard = ({ token, isVerified }) => {
         const data = await res.json();
         setWallet({ balance: data.walletBalance || 0, totalEarned: data.totalEarned || 0 });
         
-        // Populate the profile block state conditionally if passed by the unified user metadata payload
         setUserProfileData({
           isPayoutBlocked: data.isPayoutBlocked === true
         });
@@ -30,7 +28,6 @@ const WalletCard = ({ token, isVerified }) => {
     fetchWalletData();
   }, [token]);
 
-  // Maps directly to the function name specified in your button component configuration
   const executeWithdrawalFundsPipeline = () => {
     if (!isVerified) return;
     alert('Withdrawal request initialized.');
@@ -49,7 +46,6 @@ const WalletCard = ({ token, isVerified }) => {
     );
   }
 
-  // Blends existing requirements (KYC status and balance check) with the admin block evaluation rules
   const canWithdraw = isVerified && wallet.balance > 0 && userProfileData?.isPayoutBlocked !== true;
 
   return (
@@ -91,7 +87,6 @@ const WalletCard = ({ token, isVerified }) => {
             </div>
           )}
 
-          {/* Integrated button design component directly preserving original validation logic */}
           {!isVerified ? (
             <button 
               onClick={handleWithdrawal}

@@ -56,11 +56,9 @@ router.get('/review-queue', verifyUser, verifyAdmin, async (req, res) => {
     const flaggedListings = await db.collection('listings').where('isFlagged', '==', true).get();
     const pendingListings = await db.collection('listings').where('status', '==', 'needs_review').get();
     
-    // Updated collection query to match the user document mutation style
     const kycRequests = await db.collection('users').where('verificationStatus', '==', 'pending').get();
     const flaggedReviews = await db.collection('user_reviews').where('status', '==', 'pending_moderation').get();
     
-    // NEW ADDITION: Fetch all system users to allow profile bans and payout blocking rules
     const allUsersList = await db.collection('users').get();
 
     const propertiesQueue = [...flaggedListings.docs, ...pendingListings.docs].map(doc => ({
@@ -115,7 +113,6 @@ router.post('/moderate', verifyUser, verifyAdmin, async (req, res) => {
       }
     } 
     else if (queueType === 'kyc') {
-      // targetId represents the user's UID in this pipeline configuration
       const userRef = db.collection('users').doc(targetId);
       
       if (action === 'approve') {
@@ -140,7 +137,6 @@ router.post('/moderate', verifyUser, verifyAdmin, async (req, res) => {
         batch.delete(reviewRef);
       }
     }
-    // NEW ADDITION: Handle direct account disable rules and payout blocks
     else if (queueType === 'user') {
       const userRef = db.collection('users').doc(targetId);
       

@@ -149,7 +149,8 @@ const AdminPortal = ({ token }) => {
           {/* Section A: Platform Updates */}
           <div className="bg-white rounded-xl border border-slate-200 p-4 md:p-5 shadow-sm space-y-4">
             <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-              <NewPaper size={18} className="text-blue-600" />
+              {/* FIXED: Changed from NewPaper to Newspaper to match the lucide library naming spec */}
+              <Newspaper size={18} className="text-blue-600" />
               <h3 className="font-extrabold text-slate-900">Platform Updates</h3>
             </div>
             <div className="space-y-4 divide-y divide-slate-100">
