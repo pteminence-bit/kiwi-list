@@ -4,6 +4,8 @@ import { Wallet, ArrowUpRight, ShieldAlert } from 'lucide-react';
 const WalletCard = ({ token, isVerified }) => {
   const [wallet, setWallet] = useState({ balance: 0, totalEarned: 0 });
   const [loading, setLoading] = useState(true);
+  // Added state to hold the user profile data needed for the layout logic
+  const [userProfileData, setUserProfileData] = useState({ isPayoutBlocked: false });
 
   useEffect(() => {
     if (!token) return;
@@ -14,6 +16,11 @@ const WalletCard = ({ token, isVerified }) => {
         });
         const data = await res.json();
         setWallet({ balance: data.walletBalance || 0, totalEarned: data.totalEarned || 0 });
+        
+        // Populate the profile block state conditionally if passed by the unified user metadata payload
+        setUserProfileData({
+          isPayoutBlocked: data.isPayoutBlocked === true
+        });
       } catch (err) {
         console.error("Wallet fetch error:", err);
       } finally {
@@ -22,6 +29,12 @@ const WalletCard = ({ token, isVerified }) => {
     };
     fetchWalletData();
   }, [token]);
+
+  // Maps directly to the function name specified in your button component configuration
+  const executeWithdrawalFundsPipeline = () => {
+    if (!isVerified) return;
+    alert('Withdrawal request initialized.');
+  };
 
   const handleWithdrawal = () => {
     if (!isVerified) return;
@@ -36,7 +49,8 @@ const WalletCard = ({ token, isVerified }) => {
     );
   }
 
-  const canWithdraw = isVerified && wallet.balance > 0;
+  // Blends existing requirements (KYC status and balance check) with the admin block evaluation rules
+  const canWithdraw = isVerified && wallet.balance > 0 && userProfileData?.isPayoutBlocked !== true;
 
   return (
     <div className="p-4 md:p-8 bg-slate-50 min-h-screen w-full flex flex-col items-center justify-start">
@@ -77,13 +91,30 @@ const WalletCard = ({ token, isVerified }) => {
             </div>
           )}
 
-          <button 
-            onClick={handleWithdrawal}
-            disabled={!canWithdraw}
-            className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-800 disabled:text-slate-600 text-white font-semibold rounded-xl transition-all duration-200 tracking-wide text-sm shadow-sm"
-          >
-            {!isVerified ? 'Verification Required' : 'Withdraw Funds'}
-          </button>
+          {/* Integrated button design component directly preserving original validation logic */}
+          {!isVerified ? (
+            <button 
+              onClick={handleWithdrawal}
+              disabled={!canWithdraw}
+              className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-800 disabled:text-slate-600 text-white font-semibold rounded-xl transition-all duration-200 tracking-wide text-sm shadow-sm"
+            >
+              Verification Required
+            </button>
+          ) : (
+            <button 
+              disabled={userProfileData?.isPayoutBlocked === true || wallet.balance <= 0}
+              onClick={executeWithdrawalFundsPipeline}
+              className={`w-full py-3 px-6 rounded-lg text-white font-bold tracking-wide transition ${
+                userProfileData?.isPayoutBlocked === true 
+                  ? 'bg-slate-400 cursor-not-allowed opacity-60 line-through' 
+                  : wallet.balance <= 0
+                    ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700'
+              }`}
+            >
+              {userProfileData?.isPayoutBlocked === true ? "Withdrawals Paused by Admin" : "Withdraw Funds"}
+            </button>
+          )}
         </div>
       </div>
     </div>

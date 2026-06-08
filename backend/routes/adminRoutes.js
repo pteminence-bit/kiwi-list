@@ -50,7 +50,7 @@ router.get('/debug-my-status', verifyUser, async (req, res) => {
   }
 });
 
-// --- GET ALL ADMINISTRATIVE REVIEW QUEUES (PROPERTIES, KYC, REVIEWS, & ALL USERS) ---
+// --- GET ALL ADMINISTRATIVE REVIEW QUEUES (PROPERTIES, KYC, USER REVIEWS, & ALL USERS) ---
 router.get('/review-queue', verifyUser, verifyAdmin, async (req, res) => {
   try {
     const flaggedListings = await db.collection('listings').where('isFlagged', '==', true).get();
@@ -60,8 +60,8 @@ router.get('/review-queue', verifyUser, verifyAdmin, async (req, res) => {
     const kycRequests = await db.collection('users').where('verificationStatus', '==', 'pending').get();
     const flaggedReviews = await db.collection('user_reviews').where('status', '==', 'pending_moderation').get();
     
-    // Fetch user directories to enable account disabling and withdrawal blocking features
-    const allUsersSnapshot = await db.collection('users').get();
+    // NEW ADDITION: Fetch all system users to allow profile bans and payout blocking rules
+    const allUsersList = await db.collection('users').get();
 
     const propertiesQueue = [...flaggedListings.docs, ...pendingListings.docs].map(doc => ({
       id: doc.id,
@@ -82,7 +82,7 @@ router.get('/review-queue', verifyUser, verifyAdmin, async (req, res) => {
       ...doc.data()
     }));
 
-    const usersDirectory = allUsersSnapshot.docs.map(doc => ({
+    const usersQueue = allUsersList.docs.map(doc => ({
       id: doc.id,
       queueType: 'user',
       ...doc.data()
@@ -92,7 +92,7 @@ router.get('/review-queue', verifyUser, verifyAdmin, async (req, res) => {
       properties: propertiesQueue,
       kyc: kycQueue,
       reviews: reviewsQueue,
-      users: usersDirectory
+      users: usersQueue
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -110,8 +110,6 @@ router.post('/moderate', verifyUser, verifyAdmin, async (req, res) => {
       const docRef = db.collection('listings').doc(targetId);
       if (action === 'approve') {
         batch.update(docRef, { isFlagged: false, status: 'active' });
-      } else if (action === 'delete') {
-        batch.delete(docRef);
       } else {
         batch.delete(docRef);
       }
@@ -142,16 +140,18 @@ router.post('/moderate', verifyUser, verifyAdmin, async (req, res) => {
         batch.delete(reviewRef);
       }
     }
+    // NEW ADDITION: Handle direct account disable rules and payout blocks
     else if (queueType === 'user') {
       const userRef = db.collection('users').doc(targetId);
+      
       if (action === 'disable') {
-        batch.update(userRef, { disabled: true });
+        batch.update(userRef, { isDisabled: true });
       } else if (action === 'enable') {
-        batch.update(userRef, { disabled: false });
-      } else if (action === 'block_withdrawal') {
-        batch.update(userRef, { withdrawalBlocked: true });
-      } else if (action === 'unblock_withdrawal') {
-        batch.update(userRef, { withdrawalBlocked: false });
+        batch.update(userRef, { isDisabled: false });
+      } else if (action === 'block_payout') {
+        batch.update(userRef, { isPayoutBlocked: true });
+      } else if (action === 'unblock_payout') {
+        batch.update(userRef, { isPayoutBlocked: false });
       }
     }
 
