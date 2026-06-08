@@ -1,8 +1,7 @@
-// src/components/Settings.jsx
+// src/pages/Settings.jsx
 import React, { useState, useEffect } from 'react';
 import { User, Phone, FileText, UserCheck, Upload, Loader2, CheckCircle, Save } from 'lucide-react';
 
-// CRITICAL ACTION REQUIRED: Verify if your active backend is 'kiwi-list-api' or your instance 'kiwi-list-ifnr'
 const BACKEND_BASE_URL = 'https://kiwi-list-api.onrender.com';
 
 const Settings = ({ token, isVerified, onProfileUpdate }) => {
@@ -93,25 +92,28 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
 
     setUploading(true);
     setKycMsg({ type: '', text: '' });
+    
     const data = new FormData();
     data.append('file', file);
 
     try {
-      const res = await fetch(`${BACKEND_BASE_URL}/api/upload`, {
+      const res = await fetch(`${BACKEND_BASE_URL}/api/upload/file`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
-        body: data
+        body: data 
       });
 
       const contentType = res.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         const rawTextResponse = await res.text();
-        throw new Error(`Upload server engine returned non-JSON structure (${res.status}). Check server logs.`);
+        console.error("CRITICAL BACKEND ERROR TEXT:", rawTextResponse);
+        throw new Error(`Server sent back an HTML/Text error page (${res.status}).`);
       }
 
       const result = await res.json();
       if (res.ok) {
-        setKycData(prev => ({ ...prev, documentUrl: result.url }));
+        // FIXED: Updates state with single image URL string directly from upload middleware
+        setKycData(prev => ({ ...prev, documentUrl: result.url || result.imageUrl }));
         setKycMsg({ type: 'success', text: 'ID Document uploaded successfully to R2 edges!' });
       } else {
         throw new Error(result.error || 'Upload failed');
@@ -133,7 +135,7 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
     setSubmitting(true);
     setKycMsg({ type: '', text: '' });
     try {
-      // FIXED: Corrected target route parameters to cleanly map to core unified userRoutes endpoint
+      // FIXED: Delivers the payload directly containing documentUrl as a plain string string value
       const res = await fetch(`${BACKEND_BASE_URL}/api/users/submit-kyc`, {
         method: 'POST',
         headers: {
@@ -165,7 +167,6 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
     return <div className="p-8 text-center text-slate-500 text-xs font-bold tracking-wide bg-slate-50 min-h-screen flex items-center justify-center">Syncing account parameter variables...</div>;
   }
 
-  // FIXED: Injected 'w-full max-w-full min-w-0 overflow-hidden' safety utilities into the canvas root
   return (
     <div className="p-4 md:p-8 bg-slate-50 min-h-screen text-slate-800 w-full max-w-full min-w-0 overflow-hidden">
       <div className="mb-6">

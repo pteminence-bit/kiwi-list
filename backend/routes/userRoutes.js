@@ -124,13 +124,12 @@ router.put('/settings', verifyUser, async (req, res) => {
 
 // --- SUBMIT KYC CREDENTIALS PIPELINE ---
 router.post('/submit-kyc', verifyUser, async (req, res) => {
-  // FIXED: Destructured documentUrls array instead of documentUrl string link
-  const { fullName, idType, idNumber, documentUrls } = req.body;
+  // FIXED: Changed parameter parsing to require exactly one string URL parameter
+  const { fullName, idType, idNumber, documentUrl } = req.body;
 
   try {
-    // Basic structural input boundary data guard verification checks
-    if (!Array.isArray(documentUrls) || documentUrls.length === 0) {
-      return res.status(400).json({ error: "At least one verification document asset URL is required." });
+    if (!documentUrl || typeof documentUrl !== 'string') {
+      return res.status(400).json({ error: "A single valid verification document file URL is required." });
     }
 
     await db.collection('users').doc(req.user.uid).set({
@@ -138,7 +137,7 @@ router.post('/submit-kyc', verifyUser, async (req, res) => {
       legalFullName: fullName,
       kycIdType: idType,
       kycIdNumber: idNumber,
-      kycDocumentUrls: documentUrls, // FIXED: Array written to database storage layer directly
+      kycDocumentUrl: documentUrl, // FIXED: Reverted back to storing a direct resource link string
       kycSubmittedAt: new Date().toISOString()
     }, { merge: true });
     
