@@ -2,8 +2,6 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
 
 import { db } from './config/firebase.js';
 import adminRoutes from './routes/adminRoutes.js';
@@ -17,14 +15,9 @@ dotenv.config();
 
 const app = express();
 
-// Set up ESM path equivalents
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 // Whitelist configuration
 const allowedOrigins = [
-  'https://kiwi-list-ifnr.onrender.com', // Frontend instance
-  'https://kiwi-list-api.onrender.com',  // Self/Backend instance if monolithic
+  'https://kiwi-list-ifnr.onrender.com', // Frontend instance URL
   'http://localhost:5173'                // Local Vite development environment
 ];
 
@@ -48,6 +41,16 @@ app.use(cors({
 // FIXED: Increased data thresholds to 50MB to handle large mobile image uploads and payloads
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// --- Core API Root Gateway ---
+// FIXED: Added root route handler to safely catch Render instance wake-up pings (GET/HEAD /)
+app.get('/', (req, res) => {
+  res.json({ 
+    status: "active", 
+    engine: "Kiwi-List Core API", 
+    documentation: "Append /api/health or target specific endpoints for operational queries." 
+  });
+});
 
 // --- API Routes ---
 app.use('/api/listings', listingRoutes);
@@ -73,28 +76,7 @@ app.get('/api/test-db', async (req, res) => {
   }
 });
 
-// --- SERVE FRONTEND STATIC ASSETS IN PRODUCTION ---
-// This mounts the compiled assets folder so the browser doesn't get a 404 text response for CSS/JS
-app.use(express.static(path.join(__dirname, '../dist')));
-
-// FIXED: Bypassed string routing matching entirely to circumvent modern path-to-regexp engine crashes.
-// This native middleware fallback intercepts web requests using pure JS criteria evaluation instead.
-app.use((req, res, next) => {
-  // Only route structural page refreshes or standard web navigations (GET) to the SPA Canvas
-  if (req.method !== 'GET') {
-    return next();
-  }
-
-  // Let explicit missing API endpoints bypass this block so they hit the JSON 404 block below
-  if (req.path.startsWith('/api/')) {
-    return next();
-  }
-
-  // Fallback to serving the single-page application entry point
-  res.sendFile(path.join(__dirname, '../dist/index.html'));
-});
-
-// 404 Route Not Found Handling (Strictly triggers for unmatched /api requests now)
+// 404 Route Not Found Handling
 app.use((req, res, next) => {
   console.log(`Incoming Unmatched Request: ${req.method} ${req.url}`);
   res.status(404).json({
