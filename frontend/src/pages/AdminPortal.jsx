@@ -1,6 +1,6 @@
 // src/pages/AdminPortal.jsx
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, CheckCircle, Trash2, ShieldX, UserCheck, MessageSquare, Newspaper, ExternalLink, Users, Ban, Landmark, ShieldCheck } from 'lucide-react';
+import { AlertCircle, CheckCircle, Trash2, ShieldX, UserCheck, MessageSquare, Newspaper, ExternalLink, Users, Ban, Landmark, ShieldCheck, Search, ShieldAlert } from 'lucide-react';
 
 // Hardcoded live target address pointing to your active Render Web Service
 const BACKEND_BASE_URL = 'https://kiwi-list-api.onrender.com';
@@ -9,6 +9,10 @@ const AdminPortal = ({ token }) => {
   const [queues, setQueues] = useState({ properties: [], kyc: [], reviews: [], users: [] });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  
+  // NEW STATE: Handles the live search input state and open state for the top-right governance menu drop-down
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showGlobalMenu, setShowGlobalMenu] = useState(false);
 
   const platformUpdates = [
     { date: "Jun 08, 2026", title: "Financial Governance Framework", body: "Admins can now revoke withdrawal permissions and disable compromised user/broker portfolios globally.", tag: "Wallets Guard" },
@@ -113,11 +117,114 @@ const AdminPortal = ({ token }) => {
 
   const totalInboundItems = queues.properties.length + queues.kyc.length + queues.reviews.length;
 
+  // Filters user nodes based on input queries in the top right menu block
+  const filteredUsers = queues.users.filter(user => {
+    const searchTarget = `${user.fullName || ''} ${user.email || ''} ${user.id || ''}`.toLowerCase();
+    return searchTarget.includes(searchQuery.toLowerCase());
+  });
+
   return (
     <div className="p-4 md:p-8 bg-slate-50 min-h-screen text-slate-800 transition-all duration-300">
-      <div className="mb-6">
-        <h1 className="text-2xl font-black tracking-tight text-slate-900">Admin Portal</h1>
-        <p className="text-xs text-slate-500 font-medium">Live System Status Metrics & Governance Review Queues</p>
+      
+      {/* Header Area with Top-Right Disabling & Withdrawal Blocking Toggle Menu */}
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative z-50">
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-slate-900">Admin Portal</h1>
+          <p className="text-xs text-slate-500 font-medium">Live System Status Metrics & Governance Review Queues</p>
+        </div>
+
+        {/* TOP RIGHT GOVERNANCE ACTIONS MENU CONTAINER */}
+        <div className="relative w-full sm:w-72">
+          <button 
+            onClick={() => setShowGlobalMenu(!showGlobalMenu)}
+            className="w-full flex items-center justify-between gap-2 py-2 px-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg text-xs tracking-wide shadow transition"
+          >
+            <div className="flex items-center gap-1.5">
+              <ShieldAlert size={14} className="text-amber-400 animate-pulse" />
+              <span>Quick Account Controls Menu</span>
+            </div>
+            <span className="bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-slate-400">
+              {queues.users.length} Nodes
+            </span>
+          </button>
+
+          {showGlobalMenu && (
+            <div className="absolute right-0 mt-2 w-full sm:w-80 bg-white border border-slate-200 rounded-xl shadow-xl p-3 flex flex-col space-y-3 animation-fade-in">
+              <div className="border-b border-slate-100 pb-2">
+                <span className="font-extrabold text-slate-900 block text-xs">Global Account Restrictions</span>
+                <span className="text-[10px] text-slate-400">Search users to block payouts or disable access instantly.</span>
+              </div>
+
+              {/* Interactive Search Bar inside the toggle dropdown container */}
+              <div className="relative">
+                <Search size={12} className="absolute left-2.5 top-2.5 text-slate-400" />
+                <input 
+                  type="text"
+                  placeholder="Filter account name, email or UID..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 bg-slate-100 border border-slate-200 rounded text-[11px] text-slate-800 focus:outline-none focus:border-blue-500 font-medium"
+                />
+              </div>
+
+              {/* Scrollable Mini-Queue for Fast Account Modification */}
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                {filteredUsers.slice(0, 15).map(user => (
+                  <div key={user.id} className="p-2 bg-slate-50 border border-slate-100 rounded-md text-[11px] space-y-1.5">
+                    <div className="flex justify-between items-start gap-1">
+                      <div className="truncate">
+                        <p className="font-bold text-slate-900 truncate">{user.fullName || user.email || "Anonymous User"}</p>
+                        <p className="text-[9px] text-slate-400 font-mono truncate">{user.id}</p>
+                      </div>
+                      <div className="flex flex-col gap-0.5 items-end shrink-0">
+                        {user.isDisabled && <span className="bg-red-50 text-red-600 px-1 rounded text-[8px] font-bold">Disabled</span>}
+                        {user.isPayoutBlocked && <span className="bg-amber-50 text-amber-700 px-1 rounded text-[8px] font-bold">Blocked Payout</span>}
+                      </div>
+                    </div>
+
+                    <div className="flex gap-1 pt-1 border-t border-slate-200/40">
+                      {user.isDisabled ? (
+                        <button 
+                          onClick={() => handleAction(user.id, 'users', 'enable')}
+                          className="flex-1 py-0.5 px-1 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded text-[9px] font-bold hover:bg-emerald-100 transition"
+                        >
+                          Enable
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => handleAction(user.id, 'users', 'disable')}
+                          className="flex-1 py-0.5 px-1 bg-white text-red-600 border border-red-100 rounded text-[9px] font-bold hover:bg-red-50 transition flex items-center justify-center gap-0.5"
+                        >
+                          <Ban size={8} /> Ban
+                        </button>
+                      )}
+
+                      {user.isPayoutBlocked ? (
+                        <button 
+                          onClick={() => handleAction(user.id, 'users', 'unblock_payout')}
+                          className="flex-1 py-0.5 px-1 bg-blue-50 text-blue-700 border border-blue-100 rounded text-[9px] font-bold hover:bg-blue-100 transition"
+                        >
+                          Lift Lock
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => handleAction(user.id, 'users', 'block_payout')}
+                          className="flex-1 py-0.5 px-1 bg-white text-amber-700 border border-amber-100 rounded text-[9px] font-bold hover:bg-amber-50 transition flex items-center justify-center gap-0.5"
+                        >
+                          <Landmark size={8} /> Lock Pay
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {filteredUsers.length === 0 && (
+                  <p className="text-center text-slate-400 italic text-[10px] py-2">No accounts match query criteria.</p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Metric Cards Ribbon */}
@@ -149,7 +256,6 @@ const AdminPortal = ({ token }) => {
           {/* Section A: Platform Updates */}
           <div className="bg-white rounded-xl border border-slate-200 p-4 md:p-5 shadow-sm space-y-4">
             <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-              {/* FIXED: Changed from NewPaper to Newspaper to match the lucide library naming spec */}
               <Newspaper size={18} className="text-blue-600" />
               <h3 className="font-extrabold text-slate-900">Platform Updates</h3>
             </div>
