@@ -73,12 +73,12 @@ app.get('/api/test-db', async (req, res) => {
   }
 });
 
-// --- NEW/ADDITION: SERVE FRONTEND STATIC ASSETS IN PRODUCTION ---
+// --- SERVE FRONTEND STATIC ASSETS IN PRODUCTION ---
 // This mounts the compiled assets folder so the browser doesn't get a 404 text response for CSS/JS
 app.use(express.static(path.join(__dirname, '../dist')));
 
-// Catch-all route for frontend single-page application routing handles layout reloads
-app.get('*', (req, res, next) => {
+// FIXED: Patched catch-all wildcard syntax to '(.*)' to prevent PathError crashes in modern routers
+app.get('(.*)', (req, res, next) => {
   // Let structural requests explicitly looking for missing API points slip safely to the 404 JSON block
   if (req.path.startsWith('/api/')) {
     return next();
