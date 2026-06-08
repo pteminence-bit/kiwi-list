@@ -16,14 +16,24 @@ const ListingCard = ({ listing, onUnlock, onReport }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
   const rawImages = listing.images || [];
-  
-  // FIXED: Normalize image references. If they are raw filenames, automatically prefix the R2 public path URL
+ // FIXED: Bulletproof image reference mapping to block any stringified "undefined" routes
   const images = rawImages.map(img => {
-    if (!img) return '/fallback-placeholder.png'; // Graceful missing asset fallback
-    return img.startsWith('http') ? img : `${R2_PUBLIC_BUCKET_URL}/${img}`;
-  });
+    if (!img) return '/fallback-placeholder.png';
+    
+    // If it's already an absolute cloud URL, bypass modifications
+    if (img.startsWith('http')) return img;
+    
+    // Explicit hard fallback boundary check for the R2 base domain
+    const fallbackBaseUrl = 'https://pub-580c3d172e3f4533b065d241e61ee132.r2.dev';
+    const baseUrl = (typeof R2_PUBLIC_BUCKET_URL !== 'undefined' && R2_PUBLIC_BUCKET_URL) 
+      ? R2_PUBLIC_BUCKET_URL 
+      : fallbackBaseUrl;
 
-  const scrollContainerRef = useRef(null);
+    // Clean up double-slashes if a filename incorrectly prefixes one
+    const sanitizedFileName = img.startsWith('/') ? img.slice(1) : img;
+    
+    return `${baseUrl}/${sanitizedFileName}`;
+  });  const scrollContainerRef = useRef(null);
 
   useEffect(() => {
     if (!listing.id) return;
