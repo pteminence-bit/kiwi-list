@@ -77,12 +77,20 @@ app.get('/api/test-db', async (req, res) => {
 // This mounts the compiled assets folder so the browser doesn't get a 404 text response for CSS/JS
 app.use(express.static(path.join(__dirname, '../dist')));
 
-// FIXED: Patched catch-all wildcard syntax to '(.*)' to prevent PathError crashes in modern routers
-app.get('(.*)', (req, res, next) => {
-  // Let structural requests explicitly looking for missing API points slip safely to the 404 JSON block
+// FIXED: Bypassed string routing matching entirely to circumvent modern path-to-regexp engine crashes.
+// This native middleware fallback intercepts web requests using pure JS criteria evaluation instead.
+app.use((req, res, next) => {
+  // Only route structural page refreshes or standard web navigations (GET) to the SPA Canvas
+  if (req.method !== 'GET') {
+    return next();
+  }
+
+  // Let explicit missing API endpoints bypass this block so they hit the JSON 404 block below
   if (req.path.startsWith('/api/')) {
     return next();
   }
+
+  // Fallback to serving the single-page application entry point
   res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
