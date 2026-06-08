@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, CheckCircle, Trash2, ShieldX, UserCheck, MessageSquare, Newspaper, ExternalLink } from 'lucide-react';
+import { AlertCircle, CheckCircle, Trash2, ShieldX, UserCheck, MessageSquare, Newspaper, ExternalLink, UserMinus } from 'lucide-react';
 
 // Hardcoded live target address pointing to your active Render Web Service
 const BACKEND_BASE_URL = 'https://kiwi-list-api.onrender.com';
 
 const AdminPortal = ({ token }) => {
-  const [queues, setQueues] = useState({ properties: [], kyc: [], reviews: [] });
+  const [queues, setQueues] = useState({ properties: [], kyc: [], reviews: [], accounts: [] });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -33,7 +33,8 @@ const AdminPortal = ({ token }) => {
       setQueues({
         properties: data.properties || [],
         kyc: data.kyc || [],
-        reviews: data.reviews || []
+        reviews: data.reviews || [],
+        accounts: data.accounts || []
       });
       setLoading(false);
     })
@@ -48,8 +49,11 @@ const AdminPortal = ({ token }) => {
   }, [token]);
 
   const handleAction = async (targetId, queueType, action) => {
-    // Normalizes singular variants ('property', 'review') expected by your Firestore logic rules
-    const normalizedQueueType = queueType === 'properties' ? 'property' : queueType === 'reviews' ? 'review' : 'kyc';
+    // Normalizes singular variants expected by your Firestore logic rules
+    let normalizedQueueType = 'kyc';
+    if (queueType === 'properties') normalizedQueueType = 'property';
+    if (queueType === 'reviews') normalizedQueueType = 'review';
+    if (queueType === 'accounts') normalizedQueueType = 'account';
 
     try {
       const res = await fetch(`${BACKEND_BASE_URL}/api/admin/moderate`, {
@@ -90,7 +94,7 @@ const AdminPortal = ({ token }) => {
     );
   }
 
-  const totalInboundItems = queues.properties.length + queues.kyc.length + queues.reviews.length;
+  const totalInboundItems = queues.properties.length + queues.kyc.length + queues.reviews.length + queues.accounts.length;
 
   return (
     <div className="p-4 md:p-8 bg-slate-50 min-h-screen text-slate-800 transition-all duration-300">
@@ -100,7 +104,7 @@ const AdminPortal = ({ token }) => {
       </div>
 
       {/* Metric Cards Ribbon */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
           <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block mb-1">Pending Assets</span>
           <span className="text-2xl font-black text-slate-900">{queues.properties.length}</span>
@@ -109,7 +113,11 @@ const AdminPortal = ({ token }) => {
           <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block mb-1">Agent KYC Requests</span>
           <span className="text-2xl font-black text-slate-900">{queues.kyc.length}</span>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm sm:col-span-2 md:col-span-1">
+        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block mb-1">Flagged Profiles</span>
+          <span className="text-2xl font-black text-red-600">{queues.accounts.length}</span>
+        </div>
+        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
           <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block mb-1">Total System Alerts</span>
           <span className="text-2xl font-black text-amber-600">{totalInboundItems}</span>
         </div>
@@ -119,7 +127,7 @@ const AdminPortal = ({ token }) => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
         {/* LEFT COLUMN: System Changelogs */}
-        <div className="lg:col-span-5 bg-white rounded-xl border border-slate-200 p-4 md:p-5 shadow-sm space-y-4 order-2 lg:order-1">
+        <div className="lg:col-span-4 bg-white rounded-xl border border-slate-200 p-4 md:p-5 shadow-sm space-y-4 order-2 lg:order-1">
           <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
             <Newspaper size={18} className="text-blue-600" />
             <h3 className="font-extrabold text-slate-900">Platform Updates</h3>
@@ -139,7 +147,7 @@ const AdminPortal = ({ token }) => {
         </div>
 
         {/* RIGHT COLUMN: Action Sub-Queues Loops */}
-        <div className="lg:col-span-7 bg-white rounded-xl border border-slate-200 p-4 md:p-5 shadow-sm space-y-6 order-1 lg:order-2">
+        <div className="lg:col-span-8 bg-white rounded-xl border border-slate-200 p-4 md:p-5 shadow-sm space-y-6 order-1 lg:order-2">
           <div className="flex items-center justify-between pb-2 border-b border-slate-100 gap-2">
             <div className="flex items-center gap-2">
               <AlertCircle size={18} className="text-amber-500" />
@@ -170,8 +178,8 @@ const AdminPortal = ({ token }) => {
                   <button onClick={() => handleAction(item.id, 'properties', 'approve')} className="flex-1 sm:flex-none px-4 py-2 sm:py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-md transition shadow-sm">
                     Approve
                   </button>
-                  <button onClick={() => handleAction(item.id, 'properties', 'decline')} className="flex-1 sm:flex-none px-4 py-2 sm:py-1.5 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-md transition">
-                    Decline
+                  <button onClick={() => handleAction(item.id, 'properties', 'delete')} className="flex-1 sm:flex-none px-4 py-2 sm:py-1.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-md transition shadow-sm flex items-center justify-center gap-1">
+                    <Trash2 size={12} /> Delete Post
                   </button>
                 </div>
               </div>
@@ -188,7 +196,7 @@ const AdminPortal = ({ token }) => {
                     <div className="font-black text-slate-900 mb-0.5 truncate">Agent KYC: {item.fullName || "Anonymous Broker"}</div>
                     <p className="text-slate-500 font-medium truncate">ID: {item.idType || "NIN"} • #{item.idNumber || "XXXX"}</p>
                     {item.documentUrl && (
-                      <a href={item.documentUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] text-blue-600 hover:underline mt-1.5 font-bold||">
+                      <a href={item.documentUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] text-blue-600 hover:underline mt-1.5 font-bold">
                         View KYC Document File <ExternalLink size={10} />
                       </a>
                     )}
@@ -228,9 +236,34 @@ const AdminPortal = ({ token }) => {
               </div>
             ))}
 
+            {/* FIXED: D. Flagged/Reported Accounts Loop for Disabling Access */}
+            {queues.accounts?.map(item => (
+              <div key={item.id} className="bg-slate-50 border border-slate-200 p-4 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
+                <div className="flex gap-3 items-start w-full">
+                  <div className="p-2 bg-red-100 text-red-700 rounded-lg shrink-0">
+                    <UserMinus size={16} />
+                  </div>
+                  <div className="w-full min-w-0">
+                    <div className="font-black text-slate-900 mb-0.5 truncate">Flagged Account Profile</div>
+                    <p className="text-slate-500 font-medium truncate">User: {item.fullName || item.email || "Anonymous User"}</p>
+                    <p className="text-slate-400 font-mono text-[10px] mt-0.5">UID: {item.id}</p>
+                    <p className="text-[11px] text-red-600 mt-1.5 font-medium bg-white px-2 py-1 border border-slate-100 rounded break-words">Reason: Flagged for high-frequency reports or bad conduct.</p>
+                  </div>
+                </div>
+                <div className="flex gap-2 w-full sm:w-auto shrink-0 justify-end">
+                  <button onClick={() => handleAction(item.id, 'accounts', 'approve')} className="flex-1 sm:flex-none px-4 py-2 sm:py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-md transition shadow-sm">
+                    Dismiss
+                  </button>
+                  <button onClick={() => handleAction(item.id, 'accounts', 'disable')} className="flex-1 sm:flex-none px-4 py-2 sm:py-1.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-md transition shadow-sm flex items-center justify-center gap-1">
+                    Disable Account
+                  </button>
+                </div>
+              </div>
+            ))}
+
             {totalInboundItems === 0 && (
               <div className="text-center py-8 text-slate-400 italic bg-slate-50 border border-dashed border-slate-200 rounded-lg">
-                No properties, KYC verifications, or profile reviews require attention.
+                No properties, KYC verifications, profile reviews, or user accounts require attention.
               </div>
             )}
           </div>
