@@ -419,7 +419,7 @@ const AdminPortal = ({ token }) => {
                   <h4 className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Broker Metadata Profile</h4>
                   <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-slate-700 pt-1">
                     <p className="font-medium">Full Legal Name:</p>
-                    <p className="font-black text-slate-900 text-right">{selectedKyc.fullName || "N/A"}</p>
+                    <p className="font-black text-slate-900 text-right">{selectedKyc.legalFullName || "N/A"}</p>
                     
                     <p className="font-medium">Account Email:</p>
                     <p className="font-mono text-slate-900 text-right truncate">{selectedKyc.email || "N/A"}</p>
@@ -428,7 +428,7 @@ const AdminPortal = ({ token }) => {
                     <p className="font-bold text-slate-900 text-right uppercase">{selectedKyc.idType || "NIN"}</p>
 
                     <p className="font-medium">Document Number:</p>
-                    <p className="font-mono text-slate-900 text-right font-bold">{selectedKyc.idNumber || "N/A"}</p>
+                    <p className="font-mono text-slate-900 text-right font-bold">{selectedKyc.kycIdNumber || "N/A"}</p>
                   </div>
                 </div>
 
