@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Phone, FileText, UserCheck, Upload, Loader2, CheckCircle, Save } from 'lucide-react';
 
-const BACKEND_BASE_URL = window.location.hostname === 'localhost' 
-  ? 'http://localhost:5000' // 👈 Change 5000 to whatever port your local Node backend runs on
-  : 'https://kiwi-list-api.onrender.com';
+const BACKEND_BASE_URL = 'https://kiwi-list-api.onrender.com';
 
 const Settings = ({ token, isVerified, onProfileUpdate }) => {
   const [profile, setProfile] = useState({

@@ -2,6 +2,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 import { db } from './config/firebase.js';
 import adminRoutes from './routes/adminRoutes.js';
@@ -15,10 +17,15 @@ dotenv.config();
 
 const app = express();
 
+// Set up ESM path equivalents
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 // Whitelist configuration
 const allowedOrigins = [
-  'https://kiwi-list-ifnr.onrender.com', // Your live frontend URL
-  'http://localhost:5173'                 // Keep local development working
+  'https://kiwi-list-ifnr.onrender.com', // Frontend instance
+  'https://kiwi-list-api.onrender.com',  // Self/Backend instance if monolithic
+  'http://localhost:5173'                // Local Vite development environment
 ];
 
 // FIXED: Added regex matching to automatically allow local network Wi-Fi IPs for mobile testing
@@ -42,7 +49,7 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Routes
+// --- API Routes ---
 app.use('/api/listings', listingRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/admin', adminRoutes);
@@ -66,7 +73,20 @@ app.get('/api/test-db', async (req, res) => {
   }
 });
 
-// 404 Route Not Found Handling
+// --- NEW/ADDITION: SERVE FRONTEND STATIC ASSETS IN PRODUCTION ---
+// This mounts the compiled assets folder so the browser doesn't get a 404 text response for CSS/JS
+app.use(express.static(path.join(__dirname, '../dist')));
+
+// Catch-all route for frontend single-page application routing handles layout reloads
+app.get('*', (req, res, next) => {
+  // Let structural requests explicitly looking for missing API points slip safely to the 404 JSON block
+  if (req.path.startsWith('/api/')) {
+    return next();
+  }
+  res.sendFile(path.join(__dirname, '../dist/index.html'));
+});
+
+// 404 Route Not Found Handling (Strictly triggers for unmatched /api requests now)
 app.use((req, res, next) => {
   console.log(`Incoming Unmatched Request: ${req.method} ${req.url}`);
   res.status(404).json({
@@ -78,11 +98,9 @@ app.use((req, res, next) => {
 });
 
 // FIXED: Catch-All Global Error Handler Middleware
-// Prevents Express from ever serving raw HTML crash pages to your frontend components
 app.use((err, req, res, next) => {
   console.error("❌ Engine Error Intercepted:", err.message);
   
-  // Gracefully normalize typical crash signatures to application/json
   const statusCode = err.status || (err.message.includes('CORS') ? 403 : 500);
   
   res.status(statusCode).json({
