@@ -6,25 +6,22 @@ import { uploadImagesToR2 } from '../controllers/uploadController.js';
 
 const router = express.Router();
 
-// Configure in-memory buffers safely
 const storage = multer.memoryStorage();
 const upload = multer({ 
   storage,
-  limits: { fileSize: 15 * 1024 * 1024 } // 15MB headroom for high-res mobile captures/PDFs
+  limits: { fileSize: 15 * 1024 * 1024 } 
 });
 
 // 1. Multiple images upload route for marketplace listings (expects 'images' array)
 router.post('/listings', verifyUser, upload.array('images', 4), uploadImagesToR2);
 
 // 2. Single file upload root route (expects 'file' key)
-// This catches POST requests to "/api/upload/"
 router.post('/', verifyUser, upload.single('file'), uploadImagesToR2);
 
-// 3. FIXED: Explicit named endpoint to safeguard direct frontend POST requests to "/api/upload"
-// This eliminates ambiguity when browsers strip trailing slashes or drop multi-part boundary parameters
+// 3. Explicit named endpoint to safeguard direct frontend POST requests to "/api/upload/file"
 router.post('/file', verifyUser, upload.single('file'), uploadImagesToR2);
 
-// Catch-all route inside the upload router to debug field mismatch errors immediately
+// FIXED: Comprehensive error interception layer to catch both Multer AND controller logic faults
 router.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     console.error(`❌ Multer Upload Engine Error: ${err.message} | Field received: ${err.field}`);
@@ -34,7 +31,13 @@ router.use((err, req, res, next) => {
       hint: `Ensure your frontend FormData key matches exactly. Expected 'file' or 'images'. Received: '${err.field}'`
     });
   }
-  next(err);
+  
+  // Catches runtime TypeErrors or properties breakdown from the uploadController logic
+  console.error("❌ Runtime Controller Upload Crash Log:", err);
+  res.status(err.status || 500).json({
+    success: false,
+    error: err.message || "Internal server processing error during R2 asset streaming."
+  });
 });
 
 export default router;

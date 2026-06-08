@@ -1,8 +1,9 @@
-// src/pages/Settings.jsx
 import React, { useState, useEffect } from 'react';
 import { User, Phone, FileText, UserCheck, Upload, Loader2, CheckCircle, Save } from 'lucide-react';
 
-const BACKEND_BASE_URL = 'https://kiwi-list-api.onrender.com';
+const BACKEND_BASE_URL = window.location.hostname === 'localhost' 
+  ? 'http://localhost:5000' // 👈 Change 5000 to whatever port your local Node backend runs on
+  : 'https://kiwi-list-api.onrender.com';
 
 const Settings = ({ token, isVerified, onProfileUpdate }) => {
   const [profile, setProfile] = useState({
@@ -112,7 +113,6 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
 
       const result = await res.json();
       if (res.ok) {
-        // FIXED: Updates state with single image URL string directly from upload middleware
         setKycData(prev => ({ ...prev, documentUrl: result.url || result.imageUrl }));
         setKycMsg({ type: 'success', text: 'ID Document uploaded successfully to R2 edges!' });
       } else {
@@ -135,7 +135,6 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
     setSubmitting(true);
     setKycMsg({ type: '', text: '' });
     try {
-      // FIXED: Delivers the payload directly containing documentUrl as a plain string string value
       const res = await fetch(`${BACKEND_BASE_URL}/api/users/submit-kyc`, {
         method: 'POST',
         headers: {
@@ -315,7 +314,8 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
                       <>
                         <Upload size={20} className="mb-1 text-slate-400" />
                         <span className="font-bold text-slate-700 text-center">Click to select document</span>
-                        <span className="text-[10px] text-slate-400 mt-0.5">Supports high-res Images or PDFs</span>
+                        {/* FIXED: Formatted text safely to remove minimum constraint confusion references */}
+                        <span className="text-[10px] text-slate-400 mt-0.5">Supports a single high-res Image or PDF</span>
                       </>
                     )}
                     <input type="file" accept="image/*,application/pdf" className="hidden" onChange={handleFileUpload} disabled={uploading} />

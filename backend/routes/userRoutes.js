@@ -67,41 +67,8 @@ router.get('/me', verifyUser, async (req, res) => {
 });
 
 // --- TARGET PROFILE SAVE PIPELINE ---
-router.put('/profile/update', verifyUser, async (req, res) => {
-  const { displayName, phoneNumber, bio } = req.body;
-  try {
-    const userRef = db.collection('users').doc(req.user.uid);
-    const updatedPayload = {
-      updatedAt: new Date().toISOString()
-    };
-
-    if (displayName !== undefined) updatedPayload.displayName = displayName;
-    if (phoneNumber !== undefined) updatedPayload.phoneNumber = phoneNumber;
-    if (bio !== undefined) updatedPayload.bio = bio;
-
-    await userRef.set(updatedPayload, { merge: true });
-    res.json({ message: "Profile settings updated successfully" });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// --- GET CURRENT USER SETTINGS ---
-router.get('/settings', verifyUser, async (req, res) => {
-  try {
-    const userDoc = await db.collection('users').doc(req.user.uid).get();
-    if (!userDoc.exists) {
-      return res.status(404).json({ error: "User profile not found" });
-    }
-    res.json(userDoc.data());
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// --- UPDATE SETTINGS & PAYOUT BANK ---
 router.put('/settings', verifyUser, async (req, res) => {
-  const { displayName, phoneNumber, bankName, accountNumber } = req.body;
+  const { displayName, phoneNumber, bio, bankName, accountNumber } = req.body;
 
   try {
     const userRef = db.collection('users').doc(req.user.uid);
@@ -110,13 +77,15 @@ router.put('/settings', verifyUser, async (req, res) => {
       updatedAt: new Date().toISOString()
     };
 
+    // Dynamically patch only parameters provided by the frontend
     if (displayName !== undefined) updateData.displayName = displayName;
     if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber;
+    if (bio !== undefined) updateData.bio = bio; // 👈 FIXED: Now handles user biography descriptions gracefully
     if (bankName !== undefined) updateData.bankName = bankName;
     if (accountNumber !== undefined) updateData.accountNumber = accountNumber;
 
     await userRef.set(updateData, { merge: true });
-    res.json({ message: "Settings saved successfully" });
+    res.json({ message: "Settings and profile metrics updated successfully" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -124,7 +93,6 @@ router.put('/settings', verifyUser, async (req, res) => {
 
 // --- SUBMIT KYC CREDENTIALS PIPELINE ---
 router.post('/submit-kyc', verifyUser, async (req, res) => {
-  // FIXED: Changed parameter parsing to require exactly one string URL parameter
   const { fullName, idType, idNumber, documentUrl } = req.body;
 
   try {
@@ -137,7 +105,7 @@ router.post('/submit-kyc', verifyUser, async (req, res) => {
       legalFullName: fullName,
       kycIdType: idType,
       kycIdNumber: idNumber,
-      kycDocumentUrl: documentUrl, // FIXED: Reverted back to storing a direct resource link string
+      kycDocumentUrl: documentUrl,
       kycSubmittedAt: new Date().toISOString()
     }, { merge: true });
     

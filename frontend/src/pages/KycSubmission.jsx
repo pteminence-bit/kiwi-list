@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { ShieldCheck, UploadCloud, AlertCircle, CheckCircle2, ArrowLeft, Trash2, FileText } from 'lucide-react';
 
-const BACKEND_BASE_URL = 'https://kiwi-list-api.onrender.com';
+const BACKEND_BASE_URL = window.location.hostname === 'localhost' 
+  ? 'http://localhost:5000' // 👈 Change 5000 to whatever port your local Node backend runs on
+  : 'https://kiwi-list-api.onrender.com';
 
 const KycSubmission = ({ token, onBack }) => {
   const [formData, setFormData] = useState({

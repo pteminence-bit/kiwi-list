@@ -1,40 +1,70 @@
+// backend/controllers/uploadController.js
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { s3Client } from "../config/r2.js";
 import crypto from 'crypto';
 
-export const uploadImagesToR2 = async (req, res) => {
-  // Catch missing configurations before running AWS logic
-  if (!process.env.R2_BUCKET_NAME || !process.env.R2_PUBLIC_URL) {
-    console.error("CRITICAL ERROR: Missing R2 environment configurations on host environment.");
-    return res.status(500).json({ error: "Storage driver misconfigured on server." });
-  }
-
-  if (!req.files || req.files.length < 2) {
-    return res.status(400).json({ error: "Minimum 2 images required." });
-  }
-
+export const uploadImagesToR2 = async (req, res, next) => {
   try {
-    const uploadPromises = req.files.map(async (file) => {
-      const fileKey = `${req.user.uid}/${crypto.randomBytes(8).toString('hex')}-${file.originalname}`;
+    let filesToProcess = [];
+    const isSingleUpload = !!req.file; 
+
+    if (req.file) {
+      filesToProcess = [req.file];
+    } else if (req.files) {
+      filesToProcess = Array.isArray(req.files) ? req.files : Object.values(req.files).flat();
+    }
+
+    if (filesToProcess.length === 0) {
+      return res.status(400).json({ 
+        error: "No image files detected in the incoming payload request metadata." 
+      });
+    }
+
+    // 👇 BULLETPROOF CHECK: Explicitly find out if this is a listing submission
+    // It is ONLY a listing route if the URL contains 'listings' OR if the frontend used the 'images' form key field
+    const isListingRoute = 
+      (req.originalUrl && req.originalUrl.includes('/listings')) || 
+      (req.files && Array.isArray(req.files) && req.files.length > 0 && req.files[0].fieldname === 'images');
+
+    // ONLY enforce the 2-image minimum for marketplace gallery listings
+    if (isListingRoute && filesToProcess.length < 2) {
+      return res.status(400).json({ 
+        error: "Marketplace gallery listings require a minimum of 2 images to display effectively." 
+      });
+    }
+
+    // Process filesToProcess up to R2
+    const uploadPromises = filesToProcess.map(async (file) => {
+      const fileExtension = file.originalname.split('.').pop();
+      const uniqueHash = crypto.randomBytes(4).toString('hex');
+      const fileName = `${Date.now()}-${uniqueHash}.${fileExtension}`;
       
       const command = new PutObjectCommand({
         Bucket: process.env.R2_BUCKET_NAME,
-        Key: fileKey,
+        Key: fileName,
         Body: file.buffer,
         ContentType: file.mimetype,
       });
 
       await s3Client.send(command);
-
-      // Clean trailing slashes out of the final URL mapping string
-      const baseUrl = process.env.R2_PUBLIC_URL.replace(/\/$/, "");
-      return `${baseUrl}/${fileKey}`;
+      return `${process.env.R2_PUBLIC_CUSTOM_DOMAIN}/${fileName}`;
     });
 
-    const imageUrls = await Promise.all(uploadPromises);
-    res.json({ urls: imageUrls });
+    const uploadedUrls = await Promise.all(uploadPromises);
+
+    // If it came from a single upload or upload payload is a flat element, return object wrapped URL
+    if (isSingleUpload || !isListingRoute) {
+      return res.json({ 
+        success: true, 
+        url: uploadedUrls[0],
+        imageUrl: uploadedUrls[0] 
+      });
+    }
+
+    return res.json({ success: true, urls: uploadedUrls });
+
   } catch (error) {
-    console.error("AWS R2 SDK Runtime Upload Crash Error:", error);
-    res.status(500).json({ error: "Upload execution failure: " + error.message });
+    console.error("R2 Engine Upload Pipeline Breakdown:", error);
+    next(error);
   }
 };

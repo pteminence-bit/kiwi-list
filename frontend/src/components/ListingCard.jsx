@@ -7,20 +7,17 @@ const ListingCard = ({ listing, onUnlock, onReport }) => {
   const isPremium = listing.tier === 'premium';
   const isUnlocked = listing.isUnlocked || !isPremium;
   
-  // Real-time synchronization state focused purely on views
   const [liveViews, setLiveViews] = useState(listing.views || 0);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
   const images = listing.images || [];
   const scrollContainerRef = useRef(null);
 
-  // 1. Establish Real-Time Listener connection to Firestore for views
   useEffect(() => {
     if (!listing.id) return;
 
     const docRef = doc(db, 'listings', listing.id);
     
-    // Listen for views updates instantly
     const unsubscribe = onSnapshot(docRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data();
@@ -28,16 +25,15 @@ const ListingCard = ({ listing, onUnlock, onReport }) => {
       }
     });
 
-    // Auto-increment public counter view tally via server-side updates on component init
     updateDoc(docRef, { views: increment(1) }).catch(err => console.error(err));
 
     return () => unsubscribe();
   }, [listing.id]);
 
-  // 2. Keep Desktop carousel sync dots updated during responsive swipe transitions
   const handleMobileScroll = () => {
     if (!scrollContainerRef.current) return;
     const { scrollLeft, clientWidth } = scrollContainerRef.current;
+    if (clientWidth === 0) return;
     const newIndex = Math.round(scrollLeft / clientWidth);
     setCurrentImageIndex(newIndex);
   };
@@ -72,16 +68,17 @@ const ListingCard = ({ listing, onUnlock, onReport }) => {
           </div>
         </div>
         
+        {/* FIXED: Destructured safe fallback execute method wrapper check */}
         <button 
-          onClick={() => onReport(listing.id)}
+          onClick={() => onReport && onReport(listing.id)}
           className="p-1.5 text-slate-400 hover:text-red-600 rounded-full transition"
         >
           <AlertTriangle size={18} />
         </button>
       </div>
 
-      {/* Media Canvas Area: Touch Swipe Carousel Engine */}
-      <div className="relative aspect-video w-full bg-slate-950 group shrink-0">
+      {/* Media Canvas Area */}
+      <div className="relative w-full aspect-[4/5] sm:aspect-square overflow-hidden bg-slate-100 shrink-0 group">
         <div 
           ref={scrollContainerRef}
           onScroll={handleMobileScroll}
@@ -89,17 +86,16 @@ const ListingCard = ({ listing, onUnlock, onReport }) => {
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {images.map((img, idx) => (
-            <div key={idx} className="w-full h-full flex-shrink-0 snap-start snap-always">
+            <div key={idx} className="w-full h-full flex-shrink-0 snap-start snap-always relative overflow-hidden">
               <img 
                 src={img} 
-                className="w-full h-full object-cover pointer-events-none select-none" 
+                className="w-full h-full object-cover select-none cursor-pointer transition-transform duration-500 hover:scale-102" 
                 alt="Property View Portfolio" 
               />
             </div>
           ))}
         </div>
 
-        {/* Desktop Explicit Navigation Chevrons */}
         {images.length > 1 && (
           <>
             <button 
@@ -123,20 +119,19 @@ const ListingCard = ({ listing, onUnlock, onReport }) => {
           </span>
         )}
 
-        {/* Carousel Position Tracking Indicator Dots */}
         {images.length > 1 && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
             {images.map((_, i) => (
               <span 
                 key={i} 
-                className={`w-2 h-2 rounded-full transition-all ${i === currentImageIndex ? 'bg-white scale-110' : 'bg-white/50'}`}
+                className={`w-1.5 h-1.5 rounded-full transition-all ${i === currentImageIndex ? 'bg-white scale-125' : 'bg-white/40'}`}
               />
             ))}
           </div>
         )}
       </div>
 
-      {/* Simplified Analytics Bar (Stripped Likes completely) */}
+      {/* Analytics Bar */}
       <div className="px-4 pt-4 pb-1 flex items-center justify-end shrink-0">
         <div className="flex items-center gap-1.5 text-slate-600 text-xs font-bold bg-slate-100 px-3 py-1.5 rounded-full">
           <Eye size={14} className="text-slate-700" /> {liveViews.toLocaleString()} real-time views
@@ -168,7 +163,6 @@ const ListingCard = ({ listing, onUnlock, onReport }) => {
           </div>
         </div>
 
-        {/* Contact Access Management Footer Panel */}
         <div className="pt-4">
           {isUnlocked ? (
             <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-center">
