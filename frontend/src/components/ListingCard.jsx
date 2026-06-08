@@ -3,6 +3,11 @@ import { doc, onSnapshot, updateDoc, increment } from 'firebase/firestore';
 import { MapPin, Bed, Bath, Lock, Eye, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { db } from '../firebase'; 
 
+// FIXED: Define your public Cloudflare R2 bucket endpoint base URL here
+const R2_PUBLIC_BUCKET_URL = 'https://pub-580c3d172e3f4533b065d241e61ee132.r2.dev'; 
+// Note: Replace this string with your custom R2 sub-domain if you are serving directly from R2,
+// e.g., 'https://pub-<unique-id>.r2.dev'
+
 const ListingCard = ({ listing, onUnlock, onReport }) => {
   const isPremium = listing.tier === 'premium';
   const isUnlocked = listing.isUnlocked || !isPremium;
@@ -10,7 +15,14 @@ const ListingCard = ({ listing, onUnlock, onReport }) => {
   const [liveViews, setLiveViews] = useState(listing.views || 0);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
-  const images = listing.images || [];
+  const rawImages = listing.images || [];
+  
+  // FIXED: Normalize image references. If they are raw filenames, automatically prefix the R2 public path URL
+  const images = rawImages.map(img => {
+    if (!img) return '/fallback-placeholder.png'; // Graceful missing asset fallback
+    return img.startsWith('http') ? img : `${R2_PUBLIC_BUCKET_URL}/${img}`;
+  });
+
   const scrollContainerRef = useRef(null);
 
   useEffect(() => {
@@ -30,7 +42,6 @@ const ListingCard = ({ listing, onUnlock, onReport }) => {
     return () => unsubscribe();
   }, [listing.id]);
 
-  // FIXED: Explicit container bounds calculation fallback to prevent tracking drops across mobile layers
   const handleMobileScroll = () => {
     if (!scrollContainerRef.current) return;
     const { scrollLeft } = scrollContainerRef.current;
@@ -43,7 +54,6 @@ const ListingCard = ({ listing, onUnlock, onReport }) => {
     }
   };
 
-  // FIXED: Smooth explicit coordinate animation execution structure
   const executeScrollTo = (index) => {
     if (!scrollContainerRef.current) return;
     const clientWidth = scrollContainerRef.current.getBoundingClientRect().width || scrollContainerRef.current.clientWidth;
@@ -84,7 +94,6 @@ const ListingCard = ({ listing, onUnlock, onReport }) => {
       </div>
 
       {/* Media Canvas Area */}
-      {/* FIXED: Added 'isolate pointer-events-auto' parameters to cleanly handle cross-device canvas layers */}
       <div className="relative w-full aspect-[4/5] sm:aspect-square overflow-hidden bg-slate-100 shrink-0 group isolate pointer-events-auto">
         <div 
           ref={scrollContainerRef}
