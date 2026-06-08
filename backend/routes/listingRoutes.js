@@ -10,6 +10,13 @@ router.post('/create', verifyUser, async (req, res) => {
   const { title, price, tier, images, contactDetails, address, beds, baths } = req.body;
 
   try {
+    // FIXED: Sanitize incoming image array keys to permanently block "undefined/" from polluting Firestore docs
+    const sanitizedImages = (images || []).map(img => {
+      if (!img || typeof img !== 'string') return img;
+      // Strip out 'undefined/' or '/undefined/' text variations cleanly
+      return img.replace(/^(\/?undefined\/)/, '');
+    });
+
     const listingData = {
       ownerId: req.user.uid,
       title,
@@ -18,7 +25,7 @@ router.post('/create', verifyUser, async (req, res) => {
       beds,
       baths,
       tier, // 'free' or 'premium'
-      images, // Array of R2 URLs
+      images: sanitizedImages, // Array of sanitized R2 reference filenames
       contactDetails,
       status: tier === 'premium' ? 'pending_payment' : 'active',
       isFlagged: false,

@@ -1,12 +1,11 @@
+// components/ListingCard.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { doc, onSnapshot, updateDoc, increment } from 'firebase/firestore';
 import { MapPin, Bed, Bath, Lock, Eye, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { db } from '../firebase'; 
 
 // FIXED: Define your public Cloudflare R2 bucket endpoint base URL here
-const R2_PUBLIC_BUCKET_URL = 'https://pub-580c3d172e3f4533b065d241e61ee132.r2.dev'; 
-// Note: Replace this string with your custom R2 sub-domain if you are serving directly from R2,
-// e.g., 'https://pub-<unique-id>.r2.dev'
+const R2_PUBLIC_BUCKET_URL = 'https://pub-580c3d172e3f4533b065d241e61ee132.r2.dev';
 
 const ListingCard = ({ listing, onUnlock, onReport }) => {
   const isPremium = listing.tier === 'premium';
@@ -16,7 +15,9 @@ const ListingCard = ({ listing, onUnlock, onReport }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
   const rawImages = listing.images || [];
- // FIXED: Bulletproof image reference mapping to block any stringified "undefined" routes
+  const scrollContainerRef = useRef(null);
+
+  // FIXED: Bulletproof image reference mapping to intercept and strip out legacy stringified "undefined" path variables
   const images = rawImages.map(img => {
     if (!img) return '/fallback-placeholder.png';
     
@@ -29,11 +30,14 @@ const ListingCard = ({ listing, onUnlock, onReport }) => {
       ? R2_PUBLIC_BUCKET_URL 
       : fallbackBaseUrl;
 
-    // Clean up double-slashes if a filename incorrectly prefixes one
-    const sanitizedFileName = img.startsWith('/') ? img.slice(1) : img;
+    // EMERGENCY SANITIZER: Automatically strips out "undefined/" or "/undefined/" if parsed from legacy documents
+    let sanitizedFileName = img.replace(/^(\/?undefined\/)/, '');
+
+    // Clean up double-slashes or structural leading characters if a filename incorrectly prefixes one
+    sanitizedFileName = sanitizedFileName.startsWith('/') ? sanitizedFileName.slice(1) : sanitizedFileName;
     
     return `${baseUrl}/${sanitizedFileName}`;
-  });  const scrollContainerRef = useRef(null);
+  });
 
   useEffect(() => {
     if (!listing.id) return;
