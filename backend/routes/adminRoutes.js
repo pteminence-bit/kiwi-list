@@ -50,7 +50,7 @@ router.get('/debug-my-status', verifyUser, async (req, res) => {
   }
 });
 
-// --- GET ALL ADMINISTRATIVE REVIEW QUEUES (PROPERTIES, KYC, USER REVIEWS, & ACCOUNTS) ---
+// --- GET ALL ADMINISTRATIVE REVIEW QUEUES (PROPERTIES, KYC, REVIEWS, & ALL USERS) ---
 router.get('/review-queue', verifyUser, verifyAdmin, async (req, res) => {
   try {
     const flaggedListings = await db.collection('listings').where('isFlagged', '==', true).get();
@@ -60,8 +60,8 @@ router.get('/review-queue', verifyUser, verifyAdmin, async (req, res) => {
     const kycRequests = await db.collection('users').where('verificationStatus', '==', 'pending').get();
     const flaggedReviews = await db.collection('user_reviews').where('status', '==', 'pending_moderation').get();
     
-    // FETCH: Get user accounts that have been reported or flagged for potential ban review structures
-    const flaggedUsers = await db.collection('users').where('isFlagged', '==', true).get();
+    // Fetch user directories to enable account disabling and withdrawal blocking features
+    const allUsersSnapshot = await db.collection('users').get();
 
     const propertiesQueue = [...flaggedListings.docs, ...pendingListings.docs].map(doc => ({
       id: doc.id,
@@ -82,9 +82,9 @@ router.get('/review-queue', verifyUser, verifyAdmin, async (req, res) => {
       ...doc.data()
     }));
 
-    const accountsQueue = flaggedUsers.docs.map(doc => ({
+    const usersDirectory = allUsersSnapshot.docs.map(doc => ({
       id: doc.id,
-      queueType: 'account',
+      queueType: 'user',
       ...doc.data()
     }));
 
@@ -92,7 +92,7 @@ router.get('/review-queue', verifyUser, verifyAdmin, async (req, res) => {
       properties: propertiesQueue,
       kyc: kycQueue,
       reviews: reviewsQueue,
-      accounts: accountsQueue
+      users: usersDirectory
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -111,7 +111,6 @@ router.post('/moderate', verifyUser, verifyAdmin, async (req, res) => {
       if (action === 'approve') {
         batch.update(docRef, { isFlagged: false, status: 'active' });
       } else if (action === 'delete') {
-        // FIXED: Hard purge deleted paths for flagged asset documents from the Firestore registry
         batch.delete(docRef);
       } else {
         batch.delete(docRef);
@@ -143,21 +142,16 @@ router.post('/moderate', verifyUser, verifyAdmin, async (req, res) => {
         batch.delete(reviewRef);
       }
     }
-    else if (queueType === 'account') {
-      // FIXED: Support administrative suspension protocols on specified accounts
+    else if (queueType === 'user') {
       const userRef = db.collection('users').doc(targetId);
       if (action === 'disable') {
-        batch.update(userRef, { 
-          status: 'disabled', 
-          isDisabled: true, 
-          isFlagged: false,
-          accountSuspendedAt: new Date().toISOString() 
-        });
-      } else if (action === 'approve') {
-        batch.update(userRef, { 
-          isFlagged: false, 
-          status: 'active' 
-        });
+        batch.update(userRef, { disabled: true });
+      } else if (action === 'enable') {
+        batch.update(userRef, { disabled: false });
+      } else if (action === 'block_withdrawal') {
+        batch.update(userRef, { withdrawalBlocked: true });
+      } else if (action === 'unblock_withdrawal') {
+        batch.update(userRef, { withdrawalBlocked: false });
       }
     }
 
