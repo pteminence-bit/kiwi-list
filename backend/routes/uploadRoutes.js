@@ -12,14 +12,23 @@ const upload = multer({
   limits: { fileSize: 15 * 1024 * 1024 } 
 });
 
+// FIXED: Context normalization middleware to bridge Firebase's req.user.uid with the upload controller's expected req.user.id format
+const ensureUserContext = (req, res, next) => {
+  if (req.user) {
+    if (req.user.uid && !req.user.id) req.user.id = req.user.uid;
+    if (req.user.id && !req.user.uid) req.user.uid = req.user.id;
+  }
+  next();
+};
+
 // 1. Multiple images upload route for marketplace listings (expects 'images' array)
-router.post('/listings', verifyUser, upload.array('images', 4), uploadImagesToR2);
+router.post('/listings', verifyUser, ensureUserContext, upload.array('images', 4), uploadImagesToR2);
 
 // 2. Single file upload root route (expects 'file' key)
-router.post('/', verifyUser, upload.single('file'), uploadImagesToR2);
+router.post('/', verifyUser, ensureUserContext, upload.single('file'), uploadImagesToR2);
 
 // 3. Explicit named endpoint to safeguard direct frontend POST requests to "/api/upload/file"
-router.post('/file', verifyUser, upload.single('file'), uploadImagesToR2);
+router.post('/file', verifyUser, ensureUserContext, upload.single('file'), uploadImagesToR2);
 
 // FIXED: Comprehensive error interception layer to catch both Multer AND controller logic faults
 router.use((err, req, res, next) => {

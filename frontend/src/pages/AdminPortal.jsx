@@ -437,7 +437,8 @@ const AdminPortal = ({ token }) => {
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Uploaded Proof Attachment</span>
                   {selectedKyc.documentUrl ? (
                     <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-100 relative aspect-[4/3] flex flex-col items-center justify-center">
-                      {selectedKyc.documentUrl.match(/\.(jpeg|jpg|gif|png)$/i) ? (
+                      {/* FIXED: Splits away query param parameters/signatures to successfully read storage image extensions */}
+                      {selectedKyc.documentUrl.split('?')[0].match(/\.(jpeg|jpg|gif|png|webp)$/i) ? (
                         <img 
                           src={selectedKyc.documentUrl} 
                           alt="KYC Identification Proof" 
