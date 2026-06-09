@@ -80,35 +80,35 @@ const ListingCard = ({ listing, onUnlock, onReport }) => {
   };
 
   return (
-    <div className="bg-white rounded-none md:rounded-xl border border-slate-200 overflow-hidden w-full md:max-w-xl lg:max-w-4xl mx-auto shadow-sm flex flex-col h-full">
+    <div className="bg-white w-full mx-auto flex flex-col h-full text-slate-950">
       
-      {/* Card Header */}
-      <div className="flex items-center justify-between p-4 border-b border-slate-100 shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-amber-500 p-[2px]">
-            <div className="w-full h-full bg-white rounded-full flex items-center justify-center font-black text-xs text-slate-800">
+      {/* Card Header: Instagram Style Profile Row */}
+      <div className="flex items-center justify-between px-3 py-3 border-b border-slate-100 shrink-0">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 via-pink-500 to-purple-600 p-[2px] shadow-sm">
+            <div className="w-full h-full bg-white rounded-full flex items-center justify-center font-black text-[10px] text-slate-800 tracking-tight">
               KW
             </div>
           </div>
           <div>
-            <div className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+            <div className="text-xs font-bold text-slate-900 flex items-center gap-1">
               Verified Agent
-              {isPremium && <span className="w-2 h-2 rounded-full bg-amber-500" />}
+              {isPremium && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />}
             </div>
-            <p className="text-[11px] text-slate-500 font-medium">{listing.address?.split(',').pop() || 'Nigeria'}</p>
+            <p className="text-[10px] text-slate-500 font-medium">{listing.address?.split(',').pop()?.trim() || 'Nigeria'}</p>
           </div>
         </div>
         
         <button 
           onClick={() => onReport && onReport(listing.id)}
-          className="p-1.5 text-slate-400 hover:text-red-600 rounded-full transition"
+          className="p-1.5 text-slate-400 hover:text-red-600 rounded-full transition active:scale-95"
         >
-          <AlertTriangle size={18} />
+          <AlertTriangle size={16} />
         </button>
       </div>
 
-      {/* Media Canvas Area */}
-      <div className="relative w-full aspect-[4/5] sm:aspect-square overflow-hidden bg-slate-100 shrink-0 group isolate pointer-events-auto">
+      {/* Media Canvas Area: Instagram Strict Square / 4:5 Bleed Dimensions */}
+      <div className="relative w-full aspect-square sm:aspect-[4/5] overflow-hidden bg-slate-50 shrink-0 group isolate pointer-events-auto">
         <div 
           ref={scrollContainerRef}
           onScroll={handleMobileScroll}
@@ -119,94 +119,102 @@ const ListingCard = ({ listing, onUnlock, onReport }) => {
             <div key={idx} className="w-full h-full flex-shrink-0 snap-start snap-always relative overflow-hidden">
               <img 
                 src={img} 
-                className="w-full h-full object-cover select-none cursor-pointer transition-transform duration-500 hover:scale-102" 
+                className="w-full h-full object-cover select-none cursor-pointer" 
                 alt="Property View Portfolio" 
               />
             </div>
           ))}
         </div>
 
+        {/* Carousel Navigation Arrow Controls */}
         {images.length > 1 && (
           <>
             <button 
               onClick={(e) => { e.stopPropagation(); executeScrollTo(currentImageIndex === 0 ? images.length - 1 : currentImageIndex - 1); }}
-              className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/90 text-slate-800 hover:bg-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 hidden md:flex z-10"
+              className="absolute left-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-white/80 backdrop-blur-xs text-slate-800 hover:bg-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 hidden md:flex z-10"
             >
-              <ChevronLeft size={18} />
+              <ChevronLeft size={16} />
             </button>
             <button 
               onClick={(e) => { e.stopPropagation(); executeScrollTo(currentImageIndex === images.length - 1 ? 0 : currentImageIndex + 1); }}
-              className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/90 text-slate-800 hover:bg-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 hidden md:flex z-10"
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-white/80 backdrop-blur-xs text-slate-800 hover:bg-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 hidden md:flex z-10"
             >
-              <ChevronRight size={18} />
+              <ChevronRight size={16} />
             </button>
           </>
         )}
 
+        {/* Premium Badge Tag Overlay */}
         {isPremium && (
-          <span className="absolute top-4 right-4 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-amber-950 bg-amber-400 rounded-full shadow-md z-10">
+          <span className="absolute top-3 right-3 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-950 bg-amber-400 rounded-md shadow-sm z-10">
             Premium
           </span>
         )}
 
+        {/* Floating Pagination Slider Dots Indicator */}
         {images.length > 1 && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-10 bg-black/20 px-2 py-1 rounded-full backdrop-blur-xs">
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1 z-10 bg-black/30 px-2 py-1 rounded-full backdrop-blur-xs">
             {images.map((_, i) => (
               <span 
                 key={i} 
-                className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${i === currentImageIndex ? 'bg-white scale-125' : 'bg-white/40'}`}
+                className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${i === currentImageIndex ? 'bg-white scale-110' : 'bg-white/50'}`}
               />
             ))}
           </div>
         )}
       </div>
 
-      {/* Analytics Bar */}
-      <div className="px-4 pt-4 pb-1 flex items-center justify-end shrink-0">
-        <div className="flex items-center gap-1.5 text-slate-600 text-xs font-bold bg-slate-100 px-3 py-1.5 rounded-full">
-          <Eye size={14} className="text-slate-700" /> {liveViews.toLocaleString()} real-time views
+      {/* Analytics Engagement Metric Bar directly under media node */}
+      <div className="px-3 pt-2.5 pb-1 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-1 text-slate-900 text-xs font-bold tracking-tight">
+          <Eye size={15} className="text-slate-900 stroke-[2.5]" /> 
+          <span>{liveViews.toLocaleString()} views</span>
         </div>
       </div>
 
-      {/* Detail Overlays */}
-      <div className="px-4 pb-4 space-y-3 flex-grow flex flex-col justify-between">
+      {/* Detail Content Layout Section */}
+      <div className="px-3 pb-4 space-y-3 flex-grow flex flex-col justify-between">
         <div className="space-y-2">
-          <div className="font-black text-slate-900 text-xl pt-1">
+          {/* Main Price Header Tag Block */}
+          <div className="font-black text-slate-900 text-lg tracking-tight">
             ₦{listing.price?.toLocaleString()}
           </div>
 
-          <p className="text-sm text-slate-800 leading-snug">
-            <span className="font-extrabold mr-2">{listing.title || 'Spacious Unit'}</span>
-            Marketed by authenticated broker networks.
-          </p>
+          {/* Inline Caption / Description Block */}
+          <div className="text-xs text-slate-800 leading-relaxed">
+            <span className="font-bold text-slate-950 mr-1.5">{listing.title || 'Spacious Unit'}</span>
+            Marketed via authenticated broker networks. Secure property documentation parameters verified.
+          </div>
 
-          <div className="flex flex-wrap gap-2 text-slate-600 text-xs pt-1">
-            <span className="flex items-center gap-1 bg-slate-100 px-3 py-1.5 rounded-md font-semibold">
-              <Bed size={13} className="text-slate-800" /> {listing.beds || 0} Beds
+          {/* Horizontal Metric Utility Tags */}
+          <div className="flex flex-wrap gap-1.5 text-slate-700 text-[11px] pt-1">
+            <span className="flex items-center gap-1 bg-slate-100 px-2.5 py-1 rounded-md font-semibold">
+              <Bed size={12} className="text-slate-900" /> {listing.beds || 0} Beds
             </span>
-            <span className="flex items-center gap-1 bg-slate-100 px-3 py-1.5 rounded-md font-semibold">
-              <Bath size={13} className="text-slate-800" /> {listing.baths || 0} Baths
+            <span className="flex items-center gap-1 bg-slate-100 px-2.5 py-1 rounded-md font-semibold">
+              <Bath size={12} className="text-slate-900" /> {listing.baths || 0} Baths
             </span>
-            <span className="flex items-center gap-1 bg-slate-100 px-3 py-1.5 rounded-md font-semibold truncate max-w-[240px]">
-              <MapPin size={13} className="text-slate-800 shrink-0" /> {listing.address || 'Lagos'}
+            <span className="flex items-center gap-1 bg-slate-100 px-2.5 py-1 rounded-md font-semibold truncate max-w-[200px]">
+              <MapPin size={12} className="text-slate-900 shrink-0" /> {listing.address || 'Lagos'}
             </span>
           </div>
         </div>
 
-        <div className="pt-4">
+        {/* Action Button Segment */}
+        <div className="pt-2">
           {isUnlocked ? (
-            <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-center">
-              <p className="text-[10px] text-blue-600 font-extrabold tracking-wider uppercase mb-0.5">Contact Line</p>
-              <a href={`tel:${listing.contactDetails?.phone}`} className="text-sm font-black text-blue-800 hover:underline">
+            <div className="bg-blue-50/70 border border-blue-100 rounded-lg p-2.5 text-center">
+              <p className="text-[9px] text-blue-600 font-extrabold tracking-wider uppercase mb-0.5">Contact Line Active</p>
+              <a href={`tel:${listing.contactDetails?.phone}`} className="text-xs font-black text-blue-800 hover:underline tracking-wide">
                 {listing.contactDetails?.phone || '0803 123 4567'}
               </a>
             </div>
           ) : (
             <button 
               onClick={() => onUnlock(listing.id)}
-              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black rounded-lg flex items-center justify-center gap-2 tracking-wide uppercase transition"
+              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold rounded-md flex items-center justify-center gap-1.5 tracking-wide transition active:scale-[0.99]"
             >
-              <Lock size={14} /> Unlock Contact (₦500)
+              <Lock size={13} /> Unlock Broker Details (₦500)
             </button>
           )}
         </div>

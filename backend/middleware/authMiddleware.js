@@ -20,6 +20,12 @@ export const verifyUser = async (req, res, next) => {
         role: 'user',
         createdAt: new Date().toISOString()
       });
+    } else {
+      // NEW PROTECTION CHECK: If the user document exists and has been disabled by admin, drop request
+      const userData = doc.data();
+      if (userData.isDisabled === true) {
+        return res.status(403).json({ error: "Your account has been suspended by an administrator." });
+      }
     }
 
     next();

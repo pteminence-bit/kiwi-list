@@ -1,3 +1,4 @@
+// components/MarketplaceFeed.jsx
 import React, { useState, useEffect } from 'react';
 import { Search, SlidersHorizontal, X, Maximize2 } from 'lucide-react';
 import ListingCard from '../components/ListingCard';
@@ -99,7 +100,7 @@ const MarketplaceFeed = ({ token }) => {
 
   return (
     <div className="p-0 sm:p-4 md:p-6 bg-white sm:bg-slate-50 min-h-screen w-full flex flex-col items-center">
-      <div className="w-full max-w-md space-y-4 sm:space-y-6 pt-2 sm:pt-0">
+      <div className="w-full max-w-md space-y-4 sm:space-y-5 pt-2 sm:pt-0">
         
         {/* Top Search & Filter Bar */}
         <div className="px-4 sm:px-0">
@@ -118,17 +119,18 @@ const MarketplaceFeed = ({ token }) => {
           </div>
         </div>
 
-        {/* Vertical Feed Track */}
+        {/* Vertical Feed Track: Sleek unified bounds avoiding structural layout container double-borders */}
         <div 
           onClick={handleImageLightboxCapture} 
-          className="flex flex-col gap-1 sm:gap-6 w-full pb-24 border-t border-slate-100 sm:border-none"
+          className="flex flex-col gap-2 sm:gap-6 w-full pb-24 border-t border-slate-100 sm:border-none"
         >
           {listings.map(listing => (
             <div 
               key={listing.id} 
-              className="w-full relative group bg-white sm:border sm:border-slate-200 sm:rounded-xl overflow-hidden sm:shadow-xs transition"
+              className="w-full relative group bg-white border-b border-slate-100 sm:border sm:border-slate-200 sm:rounded-xl overflow-hidden sm:shadow-xs transition"
             >
-              <div className="absolute top-3 right-3 z-10 bg-black/40 backdrop-blur-md text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none duration-200 hidden sm:block">
+              {/* Expand Icon View Trigger Overlay */}
+              <div className="absolute top-14 right-3 z-10 bg-black/40 backdrop-blur-md text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none duration-200 hidden sm:block">
                 <Maximize2 size={12} />
               </div>
               
