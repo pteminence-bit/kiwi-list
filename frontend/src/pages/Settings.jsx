@@ -92,8 +92,15 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
     setUploading(true);
     setKycMsg({ type: '', text: '' });
     
+    // 💡 MOBILE COMPATIBILITY LAYER: Standardize the filename metadata container if the device strips or modifies it
+    let sanitizedFile = file;
+    if (!file.name || file.name === 'image' || !file.name.includes('.')) {
+      const extension = file.type === 'application/pdf' ? 'pdf' : 'jpg';
+      sanitizedFile = new File([file], `mobile-upload-${Date.now()}.${extension}`, { type: file.type });
+    }
+    
     const data = new FormData();
-    data.append('file', file);
+    data.append('file', sanitizedFile);
 
     try {
       const res = await fetch(`${BACKEND_BASE_URL}/api/upload/file`, {
@@ -121,13 +128,15 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
       setKycMsg({ type: 'error', text: err.message });
     } finally {
       setUploading(false);
+      // Clear file inputs choice so users can re-trigger native camera capture frames if needed
+      e.target.value = '';
     }
   };
 
   const handleKycSubmit = async (e) => {
     e.preventDefault();
     if (!kycData.kycDocumentUrl) { // 💡 FIXED: Reference variable update validation
-      setKycMsg({ type: '', text: 'Please upload a clear copy of your identity document first.' });
+      setKycMsg({ type: 'error', text: 'Please upload a clear copy of your identity document first.' });
       return;
     }
 
@@ -294,6 +303,7 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
                   <div>
                     <label className="block text-slate-500 font-bold mb-1 uppercase tracking-wider">ID Number</label>
                     <input 
+                    // Changed to text pattern mapping to account for symbols, digits, and spaces on mobile input forms cleanly
                       type="text" 
                       required
                       className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-blue-500 font-medium text-slate-800"
