@@ -17,7 +17,7 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
     fullName: '',
     idType: 'NIN',
     idNumber: '',
-    documentUrl: ''
+    kycDocumentUrl: '' // 💡 FIXED: Unites field name signature with admin viewer keys
   });
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -111,7 +111,8 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
 
       const result = await res.json();
       if (res.ok) {
-        setKycData(prev => ({ ...prev, documentUrl: result.url || result.imageUrl }));
+        // 💡 FIXED: Assigns the absolute R2 url direct to your unified kycDocumentUrl key string
+        setKycData(prev => ({ ...prev, kycDocumentUrl: result.url || result.imageUrl }));
         setKycMsg({ type: 'success', text: 'ID Document uploaded successfully to R2 edges!' });
       } else {
         throw new Error(result.error || 'Upload failed');
@@ -125,8 +126,8 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
 
   const handleKycSubmit = async (e) => {
     e.preventDefault();
-    if (!kycData.documentUrl) {
-      setKycMsg({ type: 'error', text: 'Please upload a clear copy of your identity document first.' });
+    if (!kycData.kycDocumentUrl) { // 💡 FIXED: Reference variable update validation
+      setKycMsg({ type: '', text: 'Please upload a clear copy of your identity document first.' });
       return;
     }
 
@@ -312,13 +313,12 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
                       <>
                         <Upload size={20} className="mb-1 text-slate-400" />
                         <span className="font-bold text-slate-700 text-center">Click to select document</span>
-                        {/* FIXED: Formatted text safely to remove minimum constraint confusion references */}
                         <span className="text-[10px] text-slate-400 mt-0.5">Supports a single high-res Image or PDF</span>
                       </>
                     )}
                     <input type="file" accept="image/*,application/pdf" className="hidden" onChange={handleFileUpload} disabled={uploading} />
                   </label>
-                  {kycData.documentUrl && (
+                  {kycData.kycDocumentUrl && ( // 💡 FIXED: Reference variable label update
                     <p className="text-[10px] text-emerald-600 font-bold mt-1 text-right truncate">✓ Path Loaded: Cloudflare Storage Active</p>
                   )}
                 </div>

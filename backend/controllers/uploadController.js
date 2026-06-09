@@ -47,7 +47,10 @@ export const uploadImagesToR2 = async (req, res, next) => {
       });
 
       await s3Client.send(command);
-      return `${process.env.R2_PUBLIC_CUSTOM_DOMAIN}/${fileName}`;
+      
+      // PERMANENT FIX: Enforce your exact public Cloudflare R2 base URL explicitly
+      const baseUrl = process.env.R2_PUBLIC_URL || 'https://pub-580c3d172e3f4533b065d241e61ee132.r2.dev';
+      return `${baseUrl}/${fileName}`;
     });
 
     const uploadedUrls = await Promise.all(uploadPromises);
