@@ -149,7 +149,14 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(kycData)
+        // 💡 BULLETPROOF FIX: We forward both names to satisfy the backend validator while keeping your structure intact
+        body: JSON.stringify({
+          fullName: kycData.fullName,
+          idType: kycData.idType,
+          idNumber: kycData.idNumber,
+          kycDocumentUrl: kycData.kycDocumentUrl,
+          documentUrl: kycData.kycDocumentUrl 
+        })
       });
 
       const contentType = res.headers.get('content-type');
@@ -303,7 +310,6 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
                   <div>
                     <label className="block text-slate-500 font-bold mb-1 uppercase tracking-wider">ID Number</label>
                     <input 
-                    // Changed to text pattern mapping to account for symbols, digits, and spaces on mobile input forms cleanly
                       type="text" 
                       required
                       className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-blue-500 font-medium text-slate-800"
@@ -328,7 +334,7 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
                     )}
                     <input type="file" accept="image/*,application/pdf" className="hidden" onChange={handleFileUpload} disabled={uploading} />
                   </label>
-                  {kycData.kycDocumentUrl && ( // 💡 FIXED: Reference variable label update
+                  {kycData.kycDocumentUrl && (
                     <p className="text-[10px] text-emerald-600 font-bold mt-1 text-right truncate">✓ Path Loaded: Cloudflare Storage Active</p>
                   )}
                 </div>
