@@ -419,7 +419,7 @@ const AdminPortal = ({ token }) => {
                   <h4 className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Broker Metadata Profile</h4>
                   <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-slate-700 pt-1">
                     <p className="font-medium">Full Legal Name:</p>
-                    <p className="font-black text-slate-900 text-right">{selectedKyc.legalFullName || "N/A"}</p>
+                    <p className="font-black text-slate-900 text-right">{selectedKyc.legalFullName || selectedKyc.fullName || "N/A"}</p>
                     
                     <p className="font-medium">Account Email:</p>
                     <p className="font-mono text-slate-900 text-right truncate">{selectedKyc.email || "N/A"}</p>
@@ -428,7 +428,7 @@ const AdminPortal = ({ token }) => {
                     <p className="font-bold text-slate-900 text-right uppercase">{selectedKyc.idType || "NIN"}</p>
 
                     <p className="font-medium">Document Number:</p>
-                    <p className="font-mono text-slate-900 text-right font-bold">{selectedKyc.kycIdNumber || "N/A"}</p>
+                    <p className="font-mono text-slate-900 text-right font-bold">{selectedKyc.kycIdNumber || selectedKyc.idNumber || "N/A"}</p>
                   </div>
                 </div>
 
@@ -437,8 +437,8 @@ const AdminPortal = ({ token }) => {
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Uploaded Proof Attachment</span>
                   {selectedKyc.documentUrl ? (
                     <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-100 relative aspect-[4/3] flex flex-col items-center justify-center">
-                      {/* FIXED: Splits away query param parameters/signatures to successfully read storage image extensions */}
-                      {selectedKyc.documentUrl.split('?')[0].match(/\.(jpeg|jpg|gif|png|webp)$/i) ? (
+                      {/* Robust check evaluating image formats vs documents securely */}
+                      {selectedKyc.kycDocumentUrl.split('?')[0].match(/\.(jpeg|jpg|gif|png|webp)$/i) || selectedKyc.kycDocumentUrl.includes('images') || selectedKyc.documentUrl.includes('image') ? (
                         <img 
                           src={selectedKyc.kycDocumentUrl} 
                           alt="KYC Identification Proof" 
@@ -446,7 +446,7 @@ const AdminPortal = ({ token }) => {
                         />
                       ) : (
                         <iframe 
-                          src={`https://docs.google.com/gview?url=${encodeURIComponent(selectedKyc.documentUrl)}&embedded=true`} 
+                          src={`https://docs.google.com/gview?url=${encodeURIComponent(selectedKyc.kycDocumentUrl)}&embedded=true`} 
                           title="KYC Proof Frame"
                           className="w-full h-full border-0"
                         />
@@ -467,13 +467,13 @@ const AdminPortal = ({ token }) => {
                 onClick={() => handleAction(selectedKyc.id, 'kyc', 'approve')}
                 className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition shadow-sm flex items-center justify-center gap-1"
               >
-                <ShieldCheck size={14} /> Approve & Grant Agent Role
+                <ShieldCheck size={14} /> Approve kyc
               </button>
               <button 
                 onClick={() => handleAction(selectedKyc.id, 'kyc', 'decline')}
                 className="px-4 py-3 bg-white border border-red-200 text-red-600 hover:bg-red-50 text-xs font-bold rounded-xl transition"
               >
-                Decline Proof
+                Decline
               </button>
             </div>
 
