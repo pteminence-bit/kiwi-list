@@ -440,7 +440,7 @@ const AdminPortal = ({ token }) => {
                       {/* FIXED: Splits away query param parameters/signatures to successfully read storage image extensions */}
                       {selectedKyc.documentUrl.split('?')[0].match(/\.(jpeg|jpg|gif|png|webp)$/i) ? (
                         <img 
-                          src={selectedKyc.documentUrl} 
+                          src={selectedKyc.kycDocumentUrl} 
                           alt="KYC Identification Proof" 
                           className="w-full h-full object-contain bg-slate-900" 
                         />
