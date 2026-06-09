@@ -91,6 +91,27 @@ const AdminPortal = ({ token }) => {
               return user;
             })
           }));
+
+          // FRONTEND ACCOUNT RESTRICTION GUARD: Force immediate portal eviction if the user disables themselves or an active token target matching this runtime session
+          if (action === 'disable') {
+            try {
+              // Extract the uid from the client's current JWT token payload to confirm ownership
+              const base64Url = token.split('.')[1];
+              const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+              const jsonPayload = decodeURIComponent(window.atob(base64).split('').map((c) => {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+              }).join(''));
+              
+              const currentTokenUser = JSON.parse(jsonPayload);
+              if (currentTokenUser && (currentTokenUser.user_id === targetId || currentTokenUser.uid === targetId)) {
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.reload();
+              }
+            } catch (jwtErr) {
+              console.error("Session verification clearance exception:", jwtErr);
+            }
+          }
         } else {
           // For typical review queues, filter out the resolved data object entries cleanly
           setQueues(prev => ({

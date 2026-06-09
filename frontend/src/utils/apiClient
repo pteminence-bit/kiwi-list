@@ -1,0 +1,43 @@
+import { getAuth, signOut } from 'firebase/auth';
+
+const BACKEND_BASE_URL = 'https://kiwi-list-api.onrender.com';
+
+export const apiRequest = async (endpoint, options = {}) => {
+  const auth = getAuth();
+  const currentUser = auth.currentUser;
+  
+  // Automatically acquire the latest active token if the user is signed in
+  let token = null;
+  if (currentUser) {
+    token = await currentUser.getIdToken();
+  }
+
+  // Deep copy headers and configure defaults
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` }),
+    ...options.headers,
+  };
+
+  const config = {
+    ...options,
+    headers,
+  };
+
+  const response = await fetch(`${BACKEND_BASE_URL}${endpoint}`, config);
+
+  // GLOBAL SECURITY GUARD: If backend returns a 403, their account was disabled
+  if (response.status === 403) {
+    console.warn("Access revoked: Account has been disabled by an administrator.");
+    
+    // Terminate the local Firebase client state immediately
+    await signOut(auth);
+    
+    // Redirect them to your login or notice layout page
+    window.location.href = '/login?error=suspended';
+    
+    throw new Error("Account suspended. Terminating session context.");
+  }
+
+  return response;
+};
