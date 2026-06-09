@@ -453,7 +453,7 @@ const AdminPortal = ({ token }) => {
                   </div>
                 </div>
 
-                {/* Secure Document Iframe Preview Window */}
+                {/* Secure Document Preview Window */}
                 <div className="space-y-2">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Uploaded Proof Attachment</span>
                   {selectedKyc.kycDocumentUrl ? (
@@ -467,7 +467,7 @@ const AdminPortal = ({ token }) => {
                         />
                       ) : (
                         <iframe 
-                          src={`https://docs.google.com/gview?url=${encodeURIComponent(selectedKyc.kycDocumentUrl)}&embedded=true`} 
+                          src={selectedKyc.kycDocumentUrl} 
                           title="KYC Proof Frame"
                           className="w-full h-full border-0"
                         />
