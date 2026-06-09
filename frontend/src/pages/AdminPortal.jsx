@@ -284,8 +284,8 @@ const AdminPortal = ({ token }) => {
                           <Eye size={12} /> Review Details & Logs
                         </button>
                         
-                        {item.documentUrl && (
-                          <a href={item.documentUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-800 hover:underline font-bold">
+                        {item.kycDocumentUrl && (
+                          <a href={item.kycDocumentUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-800 hover:underline font-bold">
                             Open Direct File <ExternalLink size={10} />
                           </a>
                         )}
@@ -456,10 +456,10 @@ const AdminPortal = ({ token }) => {
                 {/* Secure Document Iframe Preview Window */}
                 <div className="space-y-2">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Uploaded Proof Attachment</span>
-                  {selectedKyc.documentUrl ? (
+                  {selectedKyc.kycDocumentUrl ? (
                     <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-100 relative aspect-[4/3] flex flex-col items-center justify-center">
                       {/* Robust check evaluating image formats vs documents securely */}
-                      {selectedKyc.kycDocumentUrl.split('?')[0].match(/\.(jpeg|jpg|gif|png|webp)$/i) || selectedKyc.kycDocumentUrl.includes('images') || selectedKyc.documentUrl.includes('image') ? (
+                      {selectedKyc.kycDocumentUrl.split('?')[0].match(/\.(jpeg|jpg|gif|png|webp)$/i) || selectedKyc.kycDocumentUrl.includes('images') || selectedKyc.kycDocumentUrl.includes('image') ? (
                         <img 
                           src={selectedKyc.kycDocumentUrl} 
                           alt="KYC Identification Proof" 
