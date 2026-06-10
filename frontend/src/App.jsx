@@ -3,9 +3,13 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Menu } from 'lucide-react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from './firebase'; 
+
+// Context & Components
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Sidebar from './components/Sidebar';
 import AdminUpdates from './components/AdminUpdates';
+
+// Pages
 import MarketplaceFeed from './pages/MarketplaceFeed';
 import CreateListing from './pages/CreateListing'; 
 import ManageListings from './pages/ManageListings';
@@ -22,25 +26,32 @@ const DashboardLayout = () => {
   useEffect(() => {
     const checkAdminStatus = async () => {
       if (user) {
-        const snap = await getDoc(doc(db, 'users', user.uid));
-        if (snap.exists()) setIsAdmin(snap.data().role === 'admin');
+        try {
+          const userDocRef = doc(db, 'users', user.uid);
+          const userDocSnap = await getDoc(userDocRef);
+          if (userDocSnap.exists()) {
+            setIsAdmin(userDocSnap.data().role === 'admin');
+          }
+        } catch (error) {
+          console.error("Error checking role:", error);
+        }
       }
     };
     if (user) checkAdminStatus();
   }, [user]);
 
-  if (loading) return null;
+  if (loading) return <div className="flex h-screen items-center justify-center bg-slate-950 text-white">Loading...</div>;
   if (!user) return <Navigate to="/login" replace />;
 
   return (
     <div className="flex w-full min-h-screen bg-slate-950 text-white">
-      {/* Fixed Sidebar - No top bar here */}
+      {/* Sidebar: Fixed, always present on desktop, drawer on mobile */}
       <Sidebar isAdmin={isAdmin} isOpen={mobileMenuOpen} setIsOpen={setMobileMenuOpen} />
 
-      {/* Main Container - The lg:ml-64 creates the desktop sidebar space */}
+      {/* Main Content Area */}
       <div className="flex-1 lg:ml-64 flex min-h-screen">
         
-        {/* Mobile-only Menu Button */}
+        {/* Mobile menu trigger: Only visible on mobile */}
         <div className="lg:hidden fixed top-4 right-4 z-40">
            <button onClick={() => setMobileMenuOpen(true)} className="p-2 bg-slate-900 rounded-lg"><Menu size={24} /></button>
         </div>
@@ -58,7 +69,7 @@ const DashboardLayout = () => {
           </Routes>
         </main>
 
-        {/* Right Admin Updates */}
+        {/* Right Admin Updates: Hidden on mobile */}
         <aside className="hidden xl:block w-80 border-l border-slate-800 p-6">
           <div className="sticky top-8">
             <h2 className="text-xs font-bold text-slate-400 mb-6 uppercase tracking-wider">Admin Updates</h2>
@@ -70,6 +81,7 @@ const DashboardLayout = () => {
   );
 };
 
+// This is the component your index.js is looking for
 export default function App() {
   return (
     <AuthProvider>
