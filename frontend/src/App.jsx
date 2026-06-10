@@ -42,3 +42,5 @@ const DashboardLayout = () => {
     </div>
   );
 };
+
+export default App;
