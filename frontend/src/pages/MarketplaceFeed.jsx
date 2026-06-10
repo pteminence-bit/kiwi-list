@@ -33,7 +33,7 @@ const MarketplaceFeed = ({ token }) => {
       <div className="flex flex-col items-center px-2">
         <div className="w-full max-w-lg space-y-6">
           {listings.map(listing => (
-            <div key={listing.id} onClick={(e) => { if(e.target.tagName === 'IMG') setActiveImage(e.target.src); }} className="bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 shadow-xl">
+            <div key={listing.id} onClick={(e) => { if(e.target.tagName === 'IMG') setActiveImage(e.target.src); }} className="rounded-2xl overflow-hidden border border-slate-800 shadow-xl">
               <ListingCard listing={listing} />
             </div>
           ))}
