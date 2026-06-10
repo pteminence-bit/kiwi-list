@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 // 👇 UPDATED: Explicitly verified imports to include sendEmailVerification and signOut
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';//sendEmailVerification, 
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification, signOut } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore'; 
 import { auth, db } from '../firebase';
 import { LogIn, UserPlus } from 'lucide-react';
@@ -45,16 +45,16 @@ const AuthPage = () => {
         });
 
         // 3. UPDATED: Dispatches verification tracking link payload to user's registration email
-        //await sendEmailVerification(registeredUser);
-        //alert("Verification email sent! Please check your inbox before logging in.");
+        await sendEmailVerification(registeredUser);
+        alert("Verification email sent! Please check your inbox before logging in.");
 
         // 4. UPDATED: Clears current active session to block automated context routing redirects
-       // await signOut(auth);
+        await signOut(auth);
 
         // Reset state and swap view cleanly back to login form layout
-       // setEmail('');
-        //setPassword('');
-        //setIsLogin(true);
+        setEmail('');
+        setPassword('');
+        setIsLogin(true);
       }
     } catch (err) {
       // Format common Firebase error messages nicely
