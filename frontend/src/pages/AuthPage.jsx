@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { auth } from '../firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+// 👇 APPENDED: Added sendEmailVerification and signOut to your existing auth imports
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification, signOut } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore'; 
+import { auth, db } from '../firebase';
 import { LogIn, UserPlus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
@@ -28,10 +30,32 @@ const AuthPage = () => {
         // Authenticate existing user
         await signInWithEmailAndPassword(auth, email, password);
       } else {
-        // Register new user profile account
-        await createUserWithEmailAndPassword(auth, email, password);
+        // 1. Capture user credentials from Firebase Authentication
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const registeredUser = userCredential.user;
+
+        // 2. Force user document instantiation to satisfy Admin Account Guard criteria
+        await setDoc(doc(db, "users", registeredUser.uid), {
+          id: registeredUser.uid,
+          email: email,
+          role: "user",
+          isDisabled: false,
+          isPayoutBlocked: false,
+          createdAt: new Date()
+        });
+
+        // 3. 👇 APPENDED: Send verification email to the user
+        await sendEmailVerification(registeredUser);
+        alert("Verification email sent! Please check your inbox.");
+        
+        // 4. 👇 APPENDED: Terminate active token context state so they must verify before app access
+        await signOut(auth);
+        
+        // Reset state and swap view cleanly back to login form layout
+        setEmail('');
+        setPassword('');
+        setIsLogin(true);
       }
-      // Note: onAuthStateChanged in AuthContext will catch this and automatically log them in!
     } catch (err) {
       // Format common Firebase error messages nicely
       const cleanError = err.message.replace('Firebase: ', '').replace(/auth\/|-/g, ' ');

@@ -41,6 +41,27 @@ const DashboardLayout = () => {
   if (loading) return null;
   if (!user) return <Navigate to="/login" replace />; 
 
+  // 👇 APPENDED RULE: Enforce email verification protection guard
+  if (!user.emailVerified) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-950 w-full p-10 text-center text-white">
+        <div className="max-w-md bg-slate-900 border border-slate-800 p-8 rounded-xl shadow-2xl">
+          <h2 className="text-xl font-black mb-2">Account Not Verified</h2>
+          <p className="text-xs text-slate-400 leading-relaxed mb-6">
+            Please check your email inbox and click the verification link sent to your address to unlock dashboard access permissions.
+          </p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="bg-blue-600 hover:bg-blue-700 text-xs font-bold px-5 py-2.5 rounded-lg transition shadow-sm"
+          >
+            I've verified my email, refresh page
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Entire original main layout core structure is preserved untouched below
   return (
     <div className="flex w-full min-h-screen bg-slate-950 text-white">
       <Sidebar isAdmin={isAdmin} isOpen={mobileMenuOpen} setIsOpen={setMobileMenuOpen} />
