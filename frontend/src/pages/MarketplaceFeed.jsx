@@ -1,48 +1,57 @@
-// components/MarketplaceFeed.jsx
-import React, { useState, useEffect } from 'react';
-import { Search, SlidersHorizontal, X } from 'lucide-react';
-import ListingCard from '../components/ListingCard';
-import { API_BASE_URL } from '../config';
+import React from 'react';
+import { Bed, Bath, Eye, AlertTriangle } from 'lucide-react';
 
-const MarketplaceFeed = ({ token }) => {
-  const [listings, setListings] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [activeImage, setActiveImage] = useState(null);
+const R2_BASE = 'https://pub-580c3d172e3f4533b065d241e61ee132.r2.dev';
 
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/api/listings/feed`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
-    .then(res => res.json())
-    .then(data => { setListings(data || []); setLoading(false); })
-    .catch(() => setLoading(false));
-  }, [token]);
-
-  if (loading) return <div className="flex h-screen items-center justify-center text-xs animate-pulse">Loading...</div>;
+const ListingCard = ({ listing }) => {
+  const images = (listing.images || []).map(img => 
+    img.startsWith('http') ? img : `${R2_BASE}/${img.replace(/^\//, '')}`
+  );
 
   return (
-    <div className="w-full h-full pb-12">
-      <div className="sticky top-0 z-20 bg-slate-950/95 p-4 border-b border-slate-800">
-        <div className="flex items-center gap-2 bg-slate-900 p-2 rounded-xl">
-          <Search className="text-slate-500 ml-2" size={18} />
-          <input className="w-full bg-transparent outline-none text-sm text-white" placeholder="Search..." />
-          <button className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 rounded-lg text-xs font-bold text-white"><SlidersHorizontal size={14} /> Filter</button>
+    <div className="flex flex-col text-slate-200 w-full bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg transition-all hover:border-slate-700">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-indigo-500" />
+          <div>
+            <p className="text-xs font-bold text-white">Verified Agent</p>
+            <p className="text-[10px] text-slate-400">{listing.address?.split(',').pop()}</p>
+          </div>
         </div>
+        <AlertTriangle size={16} className="text-slate-600 hover:text-red-500 cursor-pointer" />
       </div>
 
-      <div className="flex flex-col items-center px-2">
-        <div className="w-full max-w-lg space-y-6" onClick={(e) => { if(e.target.tagName === 'IMG') setActiveImage(e.target.src); }}>
-          {listings.map(listing => <ListingCard key={listing.id} listing={listing} />)}
-        </div>
-      </div>
-
-      {activeImage && (
-        <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4" onClick={() => setActiveImage(null)}>
-          <button className="absolute top-6 right-6 p-2 bg-white/10 rounded-full text-white"><X size={24} /></button>
-          <img src={activeImage} className="max-h-[90vh] object-contain rounded-lg" alt="Full view" />
+      {/* Primary Image: Encoded with gallery data for the parent Lightbox */}
+      {images.length > 0 && (
+        <div className="relative aspect-[4/3] w-full bg-black cursor-pointer group">
+          <img 
+            src={images[0]} 
+            alt="Property primary"
+            className="w-full h-full object-cover"
+            data-full-gallery={JSON.stringify(images)}
+          />
+          {images.length > 1 && (
+            <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur text-white text-[10px] font-bold px-3 py-1 rounded-full">
+              {images.length} Photos
+            </div>
+          )}
         </div>
       )}
+
+      {/* Details */}
+      <div className="p-4 space-y-3">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-black text-white">₦{listing.price?.toLocaleString()}</h2>
+          <div className="flex items-center gap-1.5 text-xs font-medium text-slate-400"><Eye size={14} /> {listing.views || 0}</div>
+        </div>
+        <p className="text-xs text-slate-300 leading-relaxed line-clamp-2">{listing.title}</p>
+        <div className="flex gap-6 pt-1">
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-400"><Bed size={16} /> {listing.beds}</div>
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-400"><Bath size={16} /> {listing.baths}</div>
+        </div>
+      </div>
     </div>
   );
 };
-export default MarketplaceFeed;
+export default ListingCard;

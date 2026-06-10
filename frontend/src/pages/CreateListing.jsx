@@ -7,15 +7,7 @@ const CreateListing = ({ token }) => {
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    price: '',
-    address: '',
-    beds: '',
-    baths: '',
-    tier: 'free', 
-    phone: '',
-    email: ''
+    title: '', description: '', price: '', address: '', beds: '', baths: '', tier: 'free', phone: '', email: ''
   });
 
   const handleInputChange = (e) => {
@@ -26,7 +18,7 @@ const CreateListing = ({ token }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // UPDATED: Now allows 1 to 4 images
+    // Constraint maintained: 2 to 4 images
     if (images.length < 2 || images.length > 4) {
       alert("Please upload between 2 and 4 images of the property.");
       return;
@@ -55,30 +47,18 @@ const CreateListing = ({ token }) => {
         baths: Number(formData.baths),
         tier: formData.tier,
         images: uploadData.urls, 
-        contactDetails: {
-          phone: formData.phone,
-          email: formData.email
-        }
+        contactDetails: { phone: formData.phone, email: formData.email }
       };
 
       const listingResponse = await fetch(`${API_BASE_URL}/api/listings/create`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(listingPayload)
       });
 
       const listingData = await listingResponse.json();
-      
       if (listingResponse.ok) {
-        if (formData.tier === 'premium') {
-          initializePremiumPayment(listingData.id);
-        } else {
-          alert("Free Listing published live successfully!");
-          window.location.href = "/";
-        }
+        formData.tier === 'premium' ? initializePremiumPayment(listingData.id) : (alert("Published successfully!"), window.location.href = "/");
       }
     } catch (err) {
       alert(err.message);
@@ -88,110 +68,91 @@ const CreateListing = ({ token }) => {
   };
 
   const initializePremiumPayment = async (listingId) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/payments/initialize`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          amount: 3000,
-          purpose: 'premium_listing',
-          listingId: listingId
-        })
-      });
-      const data = await res.json();
-      if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
-      }
-    } catch (err) {
-      console.error("Payment routing error:", err);
-    }
+    const res = await fetch(`${API_BASE_URL}/api/payments/initialize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ amount: 3000, purpose: 'premium_listing', listingId })
+    });
+    const data = await res.json();
+    if (data.checkoutUrl) window.location.href = data.checkoutUrl;
   };
 
   return (
-    <div className="w-full flex flex-col items-center">
-      <div className="w-full max-w-3xl bg-white border border-slate-200 rounded-xl p-6 shadow-sm text-slate-800">
-        <div className="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
-          <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-            <Landmark size={22} />
+    <div className="w-full px-4 py-8 flex flex-col items-center min-h-screen">
+      <div className="w-full max-w-2xl bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm text-slate-800">
+        <div className="flex items-center gap-4 mb-8 border-b border-slate-100 pb-6">
+          <div className="p-3 bg-blue-50 text-blue-600 rounded-xl shadow-inner">
+            <Landmark size={24} />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-slate-800">Create New Listing</h2>
-            <p className="text-xs text-slate-500">Submit your property asset configuration specifications safely down onto KIWI-list.</p>
+            <h2 className="text-xl font-black text-slate-900">Create Listing</h2>
+            <p className="text-xs text-slate-500 font-medium tracking-wide">SUBMIT PROPERTY ASSET CONFIGURATION</p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-700 mb-1">Property Title</label>
-              <input required type="text" name="title" value={formData.title} onChange={handleInputChange} placeholder="e.g., Luxury 3 Bedroom Apartment Lekki Phase 1" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-black focus:outline-none focus:border-blue-500" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="sm:col-span-2">
+              <label className="block text-[11px] font-black uppercase text-slate-400 mb-1.5">Property Title</label>
+              <input required type="text" name="title" onChange={handleInputChange} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
             </div>
 
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-700 mb-1">Detailed Description</label>
-              <textarea required name="description" value={formData.description} onChange={handleInputChange} rows={3} placeholder="Describe infrastructure details, amenities, service charges..." className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-black focus:outline-none focus:border-blue-500" />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Price (₦ Naira)</label>
-              <input required type="number" name="price" value={formData.price} onChange={handleInputChange} placeholder="Total asset cost valuation" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-black focus:outline-none focus:border-blue-500" />
+            <div className="sm:col-span-2">
+              <label className="block text-[11px] font-black uppercase text-slate-400 mb-1.5">Detailed Description</label>
+              <textarea required name="description" onChange={handleInputChange} rows={4} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Placement Tier Model</label>
-              <select name="tier" value={formData.tier} onChange={handleInputChange} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-black bg-white focus:outline-none focus:border-blue-500">
-                <option value="free" className="text-black">Free Tier Placement (Standard Feed Display)</option>
-                <option value="premium" className="text-black">Premium Placement (₦3,000 - Prioritized & Paywalled Info)</option>
+              <label className="block text-[11px] font-black uppercase text-slate-400 mb-1.5">Price (₦)</label>
+              <input required type="number" name="price" onChange={handleInputChange} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-black uppercase text-slate-400 mb-1.5">Placement Tier</label>
+              <select name="tier" onChange={handleInputChange} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                <option value="free">Free Tier</option>
+                <option value="premium">Premium (₦3,000)</option>
               </select>
             </div>
 
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-700 mb-1">Physical Address Location</label>
-              <input required type="text" name="address" value={formData.address} onChange={handleInputChange} placeholder="Full street or mapping node details" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-black focus:outline-none focus:border-blue-500" />
+            <div className="sm:col-span-2">
+              <label className="block text-[11px] font-black uppercase text-slate-400 mb-1.5">Full Address</label>
+              <input required type="text" name="address" onChange={handleInputChange} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Beds Counter</label>
-              <input required type="number" name="beds" value={formData.beds} onChange={handleInputChange} placeholder="0" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-black focus:outline-none focus:border-blue-500" />
+            <div className="grid grid-cols-2 gap-4 sm:col-span-2">
+              <div>
+                <label className="block text-[11px] font-black uppercase text-slate-400 mb-1.5">Beds</label>
+                <input required type="number" name="beds" onChange={handleInputChange} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+              <div>
+                <label className="block text-[11px] font-black uppercase text-slate-400 mb-1.5">Baths</label>
+                <input required type="number" name="baths" onChange={handleInputChange} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Baths Counter</label>
-              <input required type="number" name="baths" value={formData.baths} onChange={handleInputChange} placeholder="0" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-black focus:outline-none focus:border-blue-500" />
-            </div>
-
-            <div className="md:col-span-2 p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
-              <h3 className="text-xs font-bold text-slate-600 tracking-wider flex items-center gap-1.5 uppercase">
-                <ShieldCheck size={14} className="text-blue-500" /> Secure Contact Card Details
+            <div className="sm:col-span-2 p-5 bg-blue-50/50 border border-blue-100 rounded-2xl space-y-4">
+              <h3 className="text-[10px] font-black text-blue-800 tracking-widest flex items-center gap-2 uppercase">
+                <ShieldCheck size={16} /> Secure Contact Info
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">Owner Telephone Line</label>
-                  <input required type="tel" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="+234..." className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-black focus:outline-none focus:border-blue-500" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">Owner Email Box</label>
-                  <input required type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="user@domain.com" className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-black focus:outline-none focus:border-blue-500" />
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <input required type="tel" name="phone" onChange={handleInputChange} placeholder="Phone" className="px-4 py-3 border border-blue-100 rounded-xl text-sm outline-none" />
+                <input required type="email" name="email" onChange={handleInputChange} placeholder="Email" className="px-4 py-3 border border-blue-100 rounded-xl text-sm outline-none" />
               </div>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-slate-700">Media Workspace Attachments</label>
+          <div className="space-y-3">
+            <label className="block text-[11px] font-black uppercase text-slate-400">Property Imagery (2-4 required)</label>
             <ImageUploader onImagesSelected={setImages} />
           </div>
 
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-lg shadow transition duration-200 disabled:bg-slate-300 flex items-center justify-center gap-2"
+            className="w-full py-4 bg-slate-900 hover:bg-black text-white font-black text-sm rounded-xl transition-all shadow-lg active:scale-[0.98]"
           >
-            <FilePlus size={16} />
-            {loading ? "Processing Asset Deployments..." : formData.tier === 'premium' ? "Proceed to Checkout (₦3,000)" : "Publish Free Listing"}
+            {loading ? "PROCESSING..." : "PUBLISH ASSET TO MARKET"}
           </button>
         </form>
       </div>
