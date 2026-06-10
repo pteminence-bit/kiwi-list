@@ -1,103 +1,44 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Menu } from 'lucide-react';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from './firebase'; 
-
-import { AuthProvider, useAuth } from './context/AuthContext';
-import Sidebar from './components/Sidebar';
-import AdminUpdates from './components/AdminUpdates'; // Ensure you have this component created
-
-import MarketplaceFeed from './pages/MarketplaceFeed';
-import CreateListing from './pages/CreateListing'; 
-import ManageListings from './pages/ManageListings';
-import AdminPortal from './pages/AdminPortal';
-import WalletCard from './components/WalletCard';
-import Settings from './pages/Settings'; 
-import AuthPage from './pages/AuthPage'; 
-
 const DashboardLayout = () => {
   const { user, loading } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
-  const [isVerified, setIsVerified] = useState(false); 
-  const [checkingRole, setCheckingRole] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  useEffect(() => {
-    const checkAdminStatus = async () => {
-      if (user) {
-        try {
-          const userDocRef = doc(db, 'users', user.uid);
-          const userDocSnap = await getDoc(userDocRef);
-          if (userDocSnap.exists()) {
-            const userData = userDocSnap.data();
-            setIsAdmin(userData.role === 'admin');
-            setIsVerified(userData.isVerifiedAgent === true || userData.role === 'agent');
-          }
-        } catch (error) {
-          console.error(error);
-        }
-      }
-      setCheckingRole(false);
-    };
-    if (!loading) checkAdminStatus();
-  }, [user, loading]);
-
-  if (loading || checkingRole) return <div className="flex h-screen items-center justify-center bg-slate-950 text-white">Loading session...</div>;
-  if (!user) return <Navigate to="/login" replace />; 
-
-  const token = user.accessToken;
+  // ... (keep your existing useEffect for role checking)
 
   return (
     <div className="flex w-full min-h-screen bg-slate-950 text-white">
-      {/* Mobile Header */}
-      <header className="lg:hidden w-full bg-[#0f172a] border-b border-slate-800 p-4 flex items-center justify-between fixed top-0 z-30">
-        <div className="text-xl font-bold text-blue-400">KIWI-list</div>
-        <button onClick={() => setMobileMenuOpen(true)} className="p-2"><Menu size={24} /></button>
-      </header>
-
-      {/* DESKTOP LAYOUT STRUCTURE */}
-      {/* 1. LEFT: Navigation */}
-      <div className="hidden lg:block w-64 border-r border-slate-800 shrink-0">
-        <Sidebar isAdmin={isAdmin} isOpen={true} setIsOpen={() => {}} />
-      </div>
-
-      {/* 2. MIDDLE: Marketplace Feed / Content */}
-      <main className="flex-1 w-full max-w-2xl mx-auto pt-20 lg:pt-8 px-4">
-        <Routes>
-          <Route path="/" element={<MarketplaceFeed token={token} />} />
-          <Route path="/add" element={<CreateListing token={token} />} />
-          <Route path="/manage" element={<ManageListings token={token} />} />
-          <Route path="/admin" element={isAdmin ? <AdminPortal token={token} /> : <Navigate to="/" replace />} />
-          <Route path="/wallet" element={<WalletCard token={token} isVerified={isVerified} />} />
-          <Route path="/settings" element={<Settings token={token} isVerified={isVerified} />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </main>
-
-      {/* 3. RIGHT: Admin Updates (Only visible on large screens) */}
-      <aside className="hidden xl:block w-80 border-l border-slate-800 p-6 shrink-0">
-        <div className="sticky top-8">
-          <h2 className="text-sm font-bold text-slate-400 mb-4 uppercase tracking-wider">Admin Updates</h2>
-          <AdminUpdates />
-        </div>
-      </aside>
-
-      {/* Mobile Sidebar Trigger */}
+      {/* Sidebar: Fixed, always present on desktop, drawer on mobile */}
       <Sidebar isAdmin={isAdmin} isOpen={mobileMenuOpen} setIsOpen={setMobileMenuOpen} />
+
+      {/* Main Content Area */}
+      <div className="flex-1 lg:ml-64 flex">
+        {/* Mobile menu trigger: Only visible on mobile */}
+        <div className="lg:hidden fixed top-4 right-4 z-40">
+           <button onClick={() => setMobileMenuOpen(true)} className="p-2 bg-slate-900 rounded-lg"><Menu /></button>
+        </div>
+
+        {/* Middle Feed */}
+        <main className="flex-1 w-full max-w-2xl mx-auto pt-8 px-4">
+          <Routes>
+            <Route path="/" element={<MarketplaceFeed token={user.accessToken} />} />
+            <Route path="/add" element={<CreateListing token={user.accessToken} />} />
+            <Route path="/manage" element={<ManageListings token={user.accessToken} />} />
+            <Route path="/admin" element={isAdmin ? <AdminPortal token={user.accessToken} /> : <Navigate to="/" />} />
+            <Route path="/wallet" element={<WalletCard token={user.accessToken} />} />
+            <Route path="/settings" element={<Settings token={user.accessToken} />} />
+            {/* Added a route for mobile updates page if needed */}
+            <Route path="/updates" element={<div className="p-8"><AdminUpdates /></div>} />
+          </Routes>
+        </main>
+
+        {/* Right Admin Updates: Hidden on mobile */}
+        <aside className="hidden xl:block w-80 border-l border-slate-800 p-6">
+          <div className="sticky top-8">
+            <h2 className="text-xs font-bold text-slate-400 mb-6 uppercase tracking-wider">Admin Updates</h2>
+            <AdminUpdates />
+          </div>
+        </aside>
+      </div>
     </div>
   );
 };
-
-export default function App() {
-  return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/login" element={<AuthPage />} />
-          <Route path="/*" element={<DashboardLayout />} />
-        </Routes>
-      </Router>
-    </AuthProvider>
-  );
-}
