@@ -44,8 +44,14 @@ const AuthPage = () => {
           createdAt: new Date()
         });
 
-        // 3. UPDATED: Dispatches verification tracking link payload to user's registration email
-        await sendEmailVerification(registeredUser);
+        // 👇 THE FIX: Define the custom route parameters explicitly in your code
+        const actionCodeSettings = {
+          url: 'https://kiwi-list-ifnr.onrender.com/login?verified=true', 
+          handleCodeInApp: true,
+        };
+
+        // 3. UPDATED: Dispatches verification tracking link payload with custom actions parameter mapping
+        await sendEmailVerification(registeredUser, actionCodeSettings);
         alert("Verification email sent! Please check your inbox before logging in.");
 
         // 4. UPDATED: Clears current active session to block automated context routing redirects
