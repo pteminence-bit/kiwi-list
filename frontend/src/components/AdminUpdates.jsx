@@ -1,34 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, limit } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Megaphone } from 'lucide-react';
 
 const AdminUpdates = () => {
   const [updates, setUpdates] = useState([]);
 
   useEffect(() => {
-    const q = query(collection(db, 'admin_announcements'), orderBy('createdAt', 'desc'));
+    // Replace 'admin_updates' with your actual Firestore collection name
+    const q = query(collection(db, 'adminUpdates'), orderBy('createdAt', 'desc'), limit(5));
+    
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setUpdates(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
+
     return () => unsubscribe();
   }, []);
 
   return (
     <div className="space-y-4">
-      {updates.map(update => (
-        <div key={update.id} className="bg-slate-900 border border-slate-800 p-4 rounded-xl">
-          <div className="flex items-center gap-2 text-blue-400 mb-2">
-            <Megaphone size={14} />
-            <span className="text-[10px] font-black uppercase tracking-widest">Admin Notice</span>
+      {updates.length === 0 ? (
+        <p className="text-xs text-slate-600 italic">No current updates.</p>
+      ) : (
+        updates.map((update) => (
+          <div key={update.id} className="bg-[#0f172a] border border-slate-800 p-3 rounded-lg">
+            <h4 className="text-sm font-bold text-blue-400 mb-1">{update.title}</h4>
+            <p className="text-[11px] text-slate-300 leading-relaxed">{update.content}</p>
+            <span className="text-[9px] text-slate-500 mt-2 block">
+              {update.createdAt?.toDate().toLocaleDateString()}
+            </span>
           </div>
-          <p className="text-xs text-slate-300 leading-relaxed">{update.text}</p>
-          <span className="text-[9px] text-slate-500 mt-2 block">
-            {update.createdAt?.toDate().toLocaleDateString()}
-          </span>
-        </div>
-      ))}
-      {updates.length === 0 && <p className="text-xs text-slate-600 italic">No active admin notices.</p>}
+        ))
+      )}
     </div>
   );
 };
