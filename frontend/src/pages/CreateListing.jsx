@@ -27,13 +27,12 @@ const CreateListing = ({ token }) => {
     e.preventDefault();
     
     // UPDATED: Now allows 1 to 4 images
-    if (images.length < 1 || images.length > 4) {
-      alert("Please upload between 1 and 4 images of the property.");
+    if (images.length < 2 || images.length > 4) {
+      alert("Please upload between 2 and 4 images of the property.");
       return;
     }
 
     setLoading(true);
-
     try {
       const filePayload = new FormData();
       images.forEach(file => filePayload.append('images', file));

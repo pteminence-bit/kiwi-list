@@ -1,3 +1,4 @@
+// components/ImageUploader.jsx
 import React, { useState } from 'react';
 import { ImagePlus, X } from 'lucide-react';
 
@@ -8,7 +9,7 @@ const ImageUploader = ({ onImagesSelected }) => {
   const handleFileChange = (e) => {
     const newFiles = Array.from(e.target.files);
     
-    // Logic: Allows up to 4 images
+    // Logic: Keep the same constraint
     if (newFiles.length + previews.length > 4) {
       alert("Maximum 4 images allowed.");
       return;
@@ -16,19 +17,15 @@ const ImageUploader = ({ onImagesSelected }) => {
 
     const newPreviews = newFiles.map(file => URL.createObjectURL(file));
     setPreviews(prev => [...prev, ...newPreviews]);
-
     const updatedFiles = [...rawFiles, ...newFiles];
     setRawFiles(updatedFiles);
-
     onImagesSelected(updatedFiles);
   };
 
   const handleRemoveImage = (indexToRemove) => {
     URL.revokeObjectURL(previews[indexToRemove]);
-
     const updatedPreviews = previews.filter((_, idx) => idx !== indexToRemove);
     const updatedFiles = rawFiles.filter((_, idx) => idx !== indexToRemove);
-
     setPreviews(updatedPreviews);
     setRawFiles(updatedFiles);
     onImagesSelected(updatedFiles);
@@ -58,10 +55,9 @@ const ImageUploader = ({ onImagesSelected }) => {
           </label>
         )}
       </div>
-      {/* UPDATED: Changed text from "2 to 4" to "1 to 4" */}
-      <p className="text-xs text-black font-medium">Upload 1 to 4 high-resolution photos of the property.</p>
+      {/* REVERTED: Text back to "2 to 4" */}
+      <p className="text-xs text-black font-medium">Upload 2 to 4 high-resolution photos of the property.</p>
     </div>
   );
 };
-
 export default ImageUploader;
