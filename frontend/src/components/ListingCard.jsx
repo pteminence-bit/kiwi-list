@@ -1,105 +1,48 @@
 // components/ListingCard.jsx
-import React, { useState, useEffect, useRef } from 'react';
-import { doc, onSnapshot, updateDoc, increment, addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { MapPin, Bed, Bath, Lock, Eye, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
-import { db } from '../firebase'; 
+import React, { useState } from 'react';
+import { MapPin, Bed, Bath, Eye, AlertTriangle, ChevronRight, ChevronLeft } from 'lucide-react';
 
-const R2_PUBLIC_BUCKET_URL = 'https://pub-580c3d172e3f4533b065d241e61ee132.r2.dev';
-
-const ListingCard = ({ listing, onUnlock, onReport }) => {
-  const isPremium = listing.tier === 'premium';
-  const isUnlocked = listing.isUnlocked || !isPremium;
-  const [liveViews, setLiveViews] = useState(listing.views || 0);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const rawImages = listing.images || [];
-  const scrollContainerRef = useRef(null);
-
-  const images = rawImages.map(img => {
-    if (!img) return '/fallback-placeholder.png';
-    if (img.startsWith('http')) return img;
-    const baseUrl = R2_PUBLIC_BUCKET_URL;
-    let sanitizedFileName = img.replace(/^(\/?undefined\/)/, '');
-    sanitizedFileName = sanitizedFileName.startsWith('/') ? sanitizedFileName.slice(1) : sanitizedFileName;
-    return `${baseUrl}/${sanitizedFileName}`;
-  });
-
-  useEffect(() => {
-    if (!listing.id) return;
-    const docRef = doc(db, 'listings', listing.id);
-    const unsubscribe = onSnapshot(docRef, (snapshot) => {
-      if (snapshot.exists()) setLiveViews(snapshot.data().views || 0);
-    });
-    updateDoc(docRef, { views: increment(1) }).catch(console.error);
-    return () => unsubscribe();
-  }, [listing.id]);
-
-  const handleReport = async () => {
-    const reason = window.prompt("Reason for reporting:");
-    if (!reason) return;
-
-    try {
-      await addDoc(collection(db, 'reports'), {
-        listingId: listing.id,
-        listingTitle: listing.title || 'Untitled',
-        reason: reason,
-        reportedAt: serverTimestamp(),
-        status: 'pending'
-      });
-      await updateDoc(doc(db, 'listings', listing.id), { flagged: true });
-      alert("Thank you. This listing has been flagged for admin review.");
-    } catch (err) {
-      console.error(err);
-    }
-  };
+const ListingCard = ({ listing }) => {
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const images = listing.images || [];
 
   return (
-    <div className="bg-white w-full mx-auto flex flex-col h-full text-slate-950">
-      <div className="flex items-center justify-between px-3 py-3 border-b border-slate-100 shrink-0">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-black text-[10px] text-slate-400">KW</div>
+    <div className="flex flex-col text-slate-200">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500" />
           <div>
-            <div className="text-xs font-bold text-slate-900">Verified Agent</div>
-            <p className="text-[10px] text-slate-500 font-medium">{listing.address?.split(',').pop()?.trim() || 'Nigeria'}</p>
+            <p className="text-xs font-bold text-white">Verified Agent</p>
+            <p className="text-[10px] text-slate-400">{listing.address?.split(',').pop()}</p>
           </div>
         </div>
-        <button onClick={handleReport} className="p-1.5 text-slate-400 hover:text-red-600 transition active:scale-95">
-          <AlertTriangle size={16} />
-        </button>
+        <AlertTriangle size={16} className="text-slate-600 hover:text-red-500 cursor-pointer" />
       </div>
 
-      <div className="relative w-full aspect-square sm:aspect-[4/5] bg-slate-50 group">
-        <div ref={scrollContainerRef} className="w-full h-full flex overflow-x-auto snap-x snap-mandatory scrollbar-none">
-          {images.map((img, idx) => (
-            <div key={idx} className="w-full h-full flex-shrink-0 snap-start">
-              {/* FIXED: Added md:object-contain to prevent desktop image clipping while keeping mobile square crop */}
-              <img 
-                src={img} 
-                className="w-full h-full object-cover md:object-contain bg-slate-50" 
-                alt="Property" 
-              />
-            </div>
-          ))}
+      {/* Media */}
+      <div className="relative aspect-[4/3] bg-slate-950 overflow-hidden group">
+        <img src={images[currentIdx]} className="w-full h-full object-cover transition-opacity duration-500" alt="Listing" />
+        {images.length > 1 && (
+          <>
+            <button onClick={() => setCurrentIdx(prev => (prev === 0 ? images.length - 1 : prev - 1))} className="absolute left-2 top-1/2 p-2 bg-black/50 rounded-full opacity-0 group-hover:opacity-100"><ChevronLeft size={20} /></button>
+            <button onClick={() => setCurrentIdx(prev => (prev === images.length - 1 ? 0 : prev + 1))} className="absolute right-2 top-1/2 p-2 bg-black/50 rounded-full opacity-0 group-hover:opacity-100"><ChevronRight size={20} /></button>
+          </>
+        )}
+      </div>
+
+      {/* Details */}
+      <div className="p-4 space-y-3">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-black text-white">₦{listing.price?.toLocaleString()}</h2>
+          <div className="flex items-center gap-1 text-xs font-medium text-slate-400"><Eye size={14} /> {listing.views || 0}</div>
         </div>
-        {isPremium && <span className="absolute top-3 right-3 px-2.5 py-0.5 text-[9px] font-black uppercase text-amber-950 bg-amber-400 rounded-md z-10">Premium</span>}
-      </div>
+        
+        <p className="text-xs text-slate-300 leading-relaxed font-medium">{listing.title}</p>
 
-      <div className="px-3 pt-2.5 pb-1 flex items-center justify-between">
-        <div className="flex items-center gap-1 text-slate-900 text-xs font-bold"><Eye size={15} /> <span>{liveViews.toLocaleString()} views</span></div>
-      </div>
-
-      <div className="px-3 pb-4 space-y-3 flex-grow flex flex-col">
-        <div className="font-black text-slate-900 text-lg">₦{listing.price?.toLocaleString()}</div>
-        <div className="text-xs text-slate-800 leading-relaxed"><span className="font-bold mr-1.5">{listing.title}</span></div>
-        <div className="flex flex-wrap gap-1.5 text-[11px] pt-1">
-          <span className="bg-slate-100 px-2.5 py-1 rounded-md font-semibold">{listing.beds || 0} Beds</span>
-          <span className="bg-slate-100 px-2.5 py-1 rounded-md font-semibold">{listing.baths || 0} Baths</span>
-        </div>
-        <div className="pt-2">
-          {isUnlocked ? (
-            <div className="bg-blue-50/70 border border-blue-100 rounded-lg p-2.5 text-center"><a href={`tel:${listing.contactDetails?.phone}`} className="text-xs font-black text-blue-800">{listing.contactDetails?.phone}</a></div>
-          ) : (
-            <button onClick={() => onUnlock(listing.id)} className="w-full py-2.5 bg-blue-600 text-white text-[11px] font-bold rounded-md">Unlock Details</button>
-          )}
+        <div className="flex gap-4 pt-1">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400"><Bed size={14} /> {listing.beds} Beds</div>
+          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400"><Bath size={14} /> {listing.baths} Baths</div>
         </div>
       </div>
     </div>
