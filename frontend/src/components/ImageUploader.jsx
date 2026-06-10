@@ -3,30 +3,27 @@ import { ImagePlus, X } from 'lucide-react';
 
 const ImageUploader = ({ onImagesSelected }) => {
   const [previews, setPreviews] = useState([]);
-  const [rawFiles, setRawFiles] = useState([]); // Track cumulative raw files locally
+  const [rawFiles, setRawFiles] = useState([]);
 
   const handleFileChange = (e) => {
     const newFiles = Array.from(e.target.files);
     
+    // Logic: Allows up to 4 images
     if (newFiles.length + previews.length > 4) {
       alert("Maximum 4 images allowed.");
       return;
     }
 
-    // 1. Generate local object URLs for rendering visuals
     const newPreviews = newFiles.map(file => URL.createObjectURL(file));
     setPreviews(prev => [...prev, ...newPreviews]);
 
-    // 2. Accumulate raw binary file structures safely
     const updatedFiles = [...rawFiles, ...newFiles];
     setRawFiles(updatedFiles);
 
-    // 3. Bubble up the complete cumulative array to the parent form
     onImagesSelected(updatedFiles);
   };
 
   const handleRemoveImage = (indexToRemove) => {
-    // Clean up memory leaks by revoking object URL before removing
     URL.revokeObjectURL(previews[indexToRemove]);
 
     const updatedPreviews = previews.filter((_, idx) => idx !== indexToRemove);
@@ -34,7 +31,7 @@ const ImageUploader = ({ onImagesSelected }) => {
 
     setPreviews(updatedPreviews);
     setRawFiles(updatedFiles);
-    onImagesSelected(updatedFiles); // Inform parent form of the update
+    onImagesSelected(updatedFiles);
   };
 
   return (
@@ -44,7 +41,7 @@ const ImageUploader = ({ onImagesSelected }) => {
           <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-slate-700">
             <img src={src} alt="Preview" className="w-full h-full object-cover" />
             <button 
-              type="button" // Prevents unintentional parent form submission triggers
+              type="button"
               onClick={() => handleRemoveImage(idx)}
               className="absolute top-1 right-1 p-1 bg-red-500 rounded-full text-white hover:bg-red-600 transition"
             >
@@ -61,7 +58,8 @@ const ImageUploader = ({ onImagesSelected }) => {
           </label>
         )}
       </div>
-      <p className="text-xs text-black font-medium">Upload 2 to 4 high-resolution photos of the property.</p>
+      {/* UPDATED: Changed text from "2 to 4" to "1 to 4" */}
+      <p className="text-xs text-black font-medium">Upload 1 to 4 high-resolution photos of the property.</p>
     </div>
   );
 };
