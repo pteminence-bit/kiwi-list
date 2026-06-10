@@ -6,7 +6,9 @@ import { LayoutDashboard, Wallet, Building2, ClipboardList, Settings, LogOut, X,
 const Sidebar = ({ isAdmin, isOpen, setIsOpen }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+  
+  // FIX: Initialize directly from window so it's correct on first render
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 1024 : false);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 1024);
@@ -26,7 +28,7 @@ const Sidebar = ({ isAdmin, isOpen, setIsOpen }) => {
     navigationItems.push({ name: 'Admin Portal', path: '/admin', icon: ClipboardList });
   }
   
-  // Only add Admin Updates for mobile view
+  // This will now correctly evaluate on first render
   if (isMobile) {
     navigationItems.push({ name: 'Admin Updates', path: '/updates', icon: Bell });
   }
