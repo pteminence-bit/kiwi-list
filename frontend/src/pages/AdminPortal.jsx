@@ -1,6 +1,9 @@
 // src/pages/AdminPortal.jsx
 import React, { useState, useEffect } from 'react';
 import { AlertCircle, CheckCircle, Trash2, ShieldX, UserCheck, MessageSquare, Newspaper, ExternalLink, Users, Ban, Landmark, ShieldCheck, X, Eye } from 'lucide-react';
+// 👇 ADDED: Firebase Firestore real-time engine functions
+import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from '../firebase';
 
 // Hardcoded live target address pointing to your active Render Web Service
 const BACKEND_BASE_URL = 'https://kiwi-list-api.onrender.com';
@@ -9,6 +12,9 @@ const AdminPortal = ({ token }) => {
   const [queues, setQueues] = useState({ properties: [], kyc: [], reviews: [], users: [] });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  
+  // 👇 ADDED: State management tracker array for Firestore reports collection
+  const [reports, setReports] = useState([]);
   
   // NEW VIEW SWITCH STATE: Toggles layout space between operational queues and user directory controls
   const [activeTab, setActiveTab] = useState('moderation'); 
@@ -21,6 +27,14 @@ const AdminPortal = ({ token }) => {
     { date: "Jun 06, 2026", title: "Automated Multi-Queue Engine", body: "Admin dashboards now isolate KYC proofs, reported asset portfolios, and text reviews into explicit separate arrays.", tag: "System Core" },
     { date: "May 18, 2026", title: "Cloudflare R2 Storage Active", body: "Asset media arrays now route cleanly via optimized chunked streams direct to global storage edges.", tag: "Media Pipeline" }
   ];
+
+  // 👇 ADDED: Real-time listener binding for Firestore 'reports' collection collection paths
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, 'reports'), (snapshot) => {
+      setReports(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    return () => unsubscribe();
+  }, []);
 
   const fetchQueues = () => {
     fetch(`${BACKEND_BASE_URL}/api/admin/review-queue`, {
@@ -205,7 +219,7 @@ const AdminPortal = ({ token }) => {
         /* VIEW 1: OPERATIONAL MODERATION MODULE QUEUE SELECTION (DEFAULT) */
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start animate-fadeIn">
           
-          {/* Left Column: Platform Changelogs */}
+          {/* Left Column: Platform Changelogs & Flagged Reports Stream */}
           <div className="lg:col-span-5 space-y-6">
             <div className="bg-white rounded-xl border border-slate-200 p-4 md:p-5 shadow-sm space-y-4">
               <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
@@ -223,6 +237,43 @@ const AdminPortal = ({ token }) => {
                     <p className="text-xs text-slate-600 leading-relaxed">{update.body}</p>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            {/* 👇 UPGRADED: Real-time Flagged User Reports Stream Dashboard Container */}
+            <div className="bg-white rounded-xl border border-slate-200 p-4 md:p-5 shadow-sm">
+              <div className="flex items-center gap-2 pb-3 border-b border-slate-100 mb-4">
+                <AlertCircle size={18} className="text-red-600" />
+                <h2 className="text-sm font-black text-slate-900">Flagged Listings for Review</h2>
+              </div>
+              
+              <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
+                {reports.map(report => (
+                  <div key={report.id} className="p-4 bg-white border border-red-200 rounded-lg shadow-sm">
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="text-[10px] font-black uppercase text-red-600 bg-red-50 px-2 py-0.5 rounded">Action Required</span>
+                      <span className="text-[9px] text-slate-400 font-mono">
+                        {report.reportedAt ? report.reportedAt.toDate().toLocaleDateString() : 'Recent'}
+                      </span>
+                    </div>
+                    <p className="text-xs font-bold text-slate-900 mb-1">{report.listingTitle || 'Untitled Property Flag'}</p>
+                    <p className="text-[11px] text-slate-600 italic">"{report.reason || 'No specific issue reason provided.'}"</p>
+                    <div className="mt-3 flex gap-2">
+                      <button 
+                        onClick={() => console.log("Navigate to listing:", report.listingId)}
+                        className="text-[10px] font-bold text-blue-600 hover:underline"
+                      >
+                        View Listing
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                
+                {reports.length === 0 && (
+                  <div className="text-center py-6 text-slate-400 text-xs italic bg-slate-50 border border-dashed border-slate-200 rounded-lg">
+                    No active user report flags matching cluster logs.
+                  </div>
+                )}
               </div>
             </div>
           </div>
