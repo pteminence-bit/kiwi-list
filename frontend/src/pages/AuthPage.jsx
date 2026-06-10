@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-// 👇 APPENDED: Added sendEmailVerification and signOut to your existing auth imports
+// 👇 UPDATED: Explicitly verified imports to include sendEmailVerification and signOut
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification, signOut } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore'; 
 import { auth, db } from '../firebase';
@@ -44,13 +44,13 @@ const AuthPage = () => {
           createdAt: new Date()
         });
 
-        // 3. 👇 APPENDED: Send verification email to the user
+        // 3. UPDATED: Dispatches verification tracking link payload to user's registration email
         await sendEmailVerification(registeredUser);
-        alert("Verification email sent! Please check your inbox.");
-        
-        // 4. 👇 APPENDED: Terminate active token context state so they must verify before app access
+        alert("Verification email sent! Please check your inbox before logging in.");
+
+        // 4. UPDATED: Clears current active session to block automated context routing redirects
         await signOut(auth);
-        
+
         // Reset state and swap view cleanly back to login form layout
         setEmail('');
         setPassword('');
