@@ -33,13 +33,11 @@ const ListingCard = ({ listing, onUnlock, onReport }) => {
     return () => unsubscribe();
   }, [listing.id]);
 
-  // Logic to handle reporting in Firebase
   const handleReport = async () => {
     const reason = window.prompt("Reason for reporting:");
     if (!reason) return;
 
     try {
-      // 1. Add to reports collection for Admin Portal to see
       await addDoc(collection(db, 'reports'), {
         listingId: listing.id,
         listingTitle: listing.title || 'Untitled',
@@ -47,7 +45,6 @@ const ListingCard = ({ listing, onUnlock, onReport }) => {
         reportedAt: serverTimestamp(),
         status: 'pending'
       });
-      // 2. Mark listing as flagged
       await updateDoc(doc(db, 'listings', listing.id), { flagged: true });
       alert("Thank you. This listing has been flagged for admin review.");
     } catch (err) {
@@ -73,7 +70,10 @@ const ListingCard = ({ listing, onUnlock, onReport }) => {
       <div className="relative w-full aspect-square sm:aspect-[4/5] bg-slate-50 group">
         <div ref={scrollContainerRef} className="w-full h-full flex overflow-x-auto snap-x snap-mandatory scrollbar-none">
           {images.map((img, idx) => (
-            <div key={idx} className="w-full h-full flex-shrink-0 snap-start"><img src={img} className="w-full h-full object-cover" alt="Property" /></div>
+            <div key={idx} className="w-full h-full flex-shrink-0 snap-start">
+              {/* FIXED: object-cover for mobile to fill square, sm:object-contain to prevent desktop cropping */}
+              <img src={img} className="w-full h-full object-cover sm:object-contain" alt="Property" />
+            </div>
           ))}
         </div>
         {isPremium && <span className="absolute top-3 right-3 px-2.5 py-0.5 text-[9px] font-black uppercase text-amber-950 bg-amber-400 rounded-md z-10">Premium</span>}
