@@ -22,7 +22,6 @@ const MarketplaceFeed = ({ token }) => {
 
   return (
     <div className="w-full h-full pb-12">
-      {/* Search Bar - Spans full width of parent */}
       <div className="sticky top-0 z-20 bg-slate-950/95 backdrop-blur-sm p-4 mb-2 border-b border-slate-800">
         <div className="flex items-center gap-2 bg-slate-900 p-2 rounded-xl">
           <Search className="text-slate-500 ml-2" size={18} />
@@ -31,7 +30,6 @@ const MarketplaceFeed = ({ token }) => {
         </div>
       </div>
 
-      {/* Feed - Centered content without cropping */}
       <div className="flex flex-col items-center px-2">
         <div className="w-full max-w-lg space-y-6">
           {listings.map(listing => (
@@ -42,7 +40,6 @@ const MarketplaceFeed = ({ token }) => {
         </div>
       </div>
 
-      {/* Lightbox */}
       {activeImage && (
         <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4" onClick={() => setActiveImage(null)}>
           <button className="absolute top-6 right-6 p-2 bg-white/10 rounded-full text-white"><X size={24} /></button>

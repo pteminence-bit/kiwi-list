@@ -1,6 +1,6 @@
 // components/ListingCard.jsx
 import React, { useState } from 'react';
-import { MapPin, Bed, Bath, Eye, AlertTriangle, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Bed, Bath, Eye, AlertTriangle, ChevronRight, ChevronLeft } from 'lucide-react';
 
 const ListingCard = ({ listing }) => {
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -20,11 +20,11 @@ const ListingCard = ({ listing }) => {
         <AlertTriangle size={16} className="text-slate-600 hover:text-red-500 cursor-pointer" />
       </div>
 
-      {/* Media: object-contain prevents cropping, bg-black fills empty space */}
-      <div className="relative aspect-[4/3] bg-black overflow-hidden group flex items-center justify-center">
+      {/* Media: Removed forced aspect-ratio to match image shape naturally */}
+      <div className="relative w-full h-auto bg-black flex items-center justify-center overflow-hidden group">
         <img 
           src={images[currentIdx]} 
-          className="w-full h-full object-contain" 
+          className="w-full h-auto block object-contain" 
           alt="Listing" 
         />
         {images.length > 1 && (
