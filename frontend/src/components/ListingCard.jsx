@@ -1,14 +1,18 @@
 // components/ListingCard.jsx
 import React, { useState } from 'react';
-import { MapPin, Bed, Bath, Eye, AlertTriangle, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Bed, Bath, Eye, AlertTriangle, ChevronRight, ChevronLeft } from 'lucide-react';
+
+const R2_PUBLIC_BUCKET_URL = 'https://pub-580c3d172e3f4533b065d241e61ee132.r2.dev';
 
 const ListingCard = ({ listing }) => {
   const [currentIdx, setCurrentIdx] = useState(0);
-  const images = listing.images || [];
+  // Ensure we use the R2 base URL for all image paths
+  const images = (listing.images || []).map(img => 
+    img.startsWith('http') ? img : `${R2_PUBLIC_BUCKET_URL}/${img}`
+  );
 
   return (
     <div className="flex flex-col text-slate-200 w-full">
-      {/* Header */}
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500" />
@@ -20,12 +24,12 @@ const ListingCard = ({ listing }) => {
         <AlertTriangle size={16} className="text-slate-600 hover:text-red-500 cursor-pointer" />
       </div>
 
-      {/* Media: object-contain prevents cropping, bg-black fills empty space */}
       <div className="relative aspect-[4/3] bg-black overflow-hidden group flex items-center justify-center">
         <img 
           src={images[currentIdx]} 
           className="w-full h-full object-contain" 
           alt="Listing" 
+          onError={(e) => { e.target.src = '/fallback-placeholder.png'; }}
         />
         {images.length > 1 && (
           <>
@@ -35,7 +39,6 @@ const ListingCard = ({ listing }) => {
         )}
       </div>
 
-      {/* Details */}
       <div className="p-4 space-y-3 bg-slate-900">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-black text-white">₦{listing.price?.toLocaleString()}</h2>
