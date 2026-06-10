@@ -241,19 +241,38 @@ const AdminPortal = ({ token }) => {
 
       {/* DYNAMIC WORKSPACE ARCHITECTURE */}
       {activeTab === 'moderation' ? (
-        /* VIEW 1: OPERATIONAL MODERATION MODULE QUEUE SELECTION */
+        /* VIEW 1: OPERATIONAL MODERATION MODULE QUEUE SELECTION (3-COLUMN DESKTOP ARRAY) */
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start animate-fadeIn">
           
-          {/* Left Column: Platform Announcements Hub & Flagged Reports Stream */}
+          {/* COLUMN 1 (DESKTOP): Recent Static Logs & Historical Metadata Platform Updates */}
+          <div className="lg:col-span-4 bg-white rounded-xl border border-slate-200 p-4 md:p-5 shadow-sm space-y-4">
+            <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+              <Newspaper size={18} className="text-blue-600" />
+              <h3 className="font-extrabold text-slate-900">Recent Platform Logs</h3>
+            </div>
+            <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1 divide-y divide-slate-100">
+              {platformUpdates.map((update, idx) => (
+                <div key={idx} className={idx > 0 ? "pt-3" : ""}>
+                  <div className="flex justify-between items-center mb-1 gap-2">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide shrink-0">{update.date}</span>
+                    <span className="text-[8px] bg-blue-50 text-blue-700 font-extrabold px-1.5 py-0.5 rounded-full truncate">{update.tag}</span>
+                  </div>
+                  <h4 className="text-[11px] font-black text-slate-900 mb-0.5">{update.title}</h4>
+                  <p className="text-[11px] text-slate-600 leading-relaxed">{update.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* COLUMN 2 (DESKTOP): Middle Column Stack hosting Form Updates followed immediately by Moderate Activities */}
           <div className="lg:col-span-5 space-y-6">
             
-            {/* 👇 UPDATED COMPONENT BLOCK: Clean Interactive Global Broadcast Center Card */}
+            {/* Form Segment 1: Post Global Updates Interface */}
             <div className="bg-white rounded-xl border border-slate-200 p-4 md:p-5 shadow-sm space-y-4">
               <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
                 <Newspaper size={18} className="text-blue-600" />
                 <h3 className="font-extrabold text-slate-900">Post Global Update</h3>
               </div>
-              
               <div className="space-y-3">
                 <textarea
                   value={announcement}
@@ -272,164 +291,148 @@ const AdminPortal = ({ token }) => {
                   </button>
                 </div>
               </div>
-
-              <div className="pt-2 border-t border-slate-100">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide block mb-3">Recent Static Logs</span>
-                <div className="space-y-4 max-h-[140px] overflow-y-auto pr-1 divide-y divide-slate-100">
-                  {platformUpdates.map((update, idx) => (
-                    <div key={idx} className={idx > 0 ? "pt-3" : ""}>
-                      <div className="flex justify-between items-center mb-1 gap-2">
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide shrink-0">{update.date}</span>
-                        <span className="text-[8px] bg-blue-50 text-blue-700 font-extrabold px-1.5 py-0.5 rounded-full truncate">{update.tag}</span>
-                      </div>
-                      <h4 className="text-[11px] font-black text-slate-900 mb-0.5">{update.title}</h4>
-                      <p className="text-[11px] text-slate-600 leading-relaxed">{update.body}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
 
-            {/* Flagged User Reports Stream Dashboard Container */}
-            <div className="bg-white rounded-xl border border-slate-200 p-4 md:p-5 shadow-sm">
-              <div className="flex items-center gap-2 pb-3 border-b border-slate-100 mb-4">
-                <AlertCircle size={18} className="text-red-600" />
-                <h2 className="text-sm font-black text-slate-900">Flagged Listings for Review</h2>
+            {/* Pipeline Segment 2: Moderate Activities List Layered Directly Underneath Form Updates */}
+            <div className="bg-white rounded-xl border border-slate-200 p-4 md:p-5 shadow-sm space-y-4">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100 gap-2">
+                <div className="flex items-center gap-2">
+                  <AlertCircle size={18} className="text-amber-500" />
+                  <h3 className="font-extrabold text-slate-900">Moderate Activities</h3>
+                </div>
+                <span className="text-xs bg-slate-100 px-2.5 py-0.5 rounded-full font-bold text-slate-600 shrink-0">{totalInboundItems} Pending</span>
               </div>
-              
-              <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
-                {reports.map(report => (
-                  <div key={report.id} className="p-4 bg-white border border-red-200 rounded-lg shadow-sm">
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="text-[10px] font-black uppercase text-red-600 bg-red-50 px-2 py-0.5 rounded">Action Required</span>
-                      <span className="text-[9px] text-slate-400 font-mono">
-                        {report.reportedAt ? report.reportedAt.toDate().toLocaleDateString() : 'Recent'}
-                      </span>
+
+              <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
+                {/* Properties Queue Loop */}
+                {queues.properties.map(item => (
+                  <div key={item.id} className="bg-slate-50 border border-slate-200 p-4 rounded-lg flex flex-col justify-between gap-3 text-xs">
+                    <div className="flex gap-3 items-start w-full">
+                      <div className="p-2 bg-amber-100 text-amber-700 rounded-lg shrink-0">
+                        <AlertCircle size={16} />
+                      </div>
+                      <div className="w-full min-w-0">
+                        <div className="font-black text-slate-900 mb-0.5 flex flex-wrap items-center gap-1.5">
+                          <span className="truncate">Flagged Listing #{item.id.slice(0, 5)}</span>
+                          <span className="text-[9px] text-red-600 bg-red-50 px-1.5 py-0.5 rounded font-medium border border-red-100 shrink-0">Reported</span>
+                        </div>
+                        <p className="text-slate-500 font-medium truncate">{item.title || "Untitled property description"} • ₦{item.price?.toLocaleString()}</p>
+                        <p className="text-[11px] text-red-600 mt-1.5 font-medium bg-white px-2 py-1 border border-slate-100 rounded break-words">Reason: {item.reportReason || "Inaccurate listing specifications"}</p>
+                      </div>
                     </div>
-                    <p className="text-xs font-bold text-slate-900 mb-1">{report.listingTitle || 'Untitled Property Flag'}</p>
-                    <p className="text-[11px] text-slate-600 italic">"{report.reason || 'No specific issue reason provided.'}"</p>
-                    <div className="mt-3 flex gap-2">
-                      <button 
-                        onClick={() => console.log("Navigate to listing:", report.listingId)}
-                        className="text-[10px] font-bold text-blue-600 hover:underline"
-                      >
-                        View Listing
+                    <div className="flex gap-2 w-full shrink-0 justify-end pt-1 border-t border-slate-200/60">
+                      <button onClick={() => handleAction(item.id, 'properties', 'approve')} className="flex-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-md transition shadow-sm text-center">
+                        Approve
+                      </button>
+                      <button onClick={() => handleAction(item.id, 'properties', 'decline')} className="flex-1 px-3 py-1.5 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-md transition text-center">
+                        Decline
                       </button>
                     </div>
                   </div>
                 ))}
-                
-                {reports.length === 0 && (
-                  <div className="text-center py-6 text-slate-400 text-xs italic bg-slate-50 border border-dashed border-slate-200 rounded-lg">
-                    No active user report flags matching cluster logs.
+
+                {/* Agent KYC Request Loop */}
+                {queues.kyc.map(item => (
+                  <div key={item.id} className="bg-slate-50 border border-slate-200 p-4 rounded-lg flex flex-col justify-between gap-3 text-xs">
+                    <div className="flex gap-3 items-start w-full">
+                      <div className="p-2 bg-blue-100 text-blue-700 rounded-lg shrink-0">
+                        <UserCheck size={16} />
+                      </div>
+                      <div className="w-full min-w-0">
+                        <div className="font-black text-slate-900 mb-0.5 truncate">Agent KYC: {item.fullName || "Anonymous Broker"}</div>
+                        <p className="text-slate-500 font-medium truncate">ID: {item.idType || "NIN"} • #{item.idNumber || "XXXX"}</p>
+                        
+                        <div className="flex items-center gap-3 mt-2">
+                          <button 
+                            onClick={() => setSelectedKyc(item)}
+                            className="inline-flex items-center gap-1 text-[11px] bg-blue-50 text-blue-700 border border-blue-100 px-2 py-1 rounded hover:bg-blue-100 transition font-bold"
+                          >
+                            <Eye size={12} /> Review Details & Logs
+                          </button>
+                          
+                          {item.kycDocumentUrl && (
+                            <a href={item.kycDocumentUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-800 hover:underline font-bold">
+                              Open File <ExternalLink size={10} />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 w-full shrink-0 justify-end pt-1 border-t border-slate-200/60">
+                      <button onClick={() => handleAction(item.id, 'kyc', 'approve')} className="flex-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-md transition shadow-sm text-center">
+                        Approve
+                      </button>
+                      <button onClick={() => handleAction(item.id, 'kyc', 'decline')} className="flex-1 px-3 py-1.5 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-md transition text-center">
+                        Decline
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {/* User Reviews Loop */}
+                {queues.reviews.map(item => (
+                  <div key={item.id} className="bg-slate-50 border border-slate-200 p-4 rounded-lg flex flex-col justify-between gap-3 text-xs">
+                    <div className="flex gap-3 items-start w-full">
+                      <div className="p-2 bg-purple-100 text-purple-700 rounded-lg shrink-0">
+                        <MessageSquare size={16} />
+                      </div>
+                      <div className="w-full min-w-0">
+                        <div className="font-black text-slate-900 mb-0.5 truncate">User Review #{item.id.slice(0, 5)}</div>
+                        <p className="text-slate-600 italic font-medium bg-white px-2 py-1 border border-slate-100 rounded mt-1 break-words">"{item.reviewText || 'Empty text field feedback submission.'}"</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 w-full shrink-0 justify-end pt-1 border-t border-slate-200/60">
+                      <button onClick={() => handleAction(item.id, 'reviews', 'approve')} className="flex-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-md transition shadow-sm text-center">
+                        Approve
+                      </button>
+                      <button onClick={() => handleAction(item.id, 'reviews', 'decline')} className="flex-1 px-3 py-1.5 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-md transition text-center">
+                        Decline
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {totalInboundItems === 0 && (
+                  <div className="text-center py-8 text-slate-400 italic bg-slate-50 border border-dashed border-slate-200 rounded-lg">
+                    No properties, KYC verifications, or profile reviews require attention.
                   </div>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Right Column: Active Inbound Verification & Moderation Pipeline Cards */}
-          <div className="lg:col-span-7 bg-white rounded-xl border border-slate-200 p-4 md:p-5 shadow-sm space-y-6">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100 gap-2">
-              <div className="flex items-center gap-2">
-                <AlertCircle size={18} className="text-amber-500" />
-                <h3 className="font-extrabold text-slate-900">Moderate Activities</h3>
-              </div>
-              <span className="text-xs bg-slate-100 px-2.5 py-0.5 rounded-full font-bold text-slate-600 shrink-0">{totalInboundItems} Pending</span>
+          {/* COLUMN 3 (DESKTOP): Flagged User Reports Stream Dashboard Container */}
+          <div className="lg:col-span-3 bg-white rounded-xl border border-slate-200 p-4 md:p-5 shadow-sm">
+            <div className="flex items-center gap-2 pb-3 border-b border-slate-100 mb-4">
+              <AlertCircle size={18} className="text-red-600" />
+              <h2 className="text-sm font-black text-slate-900">Flagged Listings</h2>
             </div>
-
-            <div className="space-y-4 max-h-[600px] overflow-y-auto pr-1">
-              {/* Properties Queue Loop */}
-              {queues.properties.map(item => (
-                <div key={item.id} className="bg-slate-50 border border-slate-200 p-4 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
-                  <div className="flex gap-3 items-start w-full">
-                    <div className="p-2 bg-amber-100 text-amber-700 rounded-lg shrink-0">
-                      <AlertCircle size={16} />
-                    </div>
-                    <div className="w-full min-w-0">
-                      <div className="font-black text-slate-900 mb-0.5 flex flex-wrap items-center gap-1.5">
-                        <span className="truncate">Flagged Listing #{item.id.slice(0, 5)}</span>
-                        <span className="text-[9px] text-red-600 bg-red-50 px-1.5 py-0.5 rounded font-medium border border-red-100 shrink-0">Reported</span>
-                      </div>
-                      <p className="text-slate-500 font-medium truncate">{item.title || "Untitled property description"} • ₦{item.price?.toLocaleString()}</p>
-                      <p className="text-[11px] text-red-600 mt-1.5 font-medium bg-white px-2 py-1 border border-slate-100 rounded break-words">Reason: {item.reportReason || "Inaccurate listing specifications"}</p>
-                    </div>
+            
+            <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+              {reports.map(report => (
+                <div key={report.id} className="p-3 bg-white border border-red-200 rounded-lg shadow-sm">
+                  <div className="flex justify-between items-start mb-1.5">
+                    <span className="text-[9px] font-black uppercase text-red-600 bg-red-50 px-1.5 py-0.5 rounded">Review Required</span>
+                    <span className="text-[8px] text-slate-400 font-mono">
+                      {report.reportedAt ? report.reportedAt.toDate().toLocaleDateString() : 'Recent'}
+                    </span>
                   </div>
-                  <div className="flex gap-2 w-full sm:w-auto shrink-0 justify-end">
-                    <button onClick={() => handleAction(item.id, 'properties', 'approve')} className="flex-1 sm:flex-none px-4 py-2 sm:py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-md transition shadow-sm">
-                      Approve
-                    </button>
-                    <button onClick={() => handleAction(item.id, 'properties', 'decline')} className="flex-1 sm:flex-none px-4 py-2 sm:py-1.5 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-md transition">
-                      Decline
+                  <p className="text-xs font-bold text-slate-900 mb-1 truncate">{report.listingTitle || 'Untitled Property Flag'}</p>
+                  <p className="text-[10px] text-slate-600 italic line-clamp-3">"{report.reason || 'No specific issue reason provided.'}"</p>
+                  <div className="mt-2 pt-2 border-t border-slate-100 flex gap-2">
+                    <button 
+                      onClick={() => console.log("Navigate to listing:", report.listingId)}
+                      className="text-[10px] font-bold text-blue-600 hover:underline"
+                    >
+                      View Listing
                     </button>
                   </div>
                 </div>
               ))}
-
-              {/* Agent KYC Request Loop */}
-              {queues.kyc.map(item => (
-                <div key={item.id} className="bg-slate-50 border border-slate-200 p-4 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
-                  <div className="flex gap-3 items-start w-full">
-                    <div className="p-2 bg-blue-100 text-blue-700 rounded-lg shrink-0">
-                      <UserCheck size={16} />
-                    </div>
-                    <div className="w-full min-w-0">
-                      <div className="font-black text-slate-900 mb-0.5 truncate">Agent KYC: {item.fullName || "Anonymous Broker"}</div>
-                      <p className="text-slate-500 font-medium truncate">ID: {item.idType || "NIN"} • #{item.idNumber || "XXXX"}</p>
-                      
-                      <div className="flex items-center gap-3 mt-2">
-                        <button 
-                          onClick={() => setSelectedKyc(item)}
-                          className="inline-flex items-center gap-1 text-[11px] bg-blue-50 text-blue-700 border border-blue-100 px-2 py-1 rounded hover:bg-blue-100 transition font-bold"
-                        >
-                          <Eye size={12} /> Review Details & Logs
-                        </button>
-                        
-                        {item.kycDocumentUrl && (
-                          <a href={item.kycDocumentUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-800 hover:underline font-bold">
-                            Open Direct File <ExternalLink size={10} />
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 w-full sm:w-auto shrink-0 justify-end">
-                    <button onClick={() => handleAction(item.id, 'kyc', 'approve')} className="flex-1 sm:flex-none px-4 py-2 sm:py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-md transition shadow-sm">
-                      Approve
-                    </button>
-                    <button onClick={() => handleAction(item.id, 'kyc', 'decline')} className="flex-1 sm:flex-none px-4 py-2 sm:py-1.5 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-md transition">
-                      Decline
-                    </button>
-                  </div>
-                </div>
-              ))}
-
-              {/* User Reviews Loop */}
-              {queues.reviews.map(item => (
-                <div key={item.id} className="bg-slate-50 border border-slate-200 p-4 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
-                  <div className="flex gap-3 items-start w-full">
-                    <div className="p-2 bg-purple-100 text-purple-700 rounded-lg shrink-0">
-                      <MessageSquare size={16} />
-                    </div>
-                    <div className="w-full min-w-0">
-                      <div className="font-black text-slate-900 mb-0.5 truncate">User Review #{item.id.slice(0, 5)}</div>
-                      <p className="text-slate-600 italic font-medium bg-white px-2 py-1 border border-slate-100 rounded mt-1 break-words">"{item.reviewText || 'Empty text field feedback submission.'}"</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 w-full sm:w-auto shrink-0 justify-end">
-                    <button onClick={() => handleAction(item.id, 'reviews', 'approve')} className="flex-1 sm:flex-none px-4 py-2 sm:py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-md transition shadow-sm">
-                      Approve
-                    </button>
-                    <button onClick={() => handleAction(item.id, 'reviews', 'decline')} className="flex-1 sm:flex-none px-4 py-2 sm:py-1.5 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-md transition">
-                      Decline
-                    </button>
-                  </div>
-                </div>
-              ))}
-
-              {totalInboundItems === 0 && (
-                <div className="text-center py-8 text-slate-400 italic bg-slate-50 border border-dashed border-slate-200 rounded-lg">
-                  No properties, KYC verifications, or profile reviews require attention.
+              
+              {reports.length === 0 && (
+                <div className="text-center py-6 text-slate-400 text-xs italic bg-slate-50 border border-dashed border-slate-200 rounded-lg">
+                  No active user report flags matching cluster logs.
                 </div>
               )}
             </div>
