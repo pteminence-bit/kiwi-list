@@ -71,8 +71,12 @@ const ListingCard = ({ listing, onUnlock, onReport }) => {
         <div ref={scrollContainerRef} className="w-full h-full flex overflow-x-auto snap-x snap-mandatory scrollbar-none">
           {images.map((img, idx) => (
             <div key={idx} className="w-full h-full flex-shrink-0 snap-start">
-              {/* FIXED: object-cover for mobile to fill square, sm:object-contain to prevent desktop cropping */}
-              <img src={img} className="w-full h-full object-cover sm:object-contain" alt="Property" />
+              {/* FIXED: Added md:object-contain to prevent desktop image clipping while keeping mobile square crop */}
+              <img 
+                src={img} 
+                className="w-full h-full object-cover md:object-contain bg-slate-50" 
+                alt="Property" 
+              />
             </div>
           ))}
         </div>

@@ -1,8 +1,8 @@
 // src/pages/AdminPortal.jsx
 import React, { useState, useEffect } from 'react';
 import { AlertCircle, CheckCircle, Trash2, ShieldX, UserCheck, MessageSquare, Newspaper, ExternalLink, Users, Ban, Landmark, ShieldCheck, X, Eye } from 'lucide-react';
-// 👇 ADDED: Firebase Firestore real-time engine functions
-import { collection, onSnapshot } from 'firebase/firestore';
+// 👇 UPGRADED: Unified imports including addDoc and serverTimestamp
+import { collection, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 
 // Hardcoded live target address pointing to your active Render Web Service
@@ -13,7 +13,7 @@ const AdminPortal = ({ token }) => {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   
-  // 👇 ADDED: State management tracker array for Firestore reports collection
+  // State management tracker array for Firestore reports collection
   const [reports, setReports] = useState([]);
   
   // NEW VIEW SWITCH STATE: Toggles layout space between operational queues and user directory controls
@@ -22,13 +22,39 @@ const AdminPortal = ({ token }) => {
   // NEW STATE TRACKER: Handles active targeted viewing injection mapping data payloads for the KYC modal panel
   const [selectedKyc, setSelectedKyc] = useState(null);
 
+  // 👇 ADDED: State trackers explicitly assigned for the new update form
+  const [announcement, setAnnouncement] = useState('');
+  const [posting, setPosting] = useState(false);
+
   const platformUpdates = [
     { date: "Jun 08, 2026", title: "Financial Governance Framework", body: "Admins can now revoke withdrawal permissions and disable compromised user/broker portfolios globally.", tag: "Wallets Guard" },
     { date: "Jun 06, 2026", title: "Automated Multi-Queue Engine", body: "Admin dashboards now isolate KYC proofs, reported asset portfolios, and text reviews into explicit separate arrays.", tag: "System Core" },
     { date: "May 18, 2026", title: "Cloudflare R2 Storage Active", body: "Asset media arrays now route cleanly via optimized chunked streams direct to global storage edges.", tag: "Media Pipeline" }
   ];
 
-  // 👇 ADDED: Real-time listener binding for Firestore 'reports' collection collection paths
+  // 👇 ADDED: Core broadcast engine targeting your updated 'adminUpdates' specification
+  const postAnnouncement = async (e) => {
+    if (e) e.preventDefault();
+    if (!announcement.trim()) return;
+    
+    setPosting(true);
+    try {
+      await addDoc(collection(db, 'adminUpdates'), {
+        text: announcement.trim(),
+        timestamp: serverTimestamp(),
+        author: 'Admin'
+      });
+      setAnnouncement('');
+      alert("Update posted successfully!");
+    } catch (error) {
+      console.error("Error posting update:", error);
+      alert("Failed to post global update payload.");
+    } finally {
+      setPosting(false);
+    }
+  };
+
+  // Real-time listener binding for Firestore 'reports' collection paths
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'reports'), (snapshot) => {
       setReports(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
@@ -92,7 +118,7 @@ const AdminPortal = ({ token }) => {
           setSelectedKyc(null);
         }
 
-        // NEW IMPLEMENTATION: For account updates, perform local inline data state mapping mutations
+        // ACCOUNT updates: Perform local inline data state mapping mutations
         if (queueType === 'users') {
           setQueues(prev => ({
             ...prev,
@@ -106,10 +132,9 @@ const AdminPortal = ({ token }) => {
             })
           }));
 
-          // FRONTEND ACCOUNT RESTRICTION GUARD: Force immediate portal eviction if the user disables themselves or an active token target matching this runtime session
+          // FRONTEND ACCOUNT RESTRICTION GUARD: Force immediate portal eviction if user self-disables
           if (action === 'disable') {
             try {
-              // Extract the uid from the client's current JWT token payload to confirm ownership
               const base64Url = token.split('.')[1];
               const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
               const jsonPayload = decodeURIComponent(window.atob(base64).split('').map((c) => {
@@ -127,7 +152,7 @@ const AdminPortal = ({ token }) => {
             }
           }
         } else {
-          // For typical review queues, filter out the resolved data object entries cleanly
+          // Filter out resolved data object entries cleanly
           setQueues(prev => ({
             ...prev,
             [queueType]: prev[queueType].filter(item => item.id !== targetId)
@@ -169,7 +194,7 @@ const AdminPortal = ({ token }) => {
           <p className="text-xs text-slate-500 font-medium">Live System Status Metrics & Governance Review Queues</p>
         </div>
         
-        {/* NEW TOP-RIGHT TOGGLE BUTTON COMPONENT BLOCK */}
+        {/* TOP-RIGHT TOGGLE BUTTON COMPONENT BLOCK */}
         <div className="bg-slate-200/80 p-1 rounded-xl flex items-center shrink-0 w-full sm:w-auto shadow-inner">
           <button 
             onClick={() => setActiveTab('moderation')}
@@ -214,33 +239,58 @@ const AdminPortal = ({ token }) => {
         </div>
       </div>
 
-      {/* DYNAMIC WORKSPACE ARCHITECTURE: Conditionally changes view based on active tab state */}
+      {/* DYNAMIC WORKSPACE ARCHITECTURE */}
       {activeTab === 'moderation' ? (
-        /* VIEW 1: OPERATIONAL MODERATION MODULE QUEUE SELECTION (DEFAULT) */
+        /* VIEW 1: OPERATIONAL MODERATION MODULE QUEUE SELECTION */
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start animate-fadeIn">
           
-          {/* Left Column: Platform Changelogs & Flagged Reports Stream */}
+          {/* Left Column: Platform Announcements Hub & Flagged Reports Stream */}
           <div className="lg:col-span-5 space-y-6">
+            
+            {/* 👇 UPDATED COMPONENT BLOCK: Clean Interactive Global Broadcast Center Card */}
             <div className="bg-white rounded-xl border border-slate-200 p-4 md:p-5 shadow-sm space-y-4">
               <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
                 <Newspaper size={18} className="text-blue-600" />
-                <h3 className="font-extrabold text-slate-900">Platform Updates</h3>
+                <h3 className="font-extrabold text-slate-900">Post Global Update</h3>
               </div>
-              <div className="space-y-4 divide-y divide-slate-100">
-                {platformUpdates.map((update, idx) => (
-                  <div key={idx} className={idx > 0 ? "pt-4" : ""}>
-                    <div className="flex justify-between items-center mb-1 gap-2">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide shrink-0">{update.date}</span>
-                      <span className="text-[9px] bg-blue-50 text-blue-700 font-extrabold px-2 py-0.5 rounded-full truncate">{update.tag}</span>
+              
+              <div className="space-y-3">
+                <textarea
+                  value={announcement}
+                  onChange={(e) => setAnnouncement(e.target.value)}
+                  placeholder="Enter global notification or announcement payload updates..."
+                  maxLength={500}
+                  className="w-full text-xs p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 font-medium resize-none h-20"
+                />
+                <div className="flex justify-end">
+                  <button
+                    onClick={postAnnouncement}
+                    disabled={posting || !announcement.trim()}
+                    className="text-[11px] font-bold px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 shadow-sm"
+                  >
+                    {posting ? 'Posting...' : 'Post Update'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-100">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide block mb-3">Recent Static Logs</span>
+                <div className="space-y-4 max-h-[140px] overflow-y-auto pr-1 divide-y divide-slate-100">
+                  {platformUpdates.map((update, idx) => (
+                    <div key={idx} className={idx > 0 ? "pt-3" : ""}>
+                      <div className="flex justify-between items-center mb-1 gap-2">
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide shrink-0">{update.date}</span>
+                        <span className="text-[8px] bg-blue-50 text-blue-700 font-extrabold px-1.5 py-0.5 rounded-full truncate">{update.tag}</span>
+                      </div>
+                      <h4 className="text-[11px] font-black text-slate-900 mb-0.5">{update.title}</h4>
+                      <p className="text-[11px] text-slate-600 leading-relaxed">{update.body}</p>
                     </div>
-                    <h4 className="text-xs font-black text-slate-900 mb-1">{update.title}</h4>
-                    <p className="text-xs text-slate-600 leading-relaxed">{update.body}</p>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
 
-            {/* 👇 UPGRADED: Real-time Flagged User Reports Stream Dashboard Container */}
+            {/* Flagged User Reports Stream Dashboard Container */}
             <div className="bg-white rounded-xl border border-slate-200 p-4 md:p-5 shadow-sm">
               <div className="flex items-center gap-2 pb-3 border-b border-slate-100 mb-4">
                 <AlertCircle size={18} className="text-red-600" />
@@ -386,7 +436,7 @@ const AdminPortal = ({ token }) => {
           </div>
         </div>
       ) : (
-        /* VIEW 2: FULL COMPREHENSIVE GOVERNANCE VIEW (DISABLING, BLOCKING WITHDRAWALS, ETC) */
+        /* VIEW 2: FULL COMPREHENSIVE GOVERNANCE VIEW */
         <div className="bg-white rounded-xl border border-slate-200 p-4 md:p-6 shadow-sm space-y-4 max-w-4xl mx-auto w-full animate-fadeIn">
           <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
             <Users size={20} className="text-indigo-600" />
@@ -418,7 +468,6 @@ const AdminPortal = ({ token }) => {
                 </div>
 
                 <div className="flex gap-2 pt-2 border-t border-slate-200/60">
-                  {/* Account Enable/Disable Trigger */}
                   {user.isDisabled ? (
                     <button 
                       onClick={() => handleAction(user.id, 'users', 'enable')}
@@ -435,7 +484,6 @@ const AdminPortal = ({ token }) => {
                     </button>
                   )}
 
-                  {/* Withdrawal Guard Lock/Unlock Trigger */}
                   {user.isPayoutBlocked ? (
                     <button 
                       onClick={() => handleAction(user.id, 'users', 'unblock_payout')}
@@ -462,13 +510,12 @@ const AdminPortal = ({ token }) => {
         </div>
       )}
 
-      {/* NEW PANEL OVERLAY: Comprehensive Slide-Out KYC Document Viewer Modal */}
+      {/* PANEL OVERLAY: Comprehensive Slide-Out KYC Document Viewer Modal */}
       {selectedKyc && (
         <div className="fixed inset-0 z-50 flex items-center justify-end bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300">
           <div className="bg-white w-full max-w-xl h-full shadow-2xl p-6 overflow-y-auto flex flex-col justify-between animate-slideLeft">
             
             <div>
-              {/* Modal Top Branding Elements */}
               <div className="flex items-center justify-between pb-4 border-b border-slate-200 mb-6">
                 <div className="flex items-center gap-2">
                   <UserCheck className="text-blue-600" size={22} />
@@ -485,7 +532,6 @@ const AdminPortal = ({ token }) => {
                 </button>
               </div>
 
-              {/* Broker Information Fields */}
               <div className="space-y-4 mb-6">
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2 text-xs">
                   <h4 className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Broker Metadata Profile</h4>
@@ -504,12 +550,10 @@ const AdminPortal = ({ token }) => {
                   </div>
                 </div>
 
-                {/* Secure Document Preview Window */}
                 <div className="space-y-2">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Uploaded Proof Attachment</span>
                   {selectedKyc.kycDocumentUrl ? (
                     <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-100 relative aspect-[4/3] flex flex-col items-center justify-center">
-                      {/* Robust check evaluating image formats vs documents securely */}
                       {selectedKyc.kycDocumentUrl.split('?')[0].match(/\.(jpeg|jpg|gif|png|webp)$/i) || selectedKyc.kycDocumentUrl.includes('images') || selectedKyc.kycDocumentUrl.includes('image') ? (
                         <img 
                           src={selectedKyc.kycDocumentUrl} 
@@ -533,7 +577,6 @@ const AdminPortal = ({ token }) => {
               </div>
             </div>
 
-            {/* Modal Bottom Operational Controls */}
             <div className="flex gap-3 pt-4 border-t border-slate-200 bg-white">
               <button 
                 onClick={() => handleAction(selectedKyc.id, 'kyc', 'approve')}

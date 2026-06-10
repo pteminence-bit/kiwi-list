@@ -4,11 +4,10 @@ import { Menu } from 'lucide-react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from './firebase'; 
 
-// Context & Component Imports
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Sidebar from './components/Sidebar';
+import AdminUpdates from './components/AdminUpdates'; // Ensure you have this component created
 
-// Pages/Views Imports
 import MarketplaceFeed from './pages/MarketplaceFeed';
 import CreateListing from './pages/CreateListing'; 
 import ManageListings from './pages/ManageListings';
@@ -30,77 +29,43 @@ const DashboardLayout = () => {
         try {
           const userDocRef = doc(db, 'users', user.uid);
           const userDocSnap = await getDoc(userDocRef);
-          
           if (userDocSnap.exists()) {
             const userData = userDocSnap.data();
-            
-            if (userData.role === 'admin') {
-              setIsAdmin(true);
-            } else {
-              setIsAdmin(false);
-            }
-
-            if (userData.isVerifiedAgent === true || userData.role === 'agent') {
-              setIsVerified(true);
-            } else {
-              setIsVerified(false);
-            }
-          } else {
-            setIsAdmin(false);
-            setIsVerified(false);
+            setIsAdmin(userData.role === 'admin');
+            setIsVerified(userData.isVerifiedAgent === true || userData.role === 'agent');
           }
         } catch (error) {
-          console.error("Error checking Firestore admin role status:", error);
-          setIsAdmin(false);
-          setIsVerified(false);
+          console.error(error);
         }
       }
       setCheckingRole(false);
     };
-
-    if (!loading) {
-      checkAdminStatus();
-    }
+    if (!loading) checkAdminStatus();
   }, [user, loading]);
 
-  if (loading || checkingRole) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-slate-950 text-white">
-        Loading session...
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Navigate to="/login" replace />; 
-  }
+  if (loading || checkingRole) return <div className="flex h-screen items-center justify-center bg-slate-950 text-white">Loading session...</div>;
+  if (!user) return <Navigate to="/login" replace />; 
 
   const token = user.accessToken;
 
   return (
-    <div className="flex bg-slate-950 min-h-screen text-white flex-col w-full">
-      {/* Top Mobile Navbar Header Panel */}
-      <header className="lg:hidden w-full bg-[#0f172a] border-b border-slate-800 p-4 flex items-center justify-between sticky top-0 z-30">
-        <div className="text-xl font-bold text-blue-400 tracking-tight">KIWI-list</div>
-        <button 
-          onClick={() => setMobileMenuOpen(true)}
-          className="p-2 text-slate-400 hover:text-white"
-        >
-          <Menu size={24} />
-        </button>
+    <div className="flex w-full min-h-screen bg-slate-950 text-white">
+      {/* Mobile Header */}
+      <header className="lg:hidden w-full bg-[#0f172a] border-b border-slate-800 p-4 flex items-center justify-between fixed top-0 z-30">
+        <div className="text-xl font-bold text-blue-400">KIWI-list</div>
+        <button onClick={() => setMobileMenuOpen(true)} className="p-2"><Menu size={24} /></button>
       </header>
 
-      {/* Shared Horizontal Topbar (Desktop) or Sidebar Drawer (Mobile) */}
-      <Sidebar isAdmin={isAdmin} isOpen={mobileMenuOpen} setIsOpen={setMobileMenuOpen} /> 
+      {/* DESKTOP LAYOUT STRUCTURE */}
+      {/* 1. LEFT: Navigation */}
+      <div className="hidden lg:block w-64 border-r border-slate-800 shrink-0">
+        <Sidebar isAdmin={isAdmin} isOpen={true} setIsOpen={() => {}} />
+      </div>
 
-      {/* Responsive Content Workspace Window Wrapper:
-        Completely removed 'lg:ml-64' sidebar allocation space.
-        Added 'lg:pt-16' top offset allocation spacing to prevent overlapping content beneath the topbar element.
-      */}
-      <main className="flex-1 w-full lg:pt-16 p-4 md:p-8">
+      {/* 2. MIDDLE: Marketplace Feed / Content */}
+      <main className="flex-1 w-full max-w-2xl mx-auto pt-20 lg:pt-8 px-4">
         <Routes>
           <Route path="/" element={<MarketplaceFeed token={token} />} />
-          {/* Linked cleanly to matching path value configuration */}
           <Route path="/add" element={<CreateListing token={token} />} />
           <Route path="/manage" element={<ManageListings token={token} />} />
           <Route path="/admin" element={isAdmin ? <AdminPortal token={token} /> : <Navigate to="/" replace />} />
@@ -109,6 +74,17 @@ const DashboardLayout = () => {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
+
+      {/* 3. RIGHT: Admin Updates (Only visible on large screens) */}
+      <aside className="hidden xl:block w-80 border-l border-slate-800 p-6 shrink-0">
+        <div className="sticky top-8">
+          <h2 className="text-sm font-bold text-slate-400 mb-4 uppercase tracking-wider">Admin Updates</h2>
+          <AdminUpdates />
+        </div>
+      </aside>
+
+      {/* Mobile Sidebar Trigger */}
+      <Sidebar isAdmin={isAdmin} isOpen={mobileMenuOpen} setIsOpen={setMobileMenuOpen} />
     </div>
   );
 };
