@@ -1,13 +1,14 @@
 import React from 'react';
-import { Bed, Bath, Eye, AlertTriangle } from 'lucide-react';
+import { Bed, Bath, Eye, AlertTriangle, Lock } from 'lucide-react';
 
-// Centralized R2 Config
 const R2_BASE = 'https://pub-580c3d172e3f4533b065d241e61ee132.r2.dev';
 
-const ListingCard = ({ listing }) => {
+const ListingCard = ({ listing, onUnlock }) => {
   const images = (listing.images || []).map(img => 
     img.startsWith('http') ? img : `${R2_BASE}/${img.replace(/^\//, '')}`
   );
+
+  const isPremium = listing.tier === 'premium';
 
   return (
     <div className="flex flex-col text-slate-200 w-full bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
@@ -16,21 +17,23 @@ const ListingCard = ({ listing }) => {
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-full bg-indigo-500" />
           <div>
-            <p className="text-xs font-bold text-white">Verified Agent</p>
+            <p className="text-xs font-bold text-white flex items-center gap-1">
+              Verified Agent 
+              {isPremium && <span className="bg-amber-500 text-[9px] px-1.5 py-0.5 rounded text-white font-black uppercase">Premium</span>}
+            </p>
             <p className="text-[10px] text-slate-400">{listing.address?.split(',').pop()}</p>
           </div>
         </div>
         <AlertTriangle size={16} className="text-slate-600 hover:text-red-500 cursor-pointer" />
       </div>
 
-      {/* FIXED: Single Image Display */}
+      {/* Media Display */}
       {images.length > 0 && (
         <div className="relative aspect-[4/3] w-full bg-black cursor-pointer group">
           <img 
             src={images[0]} 
             alt="Property primary view"
             className="w-full h-full object-contain"
-            // We pass the full array to the dataset so the parent can access all images
             data-full-gallery={JSON.stringify(images)} 
           />
           {images.length > 1 && (
@@ -47,11 +50,23 @@ const ListingCard = ({ listing }) => {
           <h2 className="text-xl font-black text-white">₦{listing.price?.toLocaleString()}</h2>
           <div className="flex items-center gap-1 text-xs font-medium text-slate-400"><Eye size={14} /> {listing.views || 0}</div>
         </div>
+        
         <p className="text-xs text-slate-300 leading-relaxed">{listing.title}</p>
+
         <div className="flex gap-4 pt-1">
           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400"><Bed size={14} /> {listing.beds} Beds</div>
           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400"><Bath size={14} /> {listing.baths} Baths</div>
         </div>
+
+        {/* Unlock Button for Premium Listings */}
+        {isPremium && (
+          <button 
+            onClick={() => onUnlock(listing.id)}
+            className="w-full flex items-center justify-center gap-2 mt-2 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-black uppercase tracking-wider rounded-lg transition-colors"
+          >
+            <Lock size={14} /> Unlock Contact Details
+          </button>
+        )}
       </div>
     </div>
   );

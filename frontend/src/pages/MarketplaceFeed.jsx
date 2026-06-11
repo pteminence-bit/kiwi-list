@@ -6,7 +6,7 @@ import { API_BASE_URL } from '../config';
 const MarketplaceFeed = ({ token }) => {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeGallery, setActiveGallery] = useState(null); // Changed from activeImage
+  const [activeGallery, setActiveGallery] = useState(null);
   const [galleryIdx, setGalleryIdx] = useState(0);
 
   const fetchFeed = () => {
@@ -20,12 +20,29 @@ const MarketplaceFeed = ({ token }) => {
 
   useEffect(() => { fetchFeed(); }, [token]);
 
-  // Updated click handler to capture gallery data
+  // Integration: Function to handle contact unlocking
+  const handleUnlockContact = async (listingId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/payments/initialize`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ amount: 500, purpose: 'unlock_contact', listingId })
+      });
+      const data = await response.json();
+      if (data.checkoutUrl) window.location.href = data.checkoutUrl;
+    } catch (error) {
+      console.error("Payment error:", error);
+    }
+  };
+
   const handleImageLightboxCapture = (e) => {
     const galleryData = e.target.getAttribute('data-full-gallery');
     if (galleryData) {
       setActiveGallery(JSON.parse(galleryData));
-      setGalleryIdx(0); // Reset to first image
+      setGalleryIdx(0);
     }
   };
 
@@ -51,13 +68,16 @@ const MarketplaceFeed = ({ token }) => {
         <div className="w-full max-w-lg space-y-6">
           {listings.map(listing => (
             <div key={listing.id} onClick={handleImageLightboxCapture} className="bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 shadow-xl">
-              <ListingCard listing={listing} />
+              {/* Integration: Passed onUnlock prop here */}
+              <ListingCard 
+                listing={listing} 
+                onUnlock={() => handleUnlockContact(listing.id)} 
+              />
             </div>
           ))}
         </div>
       </div>
 
-      {/* Updated Lightbox to handle gallery swiping */}
       {activeGallery && (
         <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4" onClick={() => setActiveGallery(null)}>
           <button className="absolute top-6 right-6 p-2 bg-white/10 rounded-full text-white z-50" onClick={() => setActiveGallery(null)}><X size={24} /></button>
