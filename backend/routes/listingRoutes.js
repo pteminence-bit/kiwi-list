@@ -59,7 +59,9 @@ router.get('/feed', async (req, res) => {
       const responseData = { ...data, id: listingId };
 
       if (data.tier === 'premium') {
+        // Redact sensitive info
         delete responseData.contactDetails; 
+        responseData.address = "REDACTED: Unlock for location"; // Mask the address
       }
 
       return responseData;

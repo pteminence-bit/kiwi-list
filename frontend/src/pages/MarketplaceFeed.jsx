@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, SlidersHorizontal, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import ListingCard from '../components/ListingCard';
 import { API_BASE_URL } from '../config';
@@ -8,29 +8,50 @@ const MarketplaceFeed = ({ token }) => {
   const [loading, setLoading] = useState(true);
   const [activeGallery, setActiveGallery] = useState(null);
   const [galleryIdx, setGalleryIdx] = useState(0);
+  const isFetching = useRef(false); // Prevents duplicate triggers
 
-  const fetchFeed = () => {
-    fetch(`${API_BASE_URL}/api/listings/feed`, {
-      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
-    })
-    .then(res => res.json())
-    .then(data => { 
-      // 👇 FILTER/SORT INTEGRATION: Prioritizes 'premium' listings at the top of the feed array
+  const fetchFeed = async () => {
+    if (isFetching.current) return;
+    isFetching.current = true;
+    
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/listings/feed`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      
       const sortedData = (data || []).sort((a, b) => {
         if (a.tier === 'premium' && b.tier !== 'premium') return -1;
         if (a.tier !== 'premium' && b.tier === 'premium') return 1;
-        return 0; // Maintains original secondary sorting parameters (like date) safely
+        return 0;
       });
       
-      setListings(sortedData); 
-      setLoading(false); 
-    })
-    .catch(err => { console.error(err); setLoading(false); });
+      setListings(sortedData);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+      isFetching.current = false;
+    }
   };
 
-  useEffect(() => { fetchFeed(); }, [token]);
+  useEffect(() => {
+    fetchFeed();
+  }, [token]);
 
-  // Integration: Function to handle contact unlocking
+  // Infinite Scroll Logic
+  useEffect(() => {
+    const handleScroll = () => {
+      // Check if user is near the bottom (within 200px)
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) {
+        fetchFeed();
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []); // Empty deps because fetchFeed uses latest state internally
+
   const handleUnlockContact = async (listingId) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/payments/initialize`, {
@@ -56,7 +77,7 @@ const MarketplaceFeed = ({ token }) => {
     }
   };
 
-  if (loading) {
+  if (loading && listings.length === 0) {
     return (
       <div className="flex h-screen items-center justify-center text-slate-500 text-xs font-bold uppercase tracking-widest animate-pulse">
         Loading Kiwi-List...
@@ -78,7 +99,6 @@ const MarketplaceFeed = ({ token }) => {
         <div className="w-full max-w-lg space-y-6">
           {listings.map(listing => (
             <div key={listing.id} onClick={handleImageLightboxCapture} className="bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 shadow-xl">
-              {/* Integration: Passed onUnlock prop here */}
               <ListingCard 
                 listing={listing} 
                 onUnlock={() => handleUnlockContact(listing.id)} 
