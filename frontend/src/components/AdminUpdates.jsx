@@ -24,7 +24,7 @@ const AdminUpdates = () => {
   if (updates.length === 0) {
     return (
       <div className="p-4 bg-slate-900/50 rounded-xl border border-dashed border-slate-800 text-center">
-        <p className="text-[11px] text-slate-500 font-medium italic">No active system updates.</p>
+        <p className="text-[11px] text-slate-500 font-medium italic">No active updates.</p>
       </div>
     );
   }
@@ -38,7 +38,7 @@ const AdminUpdates = () => {
         >
           <div className="flex items-center gap-2 mb-2 text-blue-400">
             <Megaphone size={12} />
-            <span className="text-[9px] font-black uppercase tracking-widest">System Update</span>
+            <span className="text-[9px] font-black uppercase tracking-widest">Updates</span>
           </div>
           
           <p className="text-xs text-slate-200 leading-relaxed font-medium">

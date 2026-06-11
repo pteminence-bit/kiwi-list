@@ -27,7 +27,7 @@ const AdminPortal = ({ token }) => {
   const [posting, setPosting] = useState(false);
 
   const platformUpdates = [
-    { date: "Jun 08, 2026", title: "Financial Governance Framework", body: "Admins can now revoke withdrawal permissions and disable compromised user/broker portfolios globally.", tag: "Wallets Guard" },
+    { date: "Jul 09, 2026", title: "Financial Governance Framework", body: "Admins can now revoke withdrawal permissions and disable compromised user/broker portfolios globally.", tag: "Wallets Guard" },
     { date: "Jun 06, 2026", title: "Automated Multi-Queue Engine", body: "Admin dashboards now isolate KYC proofs, reported asset portfolios, and text reviews into explicit separate arrays.", tag: "System Core" },
     { date: "May 18, 2026", title: "Cloudflare R2 Storage Active", body: "Asset media arrays now route cleanly via optimized chunked streams direct to global storage edges.", tag: "Media Pipeline" }
   ];
@@ -48,7 +48,7 @@ const AdminPortal = ({ token }) => {
       alert("Update posted successfully!");
     } catch (error) {
       console.error("Error posting update:", error);
-      alert("Failed to post global update payload.");
+      alert("Failed to post update.");
     } finally {
       setPosting(false);
     }
@@ -73,7 +73,7 @@ const AdminPortal = ({ token }) => {
       }
       
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to fetch queue data package.');
+      if (!res.ok) throw new Error(data.error || 'Failed to fetch.');
       return data;
     })
     .then((data) => {
@@ -176,7 +176,7 @@ const AdminPortal = ({ token }) => {
           <ShieldX className="mx-auto mb-3 text-red-500" size={40} />
           <h3 className="font-bold text-lg mb-1">Access Denied</h3>
           <p className="text-sm text-red-600 mb-4 break-words font-mono bg-white p-2 border border-red-100 rounded text-left text-xs">{error}</p>
-          <p className="text-xs text-slate-400">If this persists, make sure your token is active and your Firestore document role is explicitly set to <code className="bg-slate-200 px-1 rounded text-red-600">"admin"</code></p>
+          <p className="text-xs text-slate-400">If this persists, make sure your role is explicitly set to <code className="bg-slate-200 px-1 rounded text-red-600">"admin"</code></p>
         </div>
       </div>
     );
@@ -190,8 +190,8 @@ const AdminPortal = ({ token }) => {
       {/* HEADER WITH VIEW TOGGLE SWITCH */}
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900">Admin Portal</h1>
-          <p className="text-xs text-slate-500 font-medium">Live System Status Metrics & Governance Review Queues</p>
+          <h1 className="text-2xl font-black tracking-tight text-slate-900">Admin</h1>
+          <p className="text-xs text-slate-500 font-medium">Live System Status and Moderation</p>
         </div>
         
         {/* TOP-RIGHT TOGGLE BUTTON COMPONENT BLOCK */}
@@ -214,7 +214,7 @@ const AdminPortal = ({ token }) => {
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Users size={14} /> Account Guards ({queues.users.length})
+            <Users size={14} /> Account Guard ({queues.users.length})
           </button>
         </div>
       </div>
@@ -226,7 +226,7 @@ const AdminPortal = ({ token }) => {
           <span className="text-2xl font-black text-slate-900">{queues.properties.length}</span>
         </div>
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-          <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block mb-1">Agent KYC Requests</span>
+          <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block mb-1">KYC Requests</span>
           <span className="text-2xl font-black text-slate-900">{queues.kyc.length}</span>
         </div>
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
@@ -234,7 +234,7 @@ const AdminPortal = ({ token }) => {
           <span className="text-2xl font-black text-slate-900">{queues.users.length}</span>
         </div>
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-          <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block mb-1">Total System Alerts</span>
+          <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block mb-1">System Alerts</span>
           <span className="text-2xl font-black text-amber-600">{totalInboundItems}</span>
         </div>
       </div>
@@ -271,7 +271,7 @@ const AdminPortal = ({ token }) => {
             <div className="bg-white rounded-xl border border-slate-200 p-4 md:p-5 shadow-sm space-y-4">
               <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
                 <Newspaper size={18} className="text-blue-600" />
-                <h3 className="font-extrabold text-slate-900">Post Global Update</h3>
+                <h3 className="font-extrabold text-slate-900">Post Update</h3>
               </div>
               <div className="space-y-3">
                 <textarea
@@ -298,7 +298,7 @@ const AdminPortal = ({ token }) => {
               <div className="flex items-center justify-between pb-2 border-b border-slate-100 gap-2">
                 <div className="flex items-center gap-2">
                   <AlertCircle size={18} className="text-amber-500" />
-                  <h3 className="font-extrabold text-slate-900">Moderate Activities</h3>
+                  <h3 className="font-extrabold text-slate-900">Moderate</h3>
                 </div>
                 <span className="text-xs bg-slate-100 px-2.5 py-0.5 rounded-full font-bold text-slate-600 shrink-0">{totalInboundItems} Pending</span>
               </div>
@@ -339,7 +339,7 @@ const AdminPortal = ({ token }) => {
                         <UserCheck size={16} />
                       </div>
                       <div className="w-full min-w-0">
-                        <div className="font-black text-slate-900 mb-0.5 truncate">Agent KYC: {item.fullName || "Anonymous Broker"}</div>
+                        <div className="font-black text-slate-900 mb-0.5 truncate">KYC: {item.fullName || "Anonymous Broker"}</div>
                         <p className="text-slate-500 font-medium truncate">ID: {item.idType || "NIN"} • #{item.idNumber || "XXXX"}</p>
                         
                         <div className="flex items-center gap-3 mt-2">
@@ -347,7 +347,7 @@ const AdminPortal = ({ token }) => {
                             onClick={() => setSelectedKyc(item)}
                             className="inline-flex items-center gap-1 text-[11px] bg-blue-50 text-blue-700 border border-blue-100 px-2 py-1 rounded hover:bg-blue-100 transition font-bold"
                           >
-                            <Eye size={12} /> Review Details & Logs
+                            <Eye size={12} /> Review Details
                           </button>
                           
                           {item.kycDocumentUrl && (
@@ -377,7 +377,7 @@ const AdminPortal = ({ token }) => {
                         <MessageSquare size={16} />
                       </div>
                       <div className="w-full min-w-0">
-                        <div className="font-black text-slate-900 mb-0.5 truncate">User Review #{item.id.slice(0, 5)}</div>
+                        <div className="font-black text-slate-900 mb-0.5 truncate">Review #{item.id.slice(0, 5)}</div>
                         <p className="text-slate-600 italic font-medium bg-white px-2 py-1 border border-slate-100 rounded mt-1 break-words">"{item.reviewText || 'Empty text field feedback submission.'}"</p>
                       </div>
                     </div>
@@ -432,7 +432,7 @@ const AdminPortal = ({ token }) => {
               
               {reports.length === 0 && (
                 <div className="text-center py-6 text-slate-400 text-xs italic bg-slate-50 border border-dashed border-slate-200 rounded-lg">
-                  No active user report flags matching cluster logs.
+                  No active user reports.
                 </div>
               )}
             </div>
@@ -445,7 +445,7 @@ const AdminPortal = ({ token }) => {
             <Users size={20} className="text-indigo-600" />
             <div>
               <h3 className="font-black text-lg text-slate-900">User Account Controls</h3>
-              <p className="text-xs text-slate-400">Manage digital transaction permissions and globally suspension parameters</p>
+              <p className="text-xs text-slate-400">Manage digital transaction permissions and global suspension parameters</p>
             </div>
           </div>
           
@@ -507,7 +507,7 @@ const AdminPortal = ({ token }) => {
             ))}
             
             {queues.users.length === 0 && (
-              <p className="text-center text-slate-400 italic text-xs col-span-2 py-8">No users found registered in cluster nodes.</p>
+              <p className="text-center text-slate-400 italic text-xs col-span-2 py-8">No users registered.</p>
             )}
           </div>
         </div>
@@ -523,7 +523,7 @@ const AdminPortal = ({ token }) => {
                 <div className="flex items-center gap-2">
                   <UserCheck className="text-blue-600" size={22} />
                   <div>
-                    <h3 className="font-black text-slate-900 text-base">KYC Dossier Review</h3>
+                    <h3 className="font-black text-slate-900 text-base">KYC Review</h3>
                     <p className="text-xs text-slate-400">UID: <span className="font-mono">{selectedKyc.id}</span></p>
                   </div>
                 </div>
@@ -573,7 +573,7 @@ const AdminPortal = ({ token }) => {
                     </div>
                   ) : (
                     <div className="border border-dashed border-slate-200 rounded-xl p-6 text-center text-slate-400 text-xs italic bg-slate-50">
-                      No document attachment present in this profile node payload.
+                      No document attachment present.
                     </div>
                   )}
                 </div>
@@ -585,7 +585,7 @@ const AdminPortal = ({ token }) => {
                 onClick={() => handleAction(selectedKyc.id, 'kyc', 'approve')}
                 className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition shadow-sm flex items-center justify-center gap-1"
               >
-                <ShieldCheck size={14} /> Approve kyc
+                <ShieldCheck size={14} /> Approve
               </button>
               <button 
                 onClick={() => handleAction(selectedKyc.id, 'kyc', 'decline')}
