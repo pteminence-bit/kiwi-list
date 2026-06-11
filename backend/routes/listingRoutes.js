@@ -172,4 +172,21 @@ router.patch('/:id/report', verifyUser, async (req, res) => {
   }
 });
 
+// --- INCREMENT LISTING VIEWS ---
+router.patch('/:id/view', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const listingRef = db.collection('listings').doc(id);
+    
+    // Extracted FieldValue from your existing db configuration object
+    await listingRef.update({
+      views: db.FieldValue.increment(1)
+    });
+    
+    res.json({ message: "View incremented" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

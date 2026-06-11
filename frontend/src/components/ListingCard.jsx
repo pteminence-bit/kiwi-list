@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react'; // Added useEffect
 import { Bed, Bath, Eye, AlertTriangle, Lock, MapPin } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 
@@ -34,6 +34,21 @@ const ListingCard = ({ listing, onUnlock, token }) => {
       console.error("Error reporting listing:", error);
     }
   };
+
+  // View tracking logic
+  const handleView = async () => {
+    try {
+      await fetch(`${API_BASE_URL}/api/listings/${listing.id}/view`, {
+        method: 'PATCH'
+      });
+    } catch (err) {
+      console.error("Failed to track view", err);
+    }
+  };
+
+  useEffect(() => {
+    handleView();
+  }, [listing.id]); // Added listing.id as dependency for safety if component reuses
 
   return (
     <div className="flex flex-col text-slate-200 w-full bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
