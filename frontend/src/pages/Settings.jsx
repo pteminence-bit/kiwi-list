@@ -77,54 +77,54 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
   if (profileLoading) return <div className="flex h-screen items-center justify-center text-slate-400">Loading...</div>;
 
   return (
-    <div className="w-full max-w-6xl mx-auto p-4 md:p-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-black text-slate-900">Account Settings</h1>
-        <p className="text-sm text-slate-500">Manage your broker identity and verification.</p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Profile Section */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-          <h3 className="flex items-center gap-2 font-bold text-slate-900 mb-6 border-b pb-4"><User size={18} className="text-blue-600" /> Basic Identity</h3>
-          <form onSubmit={handleProfileSave} className="space-y-4">
-            <input className="w-full p-3 border rounded-lg" value={profile.displayName} onChange={e => setProfile({...profile, displayName: e.target.value})} placeholder="Display Name" />
-            <input className="w-full p-3 border rounded-lg" value={profile.phoneNumber} onChange={e => setProfile({...profile, phoneNumber: e.target.value})} placeholder="WhatsApp Number" />
-            <textarea className="w-full p-3 border rounded-lg h-24" value={profile.bio} onChange={e => setProfile({...profile, bio: e.target.value})} placeholder="Broker Bio" />
-            <button className="w-full py-3 bg-blue-600 text-white font-bold rounded-lg flex items-center justify-center gap-2">
-              {profileSaving ? <Loader2 className="animate-spin" /> : <Save size={16} />} Save Profile
-            </button>
-          </form>
+    <div className="w-full h-full p-4 md:p-8 bg-slate-950">
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-2xl font-black text-white">Account Settings</h1>
+          <p className="text-sm text-slate-400">Manage your broker identity and verification.</p>
         </div>
 
-        {/* KYC Section */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-          {isVerified ? (
-            <div className="bg-emerald-50 p-6 rounded-xl flex items-start gap-4">
-              <CheckCircle className="text-emerald-600 shrink-0" size={32} />
-              <div>
-                <h4 className="font-bold text-emerald-900">Verification Active</h4>
-                <p className="text-xs text-emerald-700 mt-1">Your account is fully authenticated.</p>
-              </div>
-            </div>
-          ) : (
-            <form onSubmit={handleKycSubmit} className="space-y-4">
-              <h3 className="font-bold text-slate-900 mb-2">Agent Verification</h3>
-              <input className="w-full p-3 border rounded-lg" required placeholder="Legal Full Name" value={kycData.fullName} onChange={e => setKycData({...kycData, fullName: e.target.value})} />
-              <div className="grid grid-cols-2 gap-3">
-                <select className="p-3 border rounded-lg" value={kycData.idType} onChange={e => setKycData({...kycData, idType: e.target.value})}>
-                  <option value="NIN">NIN</option><option value="Passport">Passport</option>
-                </select>
-                <input className="p-3 border rounded-lg" required placeholder="ID Number" value={kycData.idNumber} onChange={e => setKycData({...kycData, idNumber: e.target.value})} />
-              </div>
-              <label className="flex flex-col items-center p-6 border-2 border-dashed rounded-lg cursor-pointer hover:border-blue-500">
-                <Upload size={24} className="text-slate-400" />
-                <span className="text-xs font-bold mt-2">{uploading ? 'Uploading...' : 'Upload ID'}</span>
-                <input type="file" className="hidden" onChange={handleFileUpload} />
-              </label>
-              <button disabled={submitting} className="w-full py-3 bg-slate-900 text-white font-bold rounded-lg">Submit Verification</button>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+            <h3 className="flex items-center gap-2 font-bold text-white mb-6 border-b border-slate-800 pb-4"><User size={18} className="text-blue-500" /> Basic Identity</h3>
+            <form onSubmit={handleProfileSave} className="space-y-4">
+              <input className="w-full p-3 bg-slate-950 border border-slate-800 rounded-lg text-white" value={profile.displayName} onChange={e => setProfile({...profile, displayName: e.target.value})} placeholder="Display Name" />
+              <input className="w-full p-3 bg-slate-950 border border-slate-800 rounded-lg text-white" value={profile.phoneNumber} onChange={e => setProfile({...profile, phoneNumber: e.target.value})} placeholder="WhatsApp Number" />
+              <textarea className="w-full p-3 bg-slate-950 border border-slate-800 rounded-lg text-white h-24" value={profile.bio} onChange={e => setProfile({...profile, bio: e.target.value})} placeholder="Broker Bio" />
+              <button className="w-full py-3 bg-blue-600 text-white font-bold rounded-lg flex items-center justify-center gap-2">
+                {profileSaving ? <Loader2 className="animate-spin" /> : <Save size={16} />} Save Profile
+              </button>
             </form>
-          )}
+          </div>
+
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+            {isVerified ? (
+              <div className="bg-emerald-900/20 border border-emerald-900 p-6 rounded-xl flex items-start gap-4">
+                <CheckCircle className="text-emerald-500 shrink-0" size={32} />
+                <div>
+                  <h4 className="font-bold text-emerald-100">Verification Active</h4>
+                  <p className="text-xs text-emerald-400 mt-1">Your account is fully authenticated.</p>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleKycSubmit} className="space-y-4">
+                <h3 className="font-bold text-white mb-2">Agent Verification</h3>
+                <input className="w-full p-3 bg-slate-950 border border-slate-800 rounded-lg text-white" required placeholder="Legal Full Name" value={kycData.fullName} onChange={e => setKycData({...kycData, fullName: e.target.value})} />
+                <div className="grid grid-cols-2 gap-3">
+                  <select className="p-3 bg-slate-950 border border-slate-800 rounded-lg text-white" value={kycData.idType} onChange={e => setKycData({...kycData, idType: e.target.value})}>
+                    <option value="NIN">NIN</option><option value="Passport">Passport</option>
+                  </select>
+                  <input className="p-3 bg-slate-950 border border-slate-800 rounded-lg text-white" required placeholder="ID Number" value={kycData.idNumber} onChange={e => setKycData({...kycData, idNumber: e.target.value})} />
+                </div>
+                <label className="flex flex-col items-center p-6 border-2 border-dashed border-slate-800 rounded-lg cursor-pointer hover:border-blue-500">
+                  <Upload size={24} className="text-slate-500" />
+                  <span className="text-xs font-bold mt-2 text-slate-400">{uploading ? 'Uploading...' : 'Upload ID'}</span>
+                  <input type="file" className="hidden" onChange={handleFileUpload} />
+                </label>
+                <button disabled={submitting} className="w-full py-3 bg-blue-600 text-white font-bold rounded-lg">Submit Verification</button>
+              </form>
+            )}
+          </div>
         </div>
       </div>
     </div>
