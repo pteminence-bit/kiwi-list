@@ -14,7 +14,17 @@ const MarketplaceFeed = ({ token }) => {
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
     })
     .then(res => res.json())
-    .then(data => { setListings(data || []); setLoading(false); })
+    .then(data => { 
+      // 👇 FILTER/SORT INTEGRATION: Prioritizes 'premium' listings at the top of the feed array
+      const sortedData = (data || []).sort((a, b) => {
+        if (a.tier === 'premium' && b.tier !== 'premium') return -1;
+        if (a.tier !== 'premium' && b.tier === 'premium') return 1;
+        return 0; // Maintains original secondary sorting parameters (like date) safely
+      });
+      
+      setListings(sortedData); 
+      setLoading(false); 
+    })
     .catch(err => { console.error(err); setLoading(false); });
   };
 
@@ -100,4 +110,5 @@ const MarketplaceFeed = ({ token }) => {
     </div>
   );
 };
+
 export default MarketplaceFeed;
