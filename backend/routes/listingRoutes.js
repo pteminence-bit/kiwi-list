@@ -61,7 +61,7 @@ router.get('/feed', async (req, res) => {
       if (data.tier === 'premium') {
         // Redact sensitive info
         delete responseData.contactDetails; 
-        responseData.address = "REDACTED: Unlock for location"; // Mask the address
+        responseData.address = "Unlock to view location"; // Mask the address
       }
 
       return responseData;
@@ -128,7 +128,7 @@ router.post('/api/users/submit-kyc', verifyUser, async (req, res) => {
       kycDocumentUrl: kycDocumentUrl,
       kycSubmittedAt: new Date().toISOString()
     });
-    res.json({ message: "KYC credentials queued successfully." });
+    res.json({ message: "KYC submitted successfully, Reviewing." });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

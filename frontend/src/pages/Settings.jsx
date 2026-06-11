@@ -38,7 +38,7 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
         body: JSON.stringify(profile)
       });
       if (res.ok) {
-        setProfileMsg({ type: 'success', text: 'Profile updated successfully!' });
+        setProfileMsg({ type: 'success', text: 'Profile updated!' });
         if (onProfileUpdate) onProfileUpdate();
       } else throw new Error('Update failed');
     } catch (err) { setProfileMsg({ type: 'error', text: err.message }); } finally { setProfileSaving(false); }
@@ -69,7 +69,7 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ ...kycData, documentUrl: kycData.kycDocumentUrl })
       });
-      if (res.ok) setKycMsg({ type: 'success', text: 'KYC submitted successfully!' });
+      if (res.ok) setKycMsg({ type: 'success', text: 'KYC submitted pending review!' });
       else throw new Error('Submission failed');
     } catch (err) { setKycMsg({ type: 'error', text: err.message }); } finally { setSubmitting(false); }
   };
@@ -81,7 +81,7 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
           <h1 className="text-2xl font-black text-white">Account Settings</h1>
-          <p className="text-sm text-slate-400">Manage your broker identity and verification.</p>
+          <p className="text-sm text-slate-400">Manage your identity and Get KYC verification.</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -92,7 +92,7 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
               <input className="w-full p-3 bg-slate-950 border border-slate-800 rounded-lg text-white" value={profile.phoneNumber} onChange={e => setProfile({...profile, phoneNumber: e.target.value})} placeholder="WhatsApp Number" />
               <textarea className="w-full p-3 bg-slate-950 border border-slate-800 rounded-lg text-white h-24" value={profile.bio} onChange={e => setProfile({...profile, bio: e.target.value})} placeholder="Broker Bio" />
               <button className="w-full py-3 bg-blue-600 text-white font-bold rounded-lg flex items-center justify-center gap-2">
-                {profileSaving ? <Loader2 className="animate-spin" /> : <Save size={16} />} Save Profile
+                {profileSaving ? <Loader2 className="animate-spin" /> : <Save size={16} />} Save
               </button>
             </form>
           </div>
@@ -102,13 +102,13 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
               <div className="bg-emerald-900/20 border border-emerald-900 p-6 rounded-xl flex items-start gap-4">
                 <CheckCircle className="text-emerald-500 shrink-0" size={32} />
                 <div>
-                  <h4 className="font-bold text-emerald-100">Verification Active</h4>
-                  <p className="text-xs text-emerald-400 mt-1">Your account is fully authenticated.</p>
+                  <h4 className="font-bold text-emerald-100">Verified</h4>
+                  <p className="text-xs text-emerald-400 mt-1">Your account is fully verified.</p>
                 </div>
               </div>
             ) : (
               <form onSubmit={handleKycSubmit} className="space-y-4">
-                <h3 className="font-bold text-white mb-2">Agent Verification</h3>
+                <h3 className="font-bold text-white mb-2">KYC Verification</h3>
                 <input className="w-full p-3 bg-slate-950 border border-slate-800 rounded-lg text-white" required placeholder="Legal Full Name" value={kycData.fullName} onChange={e => setKycData({...kycData, fullName: e.target.value})} />
                 <div className="grid grid-cols-2 gap-3">
                   <select className="p-3 bg-slate-950 border border-slate-800 rounded-lg text-white" value={kycData.idType} onChange={e => setKycData({...kycData, idType: e.target.value})}>

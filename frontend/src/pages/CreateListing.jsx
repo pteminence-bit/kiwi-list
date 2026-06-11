@@ -94,19 +94,19 @@ const CreateListing = ({ token }) => {
           </div>
           <div>
             <h2 className="text-xl font-black text-slate-900">Create Listing</h2>
-            <p className="text-xs text-slate-500 font-medium tracking-wide">SUBMIT PROPERTY ASSET CONFIGURATION</p>
+            <p className="text-xs text-slate-500 font-medium tracking-wide">POST PROPERTY</p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div className="sm:col-span-2">
-              <label className="block text-[11px] font-black uppercase text-slate-400 mb-1.5">Property Title</label>
+              <label className="block text-[11px] font-black uppercase text-slate-400 mb-1.5">Title</label>
               <input required type="text" name="title" onChange={handleInputChange} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
             </div>
 
             <div className="sm:col-span-2">
-              <label className="block text-[11px] font-black uppercase text-slate-400 mb-1.5">Detailed Description</label>
+              <label className="block text-[11px] font-black uppercase text-slate-400 mb-1.5">Description</label>
               <textarea required name="description" onChange={handleInputChange} rows={4} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
             </div>
 
@@ -116,9 +116,9 @@ const CreateListing = ({ token }) => {
             </div>
 
             <div>
-              <label className="block text-[11px] font-black uppercase text-slate-400 mb-1.5">Placement Tier</label>
+              <label className="block text-[11px] font-black uppercase text-slate-400 mb-1.5">Listing Tier</label>
               <select name="tier" onChange={handleInputChange} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                <option value="free">Free Tier</option>
+                <option value="free">Free </option>
                 <option value="premium">Premium (₦3,000)</option>
               </select>
             </div>
@@ -141,7 +141,7 @@ const CreateListing = ({ token }) => {
 
             <div className="sm:col-span-2 p-5 bg-blue-50/50 border border-blue-100 rounded-2xl space-y-4">
               <h3 className="text-[10px] font-black text-blue-800 tracking-widest flex items-center gap-2 uppercase">
-                <ShieldCheck size={16} /> Secure Contact Info
+                <ShieldCheck size={16} /> Contact Info
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <input required type="tel" name="phone" onChange={handleInputChange} placeholder="Phone" className="px-4 py-3 border border-blue-100 rounded-xl text-sm outline-none" />
@@ -151,7 +151,7 @@ const CreateListing = ({ token }) => {
           </div>
 
           <div className="space-y-3">
-            <label className="block text-[11px] font-black uppercase text-slate-400">Property Imagery (2-4 required)</label>
+            <label className="block text-[11px] font-black uppercase text-slate-400">Property Images (2-4 required)</label>
             <ImageUploader onImagesSelected={setImages} />
           </div>
 

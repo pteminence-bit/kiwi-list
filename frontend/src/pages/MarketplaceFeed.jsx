@@ -80,7 +80,7 @@ const MarketplaceFeed = ({ token }) => {
   if (loading && listings.length === 0) {
     return (
       <div className="flex h-screen items-center justify-center text-slate-500 text-xs font-bold uppercase tracking-widest animate-pulse">
-        Loading Kiwi-List...
+        Loading Kiwi-List Feed...
       </div>
     );
   }

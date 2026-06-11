@@ -18,7 +18,7 @@ const ListingCard = ({ listing, onUnlock }) => {
           <div className="w-9 h-9 rounded-full bg-indigo-500" />
           <div>
             <p className="text-xs font-bold text-white flex items-center gap-1">
-              Verified Agent 
+              KIWI-list Verified Agent 
               {isPremium && <span className="bg-amber-500 text-[9px] px-1.5 py-0.5 rounded text-white font-black uppercase">Premium</span>}
             </p>
             {/* Show address only if not redacted */}
@@ -76,7 +76,7 @@ const ListingCard = ({ listing, onUnlock }) => {
           </button>
         ) : (
           <div className="mt-2 py-2.5 bg-slate-800 text-slate-400 text-[10px] text-center font-bold uppercase rounded-lg border border-slate-700">
-            Contact Verified: {listing.contactDetails?.phone || 'Available'}
+            Contact: {listing.contactDetails?.phone || 'Available'}
           </div>
         )}
       </div>
