@@ -72,7 +72,7 @@ const ListingCard = ({ listing, onUnlock }) => {
             onClick={() => onUnlock(listing.id)}
             className="w-full flex items-center justify-center gap-2 mt-2 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-black uppercase tracking-wider rounded-lg transition-colors"
           >
-            <Lock size={14} /> Unlock Contact & Location
+            <Lock size={14} /> Unlock Details
           </button>
         ) : (
           <div className="mt-2 py-2.5 bg-slate-800 text-slate-400 text-[10px] text-center font-bold uppercase rounded-lg border border-slate-700">
