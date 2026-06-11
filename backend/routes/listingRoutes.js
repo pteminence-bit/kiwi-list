@@ -1,4 +1,3 @@
-// backend/routes/listingRoutes.js
 import express from 'express';
 import { db } from '../config/firebase.js';
 import { verifyUser } from '../middleware/authMiddleware.js';
@@ -7,26 +6,25 @@ const router = express.Router();
 
 // --- CREATE LISTING ---
 router.post('/create', verifyUser, async (req, res) => {
-  const { title, price, tier, images, contactDetails, address, beds, baths } = req.body;
+  // FIXED: Destructured 'description'
+  const { title, description, price, tier, images, contactDetails, address, beds, baths } = req.body;
 
   try {
-    // FIXED: Sanitize incoming image array keys to permanently block "undefined/" from polluting Firestore docs
     const sanitizedImages = (images || []).map(img => {
       if (!img || typeof img !== 'string') return img;
-      // Strip out 'undefined/' or '/undefined/' text variations cleanly
       return img.replace(/^(\/?undefined\/)/, '');
     });
 
     const listingData = {
       ownerId: req.user.uid,
       title,
-      description,
+      description, // FIXED: Added description
       price,
       address,
       beds,
       baths,
-      tier, // 'free' or 'premium'
-      images: sanitizedImages, // Array of sanitized R2 reference filenames
+      tier,
+      images: sanitizedImages,
       contactDetails,
       status: tier === 'premium' ? 'pending_payment' : 'active',
       isFlagged: false,
@@ -46,6 +44,26 @@ router.post('/create', verifyUser, async (req, res) => {
   }
 });
 
+// --- UPDATE LISTING ---
+router.put('/:id', verifyUser, async (req, res) => {
+  const { id } = req.params;
+  const updates = req.body;
+
+  try {
+    const listingRef = db.collection('listings').doc(id);
+    const doc = await listingRef.get();
+
+    if (!doc.exists || doc.data().ownerId !== req.user.uid) {
+      return res.status(403).json({ error: "Unauthorized or not found" });
+    }
+
+    await listingRef.update(updates);
+    res.json({ message: "Listing updated successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // --- GET MARKETPLACE FEED ---
 router.get('/feed', async (req, res) => {
   try {
@@ -60,9 +78,8 @@ router.get('/feed', async (req, res) => {
       const responseData = { ...data, id: listingId };
 
       if (data.tier === 'premium') {
-        // Redact sensitive info
         delete responseData.contactDetails; 
-        responseData.address = "Unlock to view location"; // Mask the address
+        responseData.address = "Unlock to view location";
       }
 
       return responseData;
@@ -120,7 +137,6 @@ router.delete('/:id', verifyUser, async (req, res) => {
   }
 });
 
-// FIXED: Maintained path signature for backwards compatibility but updated destination routing mapping safely
 router.post('/api/users/submit-kyc', verifyUser, async (req, res) => {
   const { kycDocumentUrl } = req.body;
   try {

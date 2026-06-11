@@ -1,6 +1,6 @@
 import React from 'react';
 import { Bed, Bath, Eye, AlertTriangle, Lock, MapPin } from 'lucide-react';
-import { API_BASE_URL } from '../config'; // Ensure this is imported
+import { API_BASE_URL } from '../config';
 
 const R2_BASE = 'https://pub-580c3d172e3f4533b065d241e61ee132.r2.dev';
 
@@ -11,7 +11,6 @@ const ListingCard = ({ listing, onUnlock, token }) => {
 
   const isPremium = listing.tier === 'premium';
 
-  // NEW: Function to handle reporting
   const handleReport = async () => {
     const reason = prompt("Please provide a reason for reporting this listing:");
     if (!reason) return;
@@ -52,7 +51,6 @@ const ListingCard = ({ listing, onUnlock, token }) => {
             </p>
           </div>
         </div>
-        {/* UPDATED: Added onClick to trigger handleReport */}
         <AlertTriangle 
           size={16} 
           className="text-slate-600 hover:text-red-500 cursor-pointer" 
@@ -84,11 +82,13 @@ const ListingCard = ({ listing, onUnlock, token }) => {
           <div className="flex items-center gap-1 text-xs font-medium text-slate-400"><Eye size={14} /> {listing.views || 0}</div>
         </div>
         
-        <p className="text-xs text-slate-300 leading-relaxed font-medium">
-          {listing.description}
-        </p>
-
-        <p className="text-xs text-slate-500 font-bold uppercase">{listing.title}</p>
+        {/* Title and Description Section */}
+        <div className="space-y-1">
+          <p className="text-xs text-slate-500 font-bold uppercase">{listing.title}</p>
+          <p className="text-xs text-slate-300 leading-relaxed">
+            {listing.description}
+          </p>
+        </div>
         
         <div className="flex gap-4 pt-1">
           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400"><Bed size={14} /> {listing.beds} Beds</div>

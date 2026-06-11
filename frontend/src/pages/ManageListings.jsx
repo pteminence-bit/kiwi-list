@@ -24,6 +24,11 @@ const ManageListings = ({ token }) => {
     if (token) fetchMyListings();
   }, [token]);
 
+  // NEW: Handler for Edit - redirects to an edit route
+  const handleEdit = (id) => {
+    window.location.href = `/edit-listing/${id}`;
+  };
+
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to remove this property listing?")) return;
     try {
@@ -54,7 +59,6 @@ const ManageListings = ({ token }) => {
           <p className="text-sm text-slate-500">Track and edit your active property placements.</p>
         </header>
 
-        {/* TABLE VIEW (Desktop) */}
         <div className="hidden md:block w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <table className="w-full text-left">
             <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
@@ -90,7 +94,8 @@ const ManageListings = ({ token }) => {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2">
-                      <button className="p-2 text-slate-400 hover:text-blue-600"><Edit size={18} /></button>
+                      {/* UPDATED: Added onClick to Edit */}
+                      <button onClick={() => handleEdit(property.id)} className="p-2 text-slate-400 hover:text-blue-600"><Edit size={18} /></button>
                       <button onClick={() => handleDelete(property.id)} className="p-2 text-slate-400 hover:text-red-600"><Trash2 size={18} /></button>
                     </div>
                   </td>
@@ -100,7 +105,6 @@ const ManageListings = ({ token }) => {
           </table>
         </div>
 
-        {/* CARD VIEW (Mobile/iOS Optimized) */}
         <div className="grid grid-cols-1 gap-4 md:hidden">
           {myListings.map((property) => (
             <div key={property.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -116,9 +120,9 @@ const ManageListings = ({ token }) => {
                 <span className="font-bold text-slate-900">₦{property.price?.toLocaleString()}</span>
                 <div className="flex items-center gap-4">
                   <span className="text-xs text-slate-400 flex items-center gap-1"><Eye size={14} /> {property.views}</span>
-                  {/* Min touch target 44px for iOS */}
                   <div className="flex gap-1">
-                    <button className="h-11 w-11 flex items-center justify-center bg-slate-50 rounded-lg text-slate-600"><Edit size={18} /></button>
+                    {/* UPDATED: Added onClick to Edit */}
+                    <button onClick={() => handleEdit(property.id)} className="h-11 w-11 flex items-center justify-center bg-slate-50 rounded-lg text-slate-600"><Edit size={18} /></button>
                     <button onClick={() => handleDelete(property.id)} className="h-11 w-11 flex items-center justify-center bg-red-50 rounded-lg text-red-600"><Trash2 size={18} /></button>
                   </div>
                 </div>
