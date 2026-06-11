@@ -1,14 +1,40 @@
 import React from 'react';
 import { Bed, Bath, Eye, AlertTriangle, Lock, MapPin } from 'lucide-react';
+import { API_BASE_URL } from '../config'; // Ensure this is imported
 
 const R2_BASE = 'https://pub-580c3d172e3f4533b065d241e61ee132.r2.dev';
 
-const ListingCard = ({ listing, onUnlock }) => {
+const ListingCard = ({ listing, onUnlock, token }) => {
   const images = (listing.images || []).map(img => 
     img.startsWith('http') ? img : `${R2_BASE}/${img.replace(/^\//, '')}`
   );
 
   const isPremium = listing.tier === 'premium';
+
+  // NEW: Function to handle reporting
+  const handleReport = async () => {
+    const reason = prompt("Please provide a reason for reporting this listing:");
+    if (!reason) return;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/listings/${listing.id}/report`, {
+        method: 'PATCH',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ reason })
+      });
+
+      if (response.ok) {
+        alert("Listing reported successfully. Admin will review.");
+      } else {
+        alert("Failed to report listing.");
+      }
+    } catch (error) {
+      console.error("Error reporting listing:", error);
+    }
+  };
 
   return (
     <div className="flex flex-col text-slate-200 w-full bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
@@ -21,13 +47,17 @@ const ListingCard = ({ listing, onUnlock }) => {
               KIWI-list Verified Agent 
               {isPremium && <span className="bg-amber-500 text-[9px] px-1.5 py-0.5 rounded text-white font-black uppercase">Premium</span>}
             </p>
-            {/* Show address only if not redacted */}
             <p className="text-[10px] text-slate-400 flex items-center gap-1">
               <MapPin size={10} /> {listing.address || 'Location Hidden'}
             </p>
           </div>
         </div>
-        <AlertTriangle size={16} className="text-slate-600 hover:text-red-500 cursor-pointer" />
+        {/* UPDATED: Added onClick to trigger handleReport */}
+        <AlertTriangle 
+          size={16} 
+          className="text-slate-600 hover:text-red-500 cursor-pointer" 
+          onClick={handleReport}
+        />
       </div>
 
       {/* Media Display */}
@@ -54,7 +84,6 @@ const ListingCard = ({ listing, onUnlock }) => {
           <div className="flex items-center gap-1 text-xs font-medium text-slate-400"><Eye size={14} /> {listing.views || 0}</div>
         </div>
         
-        {/* ADDED: Description display */}
         <p className="text-xs text-slate-300 leading-relaxed font-medium">
           {listing.description}
         </p>

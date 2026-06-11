@@ -20,6 +20,7 @@ router.post('/create', verifyUser, async (req, res) => {
     const listingData = {
       ownerId: req.user.uid,
       title,
+      description,
       price,
       address,
       beds,

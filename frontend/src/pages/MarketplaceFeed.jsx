@@ -101,6 +101,7 @@ const MarketplaceFeed = ({ token }) => {
             <div key={listing.id} onClick={handleImageLightboxCapture} className="bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 shadow-xl">
               <ListingCard 
                 listing={listing} 
+                token={token} 
                 onUnlock={() => handleUnlockContact(listing.id)} 
               />
             </div>
