@@ -38,23 +38,31 @@ const CreateListing = ({ token }) => {
       const uploadData = await uploadResponse.json();
       if (!uploadResponse.ok) throw new Error(uploadData.error || "Image deployment failed");
 
+      // 👇 EXACT REPLACEMENT BLOCK START
       const listingPayload = {
         title: formData.title,
-        description: formData.description,
+        description: formData.description, // Ensure this matches your backend schema
         price: Number(formData.price),
         address: formData.address,
         beds: Number(formData.beds),
         baths: Number(formData.baths),
         tier: formData.tier,
         images: uploadData.urls, 
-        contactDetails: { phone: formData.phone, email: formData.email }
+        contactDetails: { 
+          phone: formData.phone, 
+          email: formData.email 
+        }
       };
 
       const listingResponse = await fetch(`${API_BASE_URL}/api/listings/create`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        headers: { 
+          'Content-Type': 'application/json', 
+          'Authorization': `Bearer ${token}` 
+        },
         body: JSON.stringify(listingPayload)
       });
+      // 👆 EXACT REPLACEMENT BLOCK END
 
       const listingData = await listingResponse.json();
       if (listingResponse.ok) {

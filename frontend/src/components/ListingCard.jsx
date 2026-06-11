@@ -54,8 +54,13 @@ const ListingCard = ({ listing, onUnlock }) => {
           <div className="flex items-center gap-1 text-xs font-medium text-slate-400"><Eye size={14} /> {listing.views || 0}</div>
         </div>
         
-        <p className="text-xs text-slate-300 leading-relaxed">{listing.title}</p>
+        {/* ADDED: Description display */}
+        <p className="text-xs text-slate-300 leading-relaxed font-medium">
+          {listing.description}
+        </p>
 
+        <p className="text-xs text-slate-500 font-bold uppercase">{listing.title}</p>
+        
         <div className="flex gap-4 pt-1">
           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400"><Bed size={14} /> {listing.beds} Beds</div>
           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400"><Bath size={14} /> {listing.baths} Baths</div>
@@ -78,4 +83,5 @@ const ListingCard = ({ listing, onUnlock }) => {
     </div>
   );
 };
+
 export default ListingCard;
