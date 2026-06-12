@@ -1,5 +1,6 @@
 import express from 'express';
 import { db } from '../config/firebase.js';
+import { FieldValue } from 'firebase-admin/firestore';
 import { verifyUser } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -178,14 +179,15 @@ router.patch('/:id/view', async (req, res) => {
   try {
     const listingRef = db.collection('listings').doc(id);
     
-    // Extracted FieldValue from your existing db configuration object
+    // Perform the atomic increment
     await listingRef.update({
-      views: db.FieldValue.increment(1)
+      views: FieldValue.increment(1)
     });
     
-    res.json({ message: "View incremented" });
+    res.status(200).json({ message: "View count updated" });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("View update error:", error);
+    res.status(500).json({ error: "Failed to increment view" });
   }
 });
 

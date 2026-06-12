@@ -25,6 +25,7 @@ const ManageListings = ({ token }) => {
   }, [token]);
 
   const handleEdit = (id) => {
+    // Ensure this route matches your App.js/Router configuration
     window.location.href = `/edit-listing/${id}`;
   };
 
@@ -36,6 +37,7 @@ const ManageListings = ({ token }) => {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!response.ok) throw new Error('Failed to delete');
+      // Update state immediately to reflect removal
       setMyListings(prev => prev.filter(item => item.id !== id));
     } catch (err) {
       alert("Could not remove the listing.");
@@ -58,7 +60,7 @@ const ManageListings = ({ token }) => {
           <p className="text-sm text-slate-500">Track and edit your active property placements.</p>
         </header>
 
-        {/* TABLE VIEW (Desktop: md and up) */}
+        {/* TABLE VIEW (Desktop) */}
         <div className="hidden md:block w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <table className="w-full text-left">
             <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
@@ -104,7 +106,7 @@ const ManageListings = ({ token }) => {
           </table>
         </div>
 
-        {/* CARD VIEW (Mobile/iOS Optimized: below md) */}
+        {/* CARD VIEW (Mobile) */}
         <div className="grid grid-cols-1 gap-4 md:hidden">
           {myListings.map((property) => (
             <div key={property.id} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -118,11 +120,8 @@ const ManageListings = ({ token }) => {
               
               <div className="flex items-center justify-between border-t border-slate-100 pt-4">
                 <span className="font-black text-slate-900 text-lg">₦{property.price?.toLocaleString()}</span>
-                
                 <div className="flex items-center gap-4">
                   <span className="text-xs font-medium text-slate-500 flex items-center gap-1.5"><Eye size={16} /> {property.views}</span>
-                  
-                  {/* Min touch target 44px maintained via h-12 w-12 */}
                   <div className="flex gap-1">
                     <button onClick={() => handleEdit(property.id)} className="h-12 w-12 flex items-center justify-center bg-slate-50 rounded-xl text-slate-600 active:bg-slate-100"><Edit size={20} /></button>
                     <button onClick={() => handleDelete(property.id)} className="h-12 w-12 flex items-center justify-center bg-red-50 rounded-xl text-red-600 active:bg-red-100"><Trash2 size={20} /></button>
