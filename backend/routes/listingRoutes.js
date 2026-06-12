@@ -45,6 +45,33 @@ router.post('/create', verifyUser, async (req, res) => {
   }
 });
 
+// --- GET SINGLE LISTING BY ID ---
+router.get('/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const listingRef = db.collection('listings').doc(id);
+    const doc = await listingRef.get();
+
+    if (!doc.exists) {
+      return res.status(404).json({ error: "Listing not found" });
+    }
+
+    const data = doc.data();
+    const responseData = { ...data, id: doc.id };
+
+    // Apply your premium privacy logic if applicable
+    if (data.tier === 'premium') {
+      delete responseData.contactDetails; 
+      responseData.address = "Unlock to view location";
+    }
+
+    res.json(responseData);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // --- UPDATE LISTING ---
 router.put('/:id', verifyUser, async (req, res) => {
   const { id } = req.params;
