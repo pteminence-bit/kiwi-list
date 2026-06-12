@@ -241,7 +241,7 @@ const AdminPortal = ({ token }) => {
 
       {/* DYNAMIC WORKSPACE ARCHITECTURE */}
       {activeTab === 'moderation' ? (
-        /* VIEW 1: OPERATIONAL MODERATION MODULE QUEUE SELECTION (3-COLUMN DESKTOP ARRAY) */
+        /* VIEW 1: OPERATIONAL MODERATION MODULE QUEUE SELECTION (3-COLUMN DESKTOP ARRAY MATCHING SCREENSHOT) */
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start animate-fadeIn">
           
           {/* COLUMN 1 (DESKTOP): Recent Static Logs & Historical Metadata Platform Updates */}
