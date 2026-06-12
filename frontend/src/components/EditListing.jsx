@@ -104,7 +104,7 @@ const EditListing = ({ token }) => {
 
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Price ($)</label>
+            <label className="block text-sm font-medium mb-1">Price (NGN)</label>
             <input 
               name="price" 
               type="number" 
