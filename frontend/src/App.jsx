@@ -10,6 +10,7 @@ import AdminUpdates from './components/AdminUpdates';
 
 import MarketplaceFeed from './pages/MarketplaceFeed';
 import CreateListing from './pages/CreateListing'; 
+import EditListing from './components/EditListing';
 import ManageListings from './pages/ManageListings';
 import AdminPortal from './pages/AdminPortal';
 import WalletCard from './components/WalletCard';
