@@ -7,7 +7,6 @@ const router = express.Router();
 
 // --- CREATE LISTING ---
 router.post('/create', verifyUser, async (req, res) => {
-  // FIXED: Destructured 'description'
   const { title, description, price, tier, images, contactDetails, address, beds, baths } = req.body;
 
   try {
@@ -19,7 +18,7 @@ router.post('/create', verifyUser, async (req, res) => {
     const listingData = {
       ownerId: req.user.uid,
       title,
-      description, // FIXED: Added description
+      description,
       price,
       address,
       beds,
@@ -40,53 +39,6 @@ router.post('/create', verifyUser, async (req, res) => {
       status: listingData.status,
       message: tier === 'premium' ? "Payment required" : "Post active" 
     });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// --- GET SINGLE LISTING BY ID ---
-router.get('/:id', async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const listingRef = db.collection('listings').doc(id);
-    const doc = await listingRef.get();
-
-    if (!doc.exists) {
-      return res.status(404).json({ error: "Listing not found" });
-    }
-
-    const data = doc.data();
-    const responseData = { ...data, id: doc.id };
-
-    // Apply your premium privacy logic if applicable
-    if (data.tier === 'premium') {
-      delete responseData.contactDetails; 
-      responseData.address = "Unlock to view location";
-    }
-
-    res.json(responseData);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// --- UPDATE LISTING ---
-router.put('/:id', verifyUser, async (req, res) => {
-  const { id } = req.params;
-  const updates = req.body;
-
-  try {
-    const listingRef = db.collection('listings').doc(id);
-    const doc = await listingRef.get();
-
-    if (!doc.exists || doc.data().ownerId !== req.user.uid) {
-      return res.status(403).json({ error: "Unauthorized or not found" });
-    }
-
-    await listingRef.update(updates);
-    res.json({ message: "Listing updated successfully" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -125,6 +77,7 @@ router.get('/feed', async (req, res) => {
   }
 });
 
+// --- FIXED: MOVED ABOVE DYNAMIC ID PATHS TO PREVENT 404 CATCHING ---
 router.get('/my-listings', verifyUser, async (req, res) => {
   try {
     const snapshots = await db.collection('listings')
@@ -137,6 +90,67 @@ router.get('/my-listings', verifyUser, async (req, res) => {
     }));
 
     res.json(myListings);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- FIXED: MOVED ABOVE DYNAMIC ID PATHS ---
+router.post('/api/users/submit-kyc', verifyUser, async (req, res) => {
+  const { kycDocumentUrl } = req.body;
+  try {
+    await db.collection('users').doc(req.user.uid).update({
+      verificationStatus: 'pending',
+      kycDocumentUrl: kycDocumentUrl,
+      kycSubmittedAt: new Date().toISOString()
+    });
+    res.json({ message: "KYC submitted successfully, Reviewing." });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- GET SINGLE LISTING BY ID ---
+router.get('/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const listingRef = db.collection('listings').doc(id);
+    const doc = await listingRef.get();
+
+    if (!doc.exists) {
+      return res.status(404).json({ error: "Listing not found" });
+    }
+
+    const data = doc.data();
+    const responseData = { ...data, id: doc.id };
+
+    if (data.tier === 'premium') {
+      delete responseData.contactDetails; 
+      responseData.address = "Unlock to view location";
+    }
+
+    res.json(responseData);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- UPDATE LISTING ---
+router.put('/:id', verifyUser, async (req, res) => {
+  const { id } = req.params;
+  const updates = req.body;
+
+  try {
+    const listingRef = db.collection('listings').doc(id);
+    const doc = await listingRef.get();
+
+    if (!doc.exists || doc.data().ownerId !== req.user.uid) {
+      return res.status(403).json({ error: "Unauthorized or not found" });
+    }
+
+    await listingRef.update(updates);
+    res.json({ message: "Listing updated successfully" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -160,20 +174,6 @@ router.delete('/:id', verifyUser, async (req, res) => {
 
     await listingRef.delete();
     res.json({ message: "Listing successfully removed from KIWI-list." });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-router.post('/api/users/submit-kyc', verifyUser, async (req, res) => {
-  const { kycDocumentUrl } = req.body;
-  try {
-    await db.collection('users').doc(req.user.uid).update({
-      verificationStatus: 'pending',
-      kycDocumentUrl: kycDocumentUrl,
-      kycSubmittedAt: new Date().toISOString()
-    });
-    res.json({ message: "KYC submitted successfully, Reviewing." });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -206,7 +206,6 @@ router.patch('/:id/view', async (req, res) => {
   try {
     const listingRef = db.collection('listings').doc(id);
     
-    // Perform the atomic increment
     await listingRef.update({
       views: FieldValue.increment(1)
     });
