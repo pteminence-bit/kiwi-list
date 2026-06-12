@@ -241,7 +241,7 @@ const AdminPortal = ({ token }) => {
 
       {/* DYNAMIC WORKSPACE ARCHITECTURE */}
       {activeTab === 'moderation' ? (
-        /* VIEW 1: OPERATIONAL MODERATION MODULE QUEUE SELECTION (3-COLUMN DESKTOP ARRAY MATCHING SCREENSHOT) */
+        /* VIEW 1: OPERATIONAL MODERATION MODULE QUEUE SELECTION (3-COLUMN DESKTOP ARRAY) */
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start animate-fadeIn">
           
           {/* COLUMN 1 (DESKTOP): Recent Static Logs & Historical Metadata Platform Updates */}
@@ -564,32 +564,33 @@ const AdminPortal = ({ token }) => {
                           className="w-full h-full object-contain bg-slate-900" 
                         />
                       ) : (
-                        <iframe 
-                          src={selectedKyc.kycDocumentUrl} 
-                          title="KYC Proof Frame"
-                          className="w-full h-full border-0"
-                        />
+                        <div className="p-4 text-center space-y-2">
+                          <p className="text-xs font-bold text-slate-500">Document proof file formatted asynchronously.</p>
+                          <a href={selectedKyc.kycDocumentUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 font-bold hover:underline">
+                            Open source document attachment <ExternalLink size={12} />
+                          </a>
+                        </div>
                       )}
                     </div>
                   ) : (
-                    <div className="border border-dashed border-slate-200 rounded-xl p-6 text-center text-slate-400 text-xs italic bg-slate-50">
-                      No document attachment present.
+                    <div className="p-8 border border-dashed border-slate-200 bg-slate-50 text-slate-400 rounded-xl text-center text-xs italic">
+                      No document scan stream found.
                     </div>
                   )}
                 </div>
               </div>
             </div>
 
-            <div className="flex gap-3 pt-4 border-t border-slate-200 bg-white">
+            <div className="flex gap-3 pt-4 border-t border-slate-200">
               <button 
                 onClick={() => handleAction(selectedKyc.id, 'kyc', 'approve')}
-                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition shadow-sm flex items-center justify-center gap-1"
+                className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition shadow-sm text-center text-xs"
               >
-                <ShieldCheck size={14} /> Approve
+                Approve Identification
               </button>
               <button 
                 onClick={() => handleAction(selectedKyc.id, 'kyc', 'decline')}
-                className="px-4 py-3 bg-white border border-red-200 text-red-600 hover:bg-red-50 text-xs font-bold rounded-xl transition"
+                className="flex-1 py-2.5 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-xl transition text-center text-xs"
               >
                 Decline
               </button>
@@ -598,6 +599,7 @@ const AdminPortal = ({ token }) => {
           </div>
         </div>
       )}
+
     </div>
   );
 };
