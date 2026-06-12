@@ -1,23 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { Wallet, ArrowUpRight, ShieldAlert } from 'lucide-react';
 
-const WalletCard = ({ token, isVerified }) => {
+const WalletCard = ({ token }) => {
   const [wallet, setWallet] = useState({ balance: 0, totalEarned: 0 });
   const [loading, setLoading] = useState(true);
-  const [userProfileData, setUserProfileData] = useState({ isPayoutBlocked: false });
+  const [userProfileData, setUserProfileData] = useState({ 
+    isPayoutBlocked: false,
+    isVerified: false // Added state to track verification from API
+  });
 
   useEffect(() => {
     if (!token) return;
     const fetchWalletData = async () => {
       try {
+        // Fetching both wallet and user status to ensure accuracy
         const res = await fetch('https://kiwi-list-api.onrender.com/api/users/me/wallet', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
+        
         setWallet({ balance: data.walletBalance || 0, totalEarned: data.totalEarned || 0 });
         
         setUserProfileData({
-          isPayoutBlocked: data.isPayoutBlocked === true
+          isPayoutBlocked: data.isPayoutBlocked === true,
+          isVerified: data.verificationStatus === 'verified' // Syncing verification from API
         });
       } catch (err) {
         console.error("Wallet fetch error:", err);
@@ -28,13 +34,8 @@ const WalletCard = ({ token, isVerified }) => {
     fetchWalletData();
   }, [token]);
 
-  const executeWithdrawalFundsPipeline = () => {
-    if (!isVerified) return;
-    alert('Withdrawal request initialized.');
-  };
-
   const handleWithdrawal = () => {
-    if (!isVerified) return;
+    if (!userProfileData.isVerified) return;
     alert('Withdrawal request initialized.');
   };
 
@@ -46,7 +47,7 @@ const WalletCard = ({ token, isVerified }) => {
     );
   }
 
-  const canWithdraw = isVerified && wallet.balance > 0 && userProfileData?.isPayoutBlocked !== true;
+  const canWithdraw = userProfileData.isVerified && wallet.balance > 0 && userProfileData?.isPayoutBlocked !== true;
 
   return (
     <div className="p-4 md:p-8 bg-slate-50 min-h-screen w-full flex flex-col items-center justify-start">
@@ -80,25 +81,24 @@ const WalletCard = ({ token, isVerified }) => {
             </div>
           </div>
 
-          {!isVerified && (
+          {!userProfileData.isVerified && (
             <div className="flex items-start gap-2.5 mb-5 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-xs text-amber-400 leading-normal">
               <ShieldAlert size={16} className="shrink-0 mt-0.5" />
               <span>Payouts locked. Complete your KYC Verification in Settings to withdraw.</span>
             </div>
           )}
 
-          {!isVerified ? (
+          {!userProfileData.isVerified ? (
             <button 
-              onClick={handleWithdrawal}
-              disabled={!canWithdraw}
-              className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-800 disabled:text-slate-600 text-white font-semibold rounded-xl transition-all duration-200 tracking-wide text-sm shadow-sm"
+              className="w-full py-3.5 bg-slate-800 text-slate-500 font-semibold rounded-xl cursor-not-allowed text-sm"
+              disabled
             >
               Verification Required
             </button>
           ) : (
             <button 
               disabled={userProfileData?.isPayoutBlocked === true || wallet.balance <= 0}
-              onClick={executeWithdrawalFundsPipeline}
+              onClick={handleWithdrawal}
               className={`w-full py-3 px-6 rounded-lg text-white font-bold tracking-wide transition ${
                 userProfileData?.isPayoutBlocked === true 
                   ? 'bg-slate-400 cursor-not-allowed opacity-60 line-through' 
