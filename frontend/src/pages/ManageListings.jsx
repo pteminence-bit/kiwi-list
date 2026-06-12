@@ -25,7 +25,6 @@ const ManageListings = ({ token }) => {
   }, [token]);
 
   const handleEdit = (id) => {
-    // Ensure this route matches your App.js/Router configuration
     window.location.href = `/edit-listing/${id}`;
   };
 
@@ -37,7 +36,6 @@ const ManageListings = ({ token }) => {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!response.ok) throw new Error('Failed to delete');
-      // Update state immediately to reflect removal
       setMyListings(prev => prev.filter(item => item.id !== id));
     } catch (err) {
       alert("Could not remove the listing.");
@@ -85,7 +83,8 @@ const ManageListings = ({ token }) => {
                       {property.tier || 'free'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 font-medium">₦{property.price?.toLocaleString()}</td>
+                  {/* FIXED: Explicitly set text color to slate-900 to ensure visibility */}
+                  <td className="px-6 py-4 font-bold text-slate-900">₦{property.price?.toLocaleString()}</td>
                   <td className="px-6 py-4">
                     <span className={`text-[10px] font-bold uppercase ${property.status === 'active' ? 'text-emerald-600' : 'text-amber-600'}`}>
                       {property.status || 'pending'}
@@ -96,8 +95,8 @@ const ManageListings = ({ token }) => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex justify-end gap-1">
-                      <button onClick={() => handleEdit(property.id)} className="p-3 text-slate-400 hover:text-blue-600 transition-colors"><Edit size={18} /></button>
-                      <button onClick={() => handleDelete(property.id)} className="p-3 text-slate-400 hover:text-red-600 transition-colors"><Trash2 size={18} /></button>
+                      <button onClick={() => handleEdit(property.id)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors"><Edit size={18} /></button>
+                      <button onClick={() => handleDelete(property.id)} className="p-2 text-slate-400 hover:text-red-600 transition-colors"><Trash2 size={18} /></button>
                     </div>
                   </td>
                 </tr>
