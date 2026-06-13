@@ -42,7 +42,7 @@ const AuthPage = () => {
           isDisabled: false,
           isPayoutBlocked: false, // Essential for withdrawal logic
           verificationStatus: "unverified", // Default state
-          balance: 0,             // Initialize wallet balance
+          walletBalance: 0,             // Initialize wallet balance
           totalEarned: 0,         // Initialize total earned
           createdAt: new Date().toISOString()
         });
