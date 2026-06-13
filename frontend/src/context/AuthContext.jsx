@@ -1,13 +1,13 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { auth } from '../firebase'; 
+import { auth, db } from '../firebase'; 
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebase';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null); // Added: Store Firestore user metadata
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(null);
 
@@ -16,11 +16,23 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       if (currentUser) {
         setUser(currentUser);
-        // Force refresh token to ensure it's always valid on initial load
+        
+        // Fetch Token
         const idToken = await currentUser.getIdToken(true);
         setToken(idToken);
+
+        // Fetch User Profile from Firestore to sync verification status
+        try {
+          const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+          if (userDoc.exists()) {
+            setProfile(userDoc.data());
+          }
+        } catch (err) {
+          console.error("Error fetching user profile:", err);
+        }
       } else {
         setUser(null);
+        setProfile(null);
         setToken(null);
       }
       setLoading(false);
@@ -29,8 +41,15 @@ export const AuthProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
+  const logout = async () => {
+    await signOut(auth);
+    setUser(null);
+    setProfile(null);
+    setToken(null);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, logout: () => signOut(auth) }}>
+    <AuthContext.Provider value={{ user, profile, token, logout }}>
       {!loading && children}
     </AuthContext.Provider>
   );

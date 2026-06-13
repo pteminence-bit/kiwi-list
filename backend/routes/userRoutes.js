@@ -1,4 +1,3 @@
-// backend/routes/userRoutes.js
 import express from 'express';
 import { db } from '../config/firebase.js';
 import { verifyUser } from '../middleware/authMiddleware.js';
@@ -17,7 +16,8 @@ router.get('/me/wallet', verifyUser, async (req, res) => {
       walletBalance: userData.balance ?? userData.walletBalance ?? 0,
       totalEarned: userData.totalEarned ?? 0,
       platformTier: userData.platformTier || "KIWI Premium Split",
-      // FIXED: Added payout status flag so WalletCard.jsx button blocks correctly
+      // FIXED: Ensure verificationStatus is explicitly passed to the frontend
+      verificationStatus: userData.verificationStatus || 'unverified',
       isPayoutBlocked: userData.isPayoutBlocked === true
     });
   } catch (error) {
@@ -48,7 +48,6 @@ router.get('/me/transactions', verifyUser, async (req, res) => {
   } catch (error) {
     console.error("Transaction Fetch Error:", error.message);
     if (error.message.includes("FAILED_PRECONDITION")) {
-      console.warn("⚠️ Missing Firestore Composite Index. Sorting client-side for now.");
       const fallbackSnapshot = await db.collection('transactions').where('userId', '==', req.user.uid).get();
       const fallbackTxs = fallbackSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       return res.json(fallbackTxs.sort((a,b) => new Date(b.createdAt || b.timestamp) - new Date(a.createdAt || a.timestamp)));
@@ -74,15 +73,11 @@ router.put('/settings', verifyUser, async (req, res) => {
 
   try {
     const userRef = db.collection('users').doc(req.user.uid);
-    
-    const updateData = {
-      updatedAt: new Date().toISOString()
-    };
+    const updateData = { updatedAt: new Date().toISOString() };
 
-    // Dynamically patch only parameters provided by the frontend
     if (displayName !== undefined) updateData.displayName = displayName;
     if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber;
-    if (bio !== undefined) updateData.bio = bio; // 👈 FIXED: Now handles user biography descriptions gracefully
+    if (bio !== undefined) updateData.bio = bio;
     if (bankName !== undefined) updateData.bankName = bankName;
     if (accountNumber !== undefined) updateData.accountNumber = accountNumber;
 
@@ -102,6 +97,7 @@ router.post('/submit-kyc', verifyUser, async (req, res) => {
       return res.status(400).json({ error: "A single valid verification document file URL is required." });
     }
 
+    // Update User KYC
     await db.collection('users').doc(req.user.uid).set({
       verificationStatus: 'pending',
       legalFullName: fullName,

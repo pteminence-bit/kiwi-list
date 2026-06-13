@@ -40,8 +40,11 @@ const AuthPage = () => {
           email: email,
           role: "user",
           isDisabled: false,
-          isPayoutBlocked: false,
-          createdAt: new Date()
+          isPayoutBlocked: false, // Essential for withdrawal logic
+          verificationStatus: "unverified", // Default state
+          balance: 0,             // Initialize wallet balance
+          totalEarned: 0,         // Initialize total earned
+          createdAt: new Date().toISOString()
         });
 
         // 👇 THE FIX: Define the custom route parameters explicitly in your code

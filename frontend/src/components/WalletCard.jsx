@@ -6,24 +6,31 @@ const WalletCard = ({ token }) => {
   const [loading, setLoading] = useState(true);
   const [userProfileData, setUserProfileData] = useState({ 
     isPayoutBlocked: false,
-    isVerified: false // Added state to track verification from API
+    isVerified: false
   });
 
   useEffect(() => {
     if (!token) return;
     const fetchWalletData = async () => {
       try {
-        // Fetching both wallet and user status to ensure accuracy
         const res = await fetch('https://kiwi-list-api.onrender.com/api/users/me/wallet', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
+        
+        if (!res.ok) throw new Error("Failed to fetch wallet");
+        
         const data = await res.json();
         
-        setWallet({ balance: data.walletBalance || 0, totalEarned: data.totalEarned || 0 });
+        // Ensure balance and totalEarned default to 0 if API returns null/undefined
+        setWallet({ 
+            balance: Number(data.walletBalance) || 0, 
+            totalEarned: Number(data.totalEarned) || 0 
+        });
         
+        // Fixed: explicitly checking for 'verified' status returned from your backend
         setUserProfileData({
           isPayoutBlocked: data.isPayoutBlocked === true,
-          isVerified: data.verificationStatus === 'verified' // Syncing verification from API
+          isVerified: data.verificationStatus === 'verified'
         });
       } catch (err) {
         console.error("Wallet fetch error:", err);
@@ -35,7 +42,8 @@ const WalletCard = ({ token }) => {
   }, [token]);
 
   const handleWithdrawal = () => {
-    if (!userProfileData.isVerified) return;
+    // Re-check verification before proceeding
+    if (!userProfileData.isVerified || userProfileData.isPayoutBlocked) return;
     alert('Withdrawal request initialized.');
   };
 
@@ -46,8 +54,6 @@ const WalletCard = ({ token }) => {
       </div>
     );
   }
-
-  const canWithdraw = userProfileData.isVerified && wallet.balance > 0 && userProfileData?.isPayoutBlocked !== true;
 
   return (
     <div className="p-4 md:p-8 bg-slate-50 min-h-screen w-full flex flex-col items-center justify-start">
@@ -97,17 +103,17 @@ const WalletCard = ({ token }) => {
             </button>
           ) : (
             <button 
-              disabled={userProfileData?.isPayoutBlocked === true || wallet.balance <= 0}
+              disabled={userProfileData.isPayoutBlocked || wallet.balance <= 0}
               onClick={handleWithdrawal}
               className={`w-full py-3 px-6 rounded-lg text-white font-bold tracking-wide transition ${
-                userProfileData?.isPayoutBlocked === true 
-                  ? 'bg-slate-400 cursor-not-allowed opacity-60 line-through' 
+                userProfileData.isPayoutBlocked 
+                  ? 'bg-slate-700 cursor-not-allowed opacity-60' 
                   : wallet.balance <= 0
                     ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
                     : 'bg-blue-600 hover:bg-blue-700'
               }`}
             >
-              {userProfileData?.isPayoutBlocked === true ? "Withdrawals Paused by Admin" : "Withdraw Funds"}
+              {userProfileData.isPayoutBlocked ? "Withdrawals Paused by Admin" : "Withdraw Funds"}
             </button>
           )}
         </div>
