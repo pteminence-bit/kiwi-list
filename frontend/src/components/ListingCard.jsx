@@ -1,15 +1,19 @@
-import React, { useEffect } from 'react'; // Added useEffect
+import React, { useEffect } from 'react';
 import { Bed, Bath, Eye, AlertTriangle, Lock, MapPin } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 
 const R2_BASE = 'https://pub-580c3d172e3f4533b065d241e61ee132.r2.dev';
 
-const ListingCard = ({ listing, onUnlock, token }) => {
+// UPDATED: Added currentUser prop
+const ListingCard = ({ listing, onUnlock, token, currentUser }) => {
   const images = (listing.images || []).map(img => 
     img.startsWith('http') ? img : `${R2_BASE}/${img.replace(/^\//, '')}`
   );
 
   const isPremium = listing.tier === 'premium';
+  
+  // FIXED: Check if the current logged-in user is the owner
+  const isOwner = currentUser && listing.ownerId === currentUser.uid;
 
   const handleReport = async () => {
     const reason = prompt("Please provide a reason for reporting this listing:");
@@ -35,7 +39,6 @@ const ListingCard = ({ listing, onUnlock, token }) => {
     }
   };
 
-  // View tracking logic
   const handleView = async () => {
     try {
       await fetch(`${API_BASE_URL}/api/listings/${listing.id}/view`, {
@@ -48,7 +51,7 @@ const ListingCard = ({ listing, onUnlock, token }) => {
 
   useEffect(() => {
     handleView();
-  }, [listing.id]); // Added listing.id as dependency for safety if component reuses
+  }, [listing.id]);
 
   return (
     <div className="flex flex-col text-slate-200 w-full bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
@@ -97,7 +100,6 @@ const ListingCard = ({ listing, onUnlock, token }) => {
           <div className="flex items-center gap-1 text-xs font-medium text-slate-400"><Eye size={14} /> {listing.views || 0}</div>
         </div>
         
-        {/* Title and Description Section */}
         <div className="space-y-1">
           <p className="text-xs text-slate-500 font-bold uppercase">{listing.title}</p>
           <p className="text-xs text-slate-300 leading-relaxed">
@@ -110,8 +112,8 @@ const ListingCard = ({ listing, onUnlock, token }) => {
           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400"><Bath size={14} /> {listing.baths} Baths</div>
         </div>
 
-        {/* Lock/Unlock Interaction */}
-        {isPremium ? (
+        {/* FIXED: Logic to show contact details if Premium AND Owner, otherwise show Unlock button */}
+        {isPremium && !isOwner ? (
           <button 
             onClick={() => onUnlock(listing.id)}
             className="w-full flex items-center justify-center gap-2 mt-2 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-black uppercase tracking-wider rounded-lg transition-colors"
