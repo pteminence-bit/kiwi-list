@@ -112,7 +112,7 @@ const ListingCard = ({ listing, onUnlock, token, currentUser }) => {
           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400"><Bath size={14} /> {listing.baths} Baths</div>
         </div>
 
-        {/* FIXED: Logic to show contact details if Premium AND Owner, otherwise show Unlock button */}
+        {/* UPDATED: If owner, always show contact details. If premium and not owner, show unlock. */}
         {isPremium && !isOwner ? (
           <button 
             onClick={() => onUnlock(listing.id)}
