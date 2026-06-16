@@ -100,9 +100,11 @@ const MarketplaceFeed = ({ token }) => {
           {listings.map(listing => (
             <div key={listing.id} onClick={handleImageLightboxCapture} className="bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 shadow-xl">
               <ListingCard 
+                key={listing.id}
                 listing={listing} 
                 token={token} 
-                onUnlock={() => handleUnlockContact(listing.id)} 
+                onUnlock={() => handleUnlockContact(listing.id)}
+                currentUser={user} // Pass the authenticated user object here 
               />
             </div>
           ))}
