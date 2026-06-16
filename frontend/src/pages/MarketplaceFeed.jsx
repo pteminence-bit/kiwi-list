@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, SlidersHorizontal, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import ListingCard from '../components/ListingCard';
 import { API_BASE_URL } from '../config';
-// 👇 FIXED: Import useAuth
 import { useAuth } from '../context/AuthContext';
 
 const MarketplaceFeed = ({ token }) => {
