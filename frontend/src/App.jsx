@@ -90,7 +90,7 @@ const DashboardLayout = () => {
 
         <aside className="hidden xl:block w-80 border-l border-slate-800 p-6">
           <div className="sticky top-8">
-            <h2 className="text-xs font-bold text-slate-400 mb-6 uppercase tracking-wider">Admin Updates</h2>
+            <h2 className="text-xs font-bold text-slate-400 mb-6 uppercase tracking-wider">KIWI-list Latest</h2>
             <AdminUpdates />
           </div>
         </aside>
