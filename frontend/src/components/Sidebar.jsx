@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { getAuth, signOut } from 'firebase/auth';
-import { LayoutDashboard, Wallet, Building2, ClipboardList, Settings, LogOut, X, PlusCircle, Bell } from 'lucide-react';
+import { LayoutDashboard, Wallet, Building2, ClipboardList, Settings, LogOut, X, PlusCircle, Bell, Package } from 'lucide-react';
 
 const Sidebar = ({ isAdmin, isOpen, setIsOpen }) => {
   const location = useLocation();
   const navigate = useNavigate();
   
-  // FIX: Initialize directly from window so it's correct on first render
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 1024 : false);
 
   useEffect(() => {
@@ -21,6 +20,7 @@ const Sidebar = ({ isAdmin, isOpen, setIsOpen }) => {
     { name: 'Create Listing', path: '/add', icon: PlusCircle },
     { name: 'My Listings', path: '/manage', icon: Building2 },
     { name: 'My Wallet', path: '/wallet', icon: Wallet },
+    { name: 'Inventory', path: '/inventory', icon: Package },
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
 
@@ -28,7 +28,6 @@ const Sidebar = ({ isAdmin, isOpen, setIsOpen }) => {
     navigationItems.push({ name: 'Admin Portal', path: '/admin', icon: ClipboardList });
   }
   
-  // This will now correctly evaluate on first render
   if (isMobile) {
     navigationItems.push({ name: 'Admin Updates', path: '/updates', icon: Bell });
   }

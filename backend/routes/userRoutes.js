@@ -88,6 +88,32 @@ router.put('/settings', verifyUser, async (req, res) => {
   }
 });
 
+// --- GET USER'S UNLOCKED INVENTORY ---
+router.get('/me/inventory', verifyUser, async (req, res) => {
+  try {
+    // 1. Find all unlocks for this user
+    const unlockSnapshot = await db.collection('unlocks')
+      .where('userId', '==', req.user.uid)
+      .get();
+      
+    const listingIds = unlockSnapshot.docs.map(doc => doc.data().listingId);
+    
+    if (listingIds.length === 0) return res.json([]);
+
+    // 2. Fetch the actual listing details for these IDs
+    const listings = await Promise.all(
+      listingIds.map(async (id) => {
+        const doc = await db.collection('listings').doc(id).get();
+        return doc.exists ? { id: doc.id, ...doc.data() } : null;
+      })
+    );
+
+    res.json(listings.filter(item => item !== null));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // --- SUBMIT KYC CREDENTIALS PIPELINE ---
 router.post('/submit-kyc', verifyUser, async (req, res) => {
   const { fullName, idType, idNumber, documentUrl } = req.body;
