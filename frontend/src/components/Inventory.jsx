@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { API_BASE_URL } from '../config';
-import { auth } from '../config/firebase'; // Added import for auth
+import { auth } from '../firebase'; // Added import for auth
 
 const Inventory = () => { // Removed 'token' prop since we fetch it directly
   const [items, setItems] = useState([]);
