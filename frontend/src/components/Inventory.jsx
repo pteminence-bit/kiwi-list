@@ -13,11 +13,18 @@ const Inventory = () => { // Removed 'token' prop since we fetch it directly
         if (!auth.currentUser) return; // Exit if no user
         const token = await auth.currentUser.getIdToken(true); 
 
-        const response = await fetch(`${API_BASE_URL}/api/users/me/inventory`, {
+        // --- ADDED IMPLEMENTATION: Cache busting with timestamp ---
+        const timestamp = new Date().getTime();
+        const url = `${API_BASE_URL}/api/users/me/inventory?t=${timestamp}`;
+
+        const response = await fetch(url, {
           method: 'GET', // Explicitly set GET method
           headers: { 
             'Authorization': `Bearer ${token}`, 
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
           }
         });
 
