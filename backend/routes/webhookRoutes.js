@@ -5,18 +5,22 @@ import { db } from '../config/firebase.js';
 const router = express.Router();
 
 router.post('/flutterwave', async (req, res) => {
-  // Verify Flutterwave signature secret to protect against fake hooks
+  // Verify Flutterwave signature secret
   const secretHash = req.headers['verif-hash'];
   if (!secretHash || secretHash !== process.env.FLW_WEBHOOK_HASH) {
     return res.status(401).send('Unauthorized webhook signature');
   }
 
   const payload = req.body;
+  
+  // FIXED: Flutterwave webhooks nest the transaction info inside 'data'
+  const txData = payload.data || payload; 
+  const status = txData.status;
 
   console.log("DEBUG PAYLOAD:", JSON.stringify(payload, null, 2));
   
-  if (payload.status === 'successful') {
-    const txRef = payload.tx_ref;
+  if (status === 'successful') {
+    const txRef = txData.tx_ref;
     const txDocRef = db.collection('transactions').doc(txRef);
     const txSnapshot = await txDocRef.get();
 
@@ -27,18 +31,18 @@ router.post('/flutterwave', async (req, res) => {
       return res.status(200).send('Already processed');
     }
 
-    // Initialize an atomic Firestore transaction write batch
     const batch = db.batch();
 
     console.log("Processing purpose:", transaction.purpose);
+    
     if (transaction.purpose === 'premium_listing') {
-  if (!transaction.listingId) {
-    console.error("Critical: transaction missing listingId", txRef);
-    return res.status(400).send('Invalid listing reference');
-  }
-  const listingRef = db.collection('listings').doc(transaction.listingId);
-  batch.update(listingRef, { status: 'active' });
-  }
+      if (!transaction.listingId) {
+        console.error("Critical: transaction missing listingId", txRef);
+        return res.status(400).send('Invalid listing reference');
+      }
+      const listingRef = db.collection('listings').doc(transaction.listingId);
+      batch.update(listingRef, { status: 'active' });
+    } 
     
     else if (transaction.purpose === 'unlock_contact') {
       const listingRef = db.collection('listings').doc(transaction.listingId);
@@ -48,7 +52,6 @@ router.post('/flutterwave', async (req, res) => {
         const listing = listingSnap.data();
         const ownerId = listing.ownerId;
         
-        // Calculate 70% earnings split for owner: ₦500 * 0.7 = ₦350
         const ownerEarnings = transaction.amount * 0.70;
 
         const ownerUserRef = db.collection('users').doc(ownerId);
@@ -57,7 +60,6 @@ router.post('/flutterwave', async (req, res) => {
           totalEarned: admin.firestore.FieldValue.increment(ownerEarnings)
         });
 
-        // Track who has unlocked this specific contact card
         const unlockRef = db.collection('unlocks').doc(`${transaction.userId}_${transaction.listingId}`);
         batch.set(unlockRef, {
           userId: transaction.userId,
@@ -67,8 +69,7 @@ router.post('/flutterwave', async (req, res) => {
       }
     }
 
-    // Update global transaction state to completed
-    batch.update(txDocRef, { status: 'completed', flw_id: payload.id });
+    batch.update(txDocRef, { status: 'completed', flw_id: txData.id });
     await batch.commit();
 
     return res.status(200).send('Webhook handled and balanced successfully');
