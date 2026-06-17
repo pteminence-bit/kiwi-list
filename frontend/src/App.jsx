@@ -15,7 +15,8 @@ import ManageListings from './pages/ManageListings';
 import AdminPortal from './pages/AdminPortal';
 import WalletCard from './components/WalletCard';
 import Settings from './pages/Settings'; 
-import AuthPage from './pages/AuthPage'; 
+import AuthPage from './pages/AuthPage';
+import PaymentSuccess from './pages/PaymentSuccess'; 
 
 const DashboardLayout = () => {
   const { user, loading } = useAuth();
