@@ -1,18 +1,16 @@
 import React, { useEffect } from 'react';
-import { Bed, Bath, Eye, AlertTriangle, Lock, MapPin } from 'lucide-react';
+import { Bed, Bath, Eye, AlertTriangle, MapPin } from 'lucide-react';
+import PaymentButton from './PaymentButton';
 import { API_BASE_URL } from '../config';
 
 const R2_BASE = 'https://pub-580c3d172e3f4533b065d241e61ee132.r2.dev';
 
-// UPDATED: Added currentUser prop
 const ListingCard = ({ listing, onUnlock, token, currentUser }) => {
   const images = (listing.images || []).map(img => 
     img.startsWith('http') ? img : `${R2_BASE}/${img.replace(/^\//, '')}`
   );
 
   const isPremium = listing.tier === 'premium';
-  
-  // FIXED: Check if the current logged-in user is the owner
   const isOwner = currentUser && listing.ownerId === currentUser.uid;
 
   const handleReport = async () => {
@@ -78,12 +76,11 @@ const ListingCard = ({ listing, onUnlock, token, currentUser }) => {
 
       {/* Media Display */}
       {images.length > 0 && (
-        <div className="relative aspect-[4/3] w-full bg-black cursor-pointer group">
+        <div className="relative aspect-[4/3] w-full bg-black">
           <img 
             src={images[0]} 
-            alt="Property primary view"
+            alt="Property"
             className="w-full h-full object-contain"
-            data-full-gallery={JSON.stringify(images)} 
           />
           {images.length > 1 && (
             <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-1 rounded-full backdrop-blur-sm">
@@ -102,9 +99,7 @@ const ListingCard = ({ listing, onUnlock, token, currentUser }) => {
         
         <div className="space-y-1">
           <p className="text-xs text-slate-500 font-bold uppercase">{listing.title}</p>
-          <p className="text-xs text-slate-300 leading-relaxed">
-            {listing.description}
-          </p>
+          <p className="text-xs text-slate-300 leading-relaxed">{listing.description}</p>
         </div>
         
         <div className="flex gap-4 pt-1">
@@ -112,14 +107,19 @@ const ListingCard = ({ listing, onUnlock, token, currentUser }) => {
           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400"><Bath size={14} /> {listing.baths} Baths</div>
         </div>
 
-        {/* UPDATED: If owner, always show contact details. If premium and not owner, show unlock. */}
+        {/* Payment / Contact Logic */}
         {isPremium && !isOwner ? (
-          <button 
-            onClick={() => onUnlock(listing.id)}
-            className="w-full flex items-center justify-center gap-2 mt-2 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-black uppercase tracking-wider rounded-lg transition-colors"
-          >
-            <Lock size={14} /> Unlock Details
-          </button>
+          <PaymentButton 
+            amount={listing.price}
+            email={currentUser?.email || 'user@example.com'}
+            name={currentUser?.displayName || 'User'}
+            onSuccess={(paymentData) => {
+              console.log("Payment successful, unlocking listing...");
+              // The backend/webhook will handle the DB entry;
+              // we call onUnlock to update the UI state immediately
+              onUnlock(listing.id); 
+            }}
+          />
         ) : (
           <div className="mt-2 py-2.5 bg-slate-800 text-slate-400 text-[10px] text-center font-bold uppercase rounded-lg border border-slate-700">
             Contact: {listing.contactDetails?.phone || 'Available'}
