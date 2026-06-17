@@ -82,6 +82,7 @@ const DashboardLayout = () => {
             <Route path="/settings" element={<Settings token={user.accessToken} />} />
             <Route path="/updates" element={<div className="p-4"><AdminUpdates /></div>} />
             <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="/success" element={<PaymentSuccess />} />
   
            {/* FIXED: Changed token to user.accessToken */}
             <Route path="/edit-listing/:id" element={<EditListing token={user.accessToken} />} />

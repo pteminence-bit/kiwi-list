@@ -12,6 +12,8 @@ router.post('/flutterwave', async (req, res) => {
   }
 
   const payload = req.body;
+
+  console.log("DEBUG PAYLOAD:", JSON.stringify(payload, null, 2));
   
   if (payload.status === 'successful') {
     const txRef = payload.tx_ref;
@@ -28,11 +30,15 @@ router.post('/flutterwave', async (req, res) => {
     // Initialize an atomic Firestore transaction write batch
     const batch = db.batch();
 
+    console.log("Processing purpose:", transaction.purpose);
     if (transaction.purpose === 'premium_listing') {
-      // Upgrade the post from 'pending_payment' to 'active'
-      const listingRef = db.collection('listings').doc(transaction.listingId);
-      batch.update(listingRef, { status: 'active' });
-    } 
+  if (!transaction.listingId) {
+    console.error("Critical: transaction missing listingId", txRef);
+    return res.status(400).send('Invalid listing reference');
+  }
+  const listingRef = db.collection('listings').doc(transaction.listingId);
+  batch.update(listingRef, { status: 'active' });
+  }
     
     else if (transaction.purpose === 'unlock_contact') {
       const listingRef = db.collection('listings').doc(transaction.listingId);

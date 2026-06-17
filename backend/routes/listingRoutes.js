@@ -1,6 +1,7 @@
 import express from 'express';
 import { db } from '../config/firebase.js';
 import { FieldValue } from 'firebase-admin/firestore';
+import { verifyPayment } from '../controllers/paymentController.js';
 import { verifyUser } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -135,6 +136,8 @@ router.get('/:id', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+router.get('/verify', verifyUser, verifyPayment);
 
 // --- UPDATE LISTING ---
 router.put('/:id', verifyUser, async (req, res) => {
