@@ -17,6 +17,7 @@ import WalletCard from './components/WalletCard';
 import Settings from './pages/Settings'; 
 import AuthPage from './pages/AuthPage';
 import PaymentSuccess from './pages/PaymentSuccess'; 
+import Inventory from './components/Inventory';
 
 const DashboardLayout = () => {
   const { user, loading } = useAuth();
@@ -84,6 +85,7 @@ const DashboardLayout = () => {
             <Route path="/updates" element={<div className="p-4"><AdminUpdates /></div>} />
             <Route path="*" element={<Navigate to="/" replace />} />
             <Route path="/success" element={<PaymentSuccess />} />
+            <Route path="/inventory" element={<Inventory />} />
   
            {/* FIXED: Changed token to user.accessToken */}
             <Route path="/edit-listing/:id" element={<EditListing token={user.accessToken} />} />
