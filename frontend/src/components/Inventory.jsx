@@ -30,3 +30,5 @@ const Inventory = ({ token }) => {
     </div>
   );
 };
+
+export default Inventory;
