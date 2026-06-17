@@ -1,20 +1,32 @@
 import React, { useEffect, useState } from 'react';
 import { API_BASE_URL } from '../config';
+import { auth } from '../config/firebase'; // Added import for auth
 
-const Inventory = ({ token }) => {
-  // 1. Initialize with an empty array [] so .map() always works
+const Inventory = () => { // Removed 'token' prop since we fetch it directly
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchInventory = async () => {
       try {
+        // --- NEW IMPLEMENTATION: Force refresh the token ---
+        if (!auth.currentUser) return; // Exit if no user
+        const token = await auth.currentUser.getIdToken(true); 
+
         const response = await fetch(`${API_BASE_URL}/api/users/me/inventory`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+          method: 'GET', // Explicitly set GET method
+          headers: { 
+            'Authorization': `Bearer ${token}`, 
+            'Content-Type': 'application/json'
+          }
         });
+
+        if (response.status === 403) {
+          console.error("Auth failed: Token rejected by backend.");
+          return;
+        }
+
         const data = await response.json();
-        
-        // 2. Ensure data is actually an array before setting it
         setItems(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Inventory fetch error:", err);
@@ -23,7 +35,7 @@ const Inventory = ({ token }) => {
       }
     };
     fetchInventory();
-  }, [token]);
+  }, []); // Dependency array empty as we get auth state directly from Firebase
 
   if (loading) return <div>Loading your inventory...</div>;
 
@@ -31,7 +43,6 @@ const Inventory = ({ token }) => {
     <div className="p-8">
       <h1 className="text-2xl font-bold mb-6">My Inventory</h1>
       
-      {/* 3. Defensive check: only map if items exist and have length */}
       {items.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {items.map(item => (

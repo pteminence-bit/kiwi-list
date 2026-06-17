@@ -4,6 +4,29 @@ import { verifyUser } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
+router.get('/me/inventory', verifyUser, async (req, res) => {
+  try {
+    const unlockSnapshot = await db.collection('unlocks')
+      .where('userId', '==', req.user.uid)
+      .get();
+      
+    const listingIds = unlockSnapshot.docs.map(doc => doc.data().listingId);
+    
+    if (listingIds.length === 0) return res.json([]);
+
+    const listings = await Promise.all(
+      listingIds.map(async (id) => {
+        const doc = await db.collection('listings').doc(id).get();
+        return doc.exists ? { id: doc.id, ...doc.data() } : null;
+      })
+    );
+
+    res.json(listings.filter(item => item !== null));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // --- GET CURRENT USER'S WALLET BALANCE ---
 router.get('/me/wallet', verifyUser, async (req, res) => {
   try {
@@ -83,31 +106,6 @@ router.put('/settings', verifyUser, async (req, res) => {
 
     await userRef.set(updateData, { merge: true });
     res.json({ message: "Settings and profile metrics updated successfully" });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Add this to your backend/routes/userRoutes.js
-router.get('/me/inventory', verifyUser, async (req, res) => {
-  try {
-    const unlockSnapshot = await db.collection('unlocks')
-      .where('userId', '==', req.user.uid)
-      .get();
-      
-    const listingIds = unlockSnapshot.docs.map(doc => doc.data().listingId);
-    
-    if (listingIds.length === 0) return res.json([]);
-
-    // Fetch details for each unlocked listing
-    const listings = await Promise.all(
-      listingIds.map(async (id) => {
-        const doc = await db.collection('listings').doc(id).get();
-        return doc.exists ? { id: doc.id, ...doc.data() } : null;
-      })
-    );
-
-    res.json(listings.filter(item => item !== null));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

@@ -32,8 +32,8 @@ export const verifyUser = async (req, res, next) => {
       
       // Admin suspension check
       if (userData.isDisabled === true) {
-        return res.status(403).json({ error: "Your account has been suspended by an administrator." });
-      }
+      return res.status(403).json({ error: "Your account has been suspended by an administrator." });
+    }
 
       // DATA MIGRATION: Ensure missing fields exist for older accounts
       if (userData.walletBalance === undefined || userData.verificationStatus === undefined) {
