@@ -13,7 +13,8 @@ const ListingCard = ({ listing, onUnlock, token, currentUser }) => {
   const isPremium = listing.tier === 'premium';
   const isOwner = currentUser && listing.ownerId === currentUser.uid;
 
-  const handleReport = async () => {
+  const handleReport = async (e) => {
+    e.stopPropagation(); // Stop click from bubbling
     const reason = prompt("Please provide a reason for reporting this listing:");
     if (!reason) return;
 
@@ -107,18 +108,9 @@ const ListingCard = ({ listing, onUnlock, token, currentUser }) => {
           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400"><Bath size={14} /> {listing.baths} Baths</div>
         </div>
 
-        {/* Payment / Contact Logic */}
+        {/* Updated Payment Logic */}
         {isPremium && !isOwner ? (
-          <PaymentButton 
-            amount={listing.price}
-            email={currentUser?.email || 'user@example.com'}
-            name={currentUser?.displayName || 'User'}
-            onSuccess={(paymentData) => {
-              // The backend/webhook will handle the DB entry;
-              // we call onUnlock to update the UI state immediately
-              onUnlock(listing.id); 
-            }}
-          />
+          <PaymentButton onUnlock={onUnlock} />
         ) : (
           <div className="mt-2 py-2.5 bg-slate-800 text-slate-400 text-[10px] text-center font-bold uppercase rounded-lg border border-slate-700">
             Contact: {listing.contactDetails?.phone || 'Available'}

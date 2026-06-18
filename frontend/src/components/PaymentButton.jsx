@@ -3,10 +3,13 @@ import React from 'react';
 const PaymentButton = ({ onUnlock }) => {
   return (
     <button
-      className="bg-blue-600 text-white px-4 py-2 rounded"
-      onClick={onUnlock}
+      className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase py-2.5 rounded-lg transition-colors"
+      onClick={(e) => {
+        e.stopPropagation(); // Prevents bubbling
+        onUnlock();
+      }}
     >
-      Pay Now
+      Unlock Contact
     </button>
   );
 };
