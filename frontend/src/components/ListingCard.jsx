@@ -14,7 +14,7 @@ const ListingCard = ({ listing, onUnlock, token, currentUser }) => {
   const isOwner = currentUser && listing.ownerId === currentUser.uid;
 
   const handleReport = async (e) => {
-    e.stopPropagation(); // Stop click from bubbling
+    e.stopPropagation(); 
     const reason = prompt("Please provide a reason for reporting this listing:");
     if (!reason) return;
 
@@ -53,7 +53,10 @@ const ListingCard = ({ listing, onUnlock, token, currentUser }) => {
   }, [listing.id]);
 
   return (
-    <div className="flex flex-col text-slate-200 w-full bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+    <div 
+      data-full-gallery={JSON.stringify(images)} 
+      className="flex flex-col text-slate-200 w-full bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl"
+    >
       {/* Header */}
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center gap-3">
@@ -108,7 +111,7 @@ const ListingCard = ({ listing, onUnlock, token, currentUser }) => {
           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400"><Bath size={14} /> {listing.baths} Baths</div>
         </div>
 
-        {/* Updated Payment Logic */}
+        {/* Payment / Contact Logic */}
         {isPremium && !isOwner ? (
           <PaymentButton onUnlock={onUnlock} />
         ) : (

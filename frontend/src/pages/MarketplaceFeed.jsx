@@ -79,7 +79,7 @@ const MarketplaceFeed = ({ token }) => {
 };
 
   const handleImageLightboxCapture = (e) => {
-    const galleryData = e.target.getAttribute('data-full-gallery');
+    const galleryData = e.currentTarget.getAttribute('data-full-gallery');
     if (galleryData) {
       setActiveGallery(JSON.parse(galleryData));
       setGalleryIdx(0);
