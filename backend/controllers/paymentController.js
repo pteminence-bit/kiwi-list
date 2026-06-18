@@ -7,10 +7,13 @@ dotenv.config();
 const FLW_SECRET_KEY = process.env.FLW_SECRET_KEY;
 
 export const initializePayment = async (req, res) => {
-  const { amount, purpose, listingId } = req.body; 
+  const amount = Number(req.body.amount); 
+  const { purpose, listingId } = req.body;
   const userEmail = req.user.email;
   const userId = req.user.uid;
   const tx_ref = `kiwi-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+  console.log("DEBUG: Final amount sent to Flutterwave:", amount);
 
   try {
     // 1. Create a pending transaction record in Firestore
