@@ -54,28 +54,29 @@ const MarketplaceFeed = ({ token }) => {
 
   // Choice A: Pure Redirect logic
   const handleUnlockContact = async (listingId) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/payments/initialize`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ amount: 500, purpose: 'unlock_contact', listingId })
-      });
-      
-      const data = await response.json();
-      
-      if (data.checkoutUrl) {
-        // Directing the browser away to the Flutterwave hosted page
-        window.location.href = data.checkoutUrl; 
-      } else {
-        console.error("No checkout URL received from server");
-      }
-    } catch (error) {
-      console.error("Payment initialization error:", error);
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/payments/initialize`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      // Ensure amount is passed as a number
+      body: JSON.stringify({ amount: 500, purpose: 'unlock_contact', listingId })
+    });
+    
+    const data = await response.json();
+    
+    if (data.checkoutUrl) {
+      // THIS IS THE ONLY ACTION: Redirect the user
+      window.location.href = data.checkoutUrl; 
+    } else {
+      console.error("Payment failed:", data.error);
     }
-  };
+  } catch (error) {
+    console.error("Connection error:", error);
+  }
+};
 
   const handleImageLightboxCapture = (e) => {
     const galleryData = e.target.getAttribute('data-full-gallery');

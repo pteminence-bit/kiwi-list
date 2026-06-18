@@ -114,7 +114,6 @@ const ListingCard = ({ listing, onUnlock, token, currentUser }) => {
             email={currentUser?.email || 'user@example.com'}
             name={currentUser?.displayName || 'User'}
             onSuccess={(paymentData) => {
-              console.log("Payment successful, unlocking listing...");
               // The backend/webhook will handle the DB entry;
               // we call onUnlock to update the UI state immediately
               onUnlock(listing.id); 
