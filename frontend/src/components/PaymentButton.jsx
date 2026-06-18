@@ -3,7 +3,7 @@ import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
 
 const PaymentButton = ({ amount, email, name, onSuccess }) => {
   const config = {
-    public_key: 'YOUR_PUBLIC_KEY_HERE', // Replace with your Public Key
+    public_key: 'FLWPUBK-ad400c106b75234a9a6aa659ad96659a-X', // Replace with your Public Key
     tx_ref: Date.now().toString(),
     amount: amount,
     currency: 'NGN', // Change if necessary
@@ -15,7 +15,7 @@ const PaymentButton = ({ amount, email, name, onSuccess }) => {
     customizations: {
       title: 'Unlock Listing',
       description: 'Payment for premium listing access',
-      logo: 'https://your-logo-url.png',
+      logo: 'https://kiwi-list-ifnr.onrender.com/favicon.svg',
     },
   };
 
