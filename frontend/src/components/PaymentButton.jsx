@@ -1,5 +1,5 @@
 import React from 'react';
-import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
+//import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
 
 const PaymentButton = ({ amount, email, name, onSuccess }) => {
   const config = {
