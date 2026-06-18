@@ -12,13 +12,21 @@ const PaymentSuccess = () => {
     // Simulate backend verification check
     const verifyTransaction = async () => {
       try {
-        // Replace with your actual backend verification endpoint
-        // await fetch(`${API_BASE_URL}/api/payments/verify?ref=${reference}`);
-        setTimeout(() => setVerifying(false), 2000);
-      } catch (err) {
-        console.error("Verification failed", err);
-      }
-    };
+        const response = await fetch(`${API_BASE_URL}/api/payments/verify?reference=${reference}`);
+    const data = await response.json();
+
+    if (response.ok) {
+      setVerifying(false);
+    } else {
+      // Handle failed verification
+      console.error("Payment verification failed:", data.error);
+      alert("Verification failed. Please contact support.");
+      navigate('/');
+    }
+  } catch (err) {
+    console.error("Network error during verification", err);
+  }
+};
     verifyTransaction();
   }, [reference]);
 

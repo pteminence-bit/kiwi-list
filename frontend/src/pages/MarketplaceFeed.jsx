@@ -5,7 +5,6 @@ import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 
 const MarketplaceFeed = ({ token }) => {
-  // 👇 FIXED: Destructure user from useAuth()
   const { user } = useAuth();
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,7 +30,7 @@ const MarketplaceFeed = ({ token }) => {
       
       setListings(sortedData);
     } catch (err) {
-      console.error(err);
+      console.error("Error fetching feed:", err);
     } finally {
       setLoading(false);
       isFetching.current = false;
@@ -53,6 +52,7 @@ const MarketplaceFeed = ({ token }) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Choice A: Pure Redirect logic
   const handleUnlockContact = async (listingId) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/payments/initialize`, {
@@ -63,10 +63,17 @@ const MarketplaceFeed = ({ token }) => {
         },
         body: JSON.stringify({ amount: 500, purpose: 'unlock_contact', listingId })
       });
+      
       const data = await response.json();
-      if (data.checkoutUrl) window.location.href = data.checkoutUrl;
+      
+      if (data.checkoutUrl) {
+        // Directing the browser away to the Flutterwave hosted page
+        window.location.href = data.checkoutUrl; 
+      } else {
+        console.error("No checkout URL received from server");
+      }
     } catch (error) {
-      console.error("Payment error:", error);
+      console.error("Payment initialization error:", error);
     }
   };
 
@@ -111,7 +118,6 @@ const MarketplaceFeed = ({ token }) => {
         </div>
       </div>
 
-      {/* Gallery Logic remains unchanged */}
       {activeGallery && (
         <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4" onClick={() => setActiveGallery(null)}>
           <button className="absolute top-6 right-6 p-2 bg-white/10 rounded-full text-white z-50" onClick={() => setActiveGallery(null)}><X size={24} /></button>
