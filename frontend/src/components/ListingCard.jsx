@@ -53,10 +53,7 @@ const ListingCard = ({ listing, onUnlock, token, currentUser }) => {
   }, [listing.id]);
 
   return (
-    <div 
-      data-full-gallery={JSON.stringify(images)} 
-      className="flex flex-col text-slate-200 w-full bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl"
-    >
+    <div className="flex flex-col text-slate-200 w-full">
       {/* Header */}
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center gap-3">

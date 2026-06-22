@@ -52,31 +52,28 @@ const MarketplaceFeed = ({ token }) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Choice A: Pure Redirect logic
   const handleUnlockContact = async (listingId) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/payments/initialize`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      // Ensure amount is passed as a number
-      body: JSON.stringify({ amount: 500, purpose: 'unlock_contact', listingId })
-    });
-    
-    const data = await response.json();
-    
-    if (data.checkoutUrl) {
-      // THIS IS THE ONLY ACTION: Redirect the user
-      window.location.href = data.checkoutUrl; 
-    } else {
-      console.error("Payment failed:", data.error);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/payments/initialize`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ amount: 500, purpose: 'unlock_contact', listingId })
+      });
+      
+      const data = await response.json();
+      
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl; 
+      } else {
+        console.error("Payment failed:", data.error);
+      }
+    } catch (error) {
+      console.error("Connection error:", error);
     }
-  } catch (error) {
-    console.error("Connection error:", error);
-  }
-};
+  };
 
   const handleImageLightboxCapture = (e) => {
     const galleryData = e.currentTarget.getAttribute('data-full-gallery');
@@ -107,7 +104,12 @@ const MarketplaceFeed = ({ token }) => {
       <div className="flex flex-col items-center px-2">
         <div className="w-full max-w-lg space-y-6">
           {listings.map(listing => (
-            <div key={listing.id} onClick={handleImageLightboxCapture} className="bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 shadow-xl">
+            <div 
+              key={listing.id} 
+              onClick={handleImageLightboxCapture} 
+              data-full-gallery={JSON.stringify((listing.images || []).map(img => img.startsWith('http') ? img : `https://pub-580c3d172e3f4533b065d241e61ee132.r2.dev/${img.replace(/^\//, '')}`))}
+              className="bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 shadow-xl cursor-pointer"
+            >
               <ListingCard 
                 listing={listing} 
                 token={token} 
