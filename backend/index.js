@@ -10,6 +10,7 @@ import webhookRoutes from './routes/webhookRoutes.js';
 import listingRoutes from './routes/listingRoutes.js';
 import paymentController from './routes/paymentRoutes.js'; 
 import userRoutes from './routes/userRoutes.js';
+import payoutRoutes from './routes/payoutRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 
 dotenv.config();
@@ -61,6 +62,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/webhooks', webhookRoutes); 
 app.use('/api/payments', paymentController);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/users/me', payoutRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
