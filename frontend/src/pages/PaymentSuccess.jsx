@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle, ArrowRight, Loader2 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { API_BASE_URL } from '../config'; // Ensure this is imported
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
@@ -13,22 +14,27 @@ const PaymentSuccess = () => {
     const verifyTransaction = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/api/payments/verify?reference=${reference}`);
-    const data = await response.json();
+        const data = await response.json();
 
-    if (response.ok) {
-      setVerifying(false);
+        if (response.ok) {
+          setVerifying(false);
+        } else {
+          // Handle failed verification
+          console.error("Payment verification failed:", data.error);
+          alert("Verification failed. Please contact support.");
+          navigate('/');
+        }
+      } catch (err) {
+        console.error("Network error during verification", err);
+      }
+    };
+    
+    if (reference) {
+      verifyTransaction();
     } else {
-      // Handle failed verification
-      console.error("Payment verification failed:", data.error);
-      alert("Verification failed. Please contact support.");
       navigate('/');
     }
-  } catch (err) {
-    console.error("Network error during verification", err);
-  }
-};
-    verifyTransaction();
-  }, [reference]);
+  }, [reference, navigate]);
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-slate-950 p-4">

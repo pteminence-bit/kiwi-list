@@ -44,18 +44,17 @@ const DashboardLayout = () => {
   if (loading) return null;
   if (!user) return <Navigate to="/login" replace />; 
 
-  // 👇 APPENDED RULE: Enforce email verification protection guard
   if (!user.emailVerified) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-950 w-full p-10 text-center text-white">
-        <div className="max-w-md bg-slate-900 border border-slate-800 p-8 rounded-xl shadow-2xl">
+      <div className="flex items-center justify-center min-h-screen bg-slate-950 w-full p-6 text-center text-white">
+        <div className="w-full max-w-sm bg-slate-900 border border-slate-800 p-8 rounded-xl shadow-2xl">
           <h2 className="text-xl font-black mb-2">Account Not Verified</h2>
           <p className="text-xs text-slate-400 leading-relaxed mb-6">
             Please check your email inbox and click the verification link sent to your address to unlock dashboard access permissions.
           </p>
           <button 
             onClick={() => window.location.reload()} 
-            className="bg-blue-600 hover:bg-blue-700 text-xs font-bold px-5 py-2.5 rounded-lg transition shadow-sm"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-xs font-bold px-5 py-3 rounded-lg transition shadow-sm"
           >
             I've verified my email, refresh page
           </button>
@@ -64,17 +63,22 @@ const DashboardLayout = () => {
     );
   }
 
-  // Entire original main layout core structure is preserved untouched below
   return (
     <div className="flex w-full min-h-screen bg-slate-950 text-white">
       <Sidebar isAdmin={isAdmin} isOpen={mobileMenuOpen} setIsOpen={setMobileMenuOpen} />
 
+      {/* Main Container: Centered and responsive */}
       <div className="flex-1 lg:ml-64 flex min-h-screen">
+        
+        {/* Mobile Menu Toggle */}
         <div className="lg:hidden fixed top-4 right-4 z-40">
-           <button onClick={() => setMobileMenuOpen(true)} className="p-2 bg-slate-900 rounded-lg"><Menu size={24} /></button>
+           <button onClick={() => setMobileMenuOpen(true)} className="p-2 bg-slate-900 border border-slate-800 rounded-lg shadow-lg">
+             <Menu size={24} />
+           </button>
         </div>
 
-        <main className="flex-1 w-full max-w-2xl mx-auto pt-8 px-4">
+        {/* Content Area: Added max-w-2xl and horizontal centering to prevent layout clustering */}
+        <main className="flex-1 w-full max-w-2xl mx-auto pt-8 px-4 md:px-6">
           <Routes>
             <Route path="/" element={<MarketplaceFeed token={user.accessToken} />} />
             <Route path="/add" element={<CreateListing token={user.accessToken} />} />
@@ -83,17 +87,15 @@ const DashboardLayout = () => {
             <Route path="/wallet" element={<WalletCard token={user.accessToken} />} />
             <Route path="/settings" element={<Settings token={user.accessToken} />} />
             <Route path="/updates" element={<div className="p-4"><AdminUpdates /></div>} />
-            <Route path="*" element={<Navigate to="/" replace />} />
             <Route path="/success" element={<PaymentSuccess />} />
             <Route path="/inventory" element={<Inventory />} />
-            <Route path="/success" element={<SuccessPage />} />
-  
-           {/* FIXED: Changed token to user.accessToken */}
             <Route path="/edit-listing/:id" element={<EditListing token={user.accessToken} />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
 
-        <aside className="hidden xl:block w-80 border-l border-slate-800 p-6">
+        {/* Sidebar for Desktop: Only visible on large screens */}
+        <aside className="hidden xl:block w-80 border-l border-slate-800 p-6 shrink-0">
           <div className="sticky top-8">
             <h2 className="text-xs font-bold text-slate-400 mb-6 uppercase tracking-wider">KIWI-list Latest</h2>
             <AdminUpdates />
