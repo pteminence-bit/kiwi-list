@@ -86,6 +86,7 @@ const DashboardLayout = () => {
             <Route path="*" element={<Navigate to="/" replace />} />
             <Route path="/success" element={<PaymentSuccess />} />
             <Route path="/inventory" element={<Inventory />} />
+            <Route path="/success" element={<SuccessPage />} />
   
            {/* FIXED: Changed token to user.accessToken */}
             <Route path="/edit-listing/:id" element={<EditListing token={user.accessToken} />} />
