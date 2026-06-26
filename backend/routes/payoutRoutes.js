@@ -6,6 +6,5 @@ const router = express.Router();
 
 // Route mappings
 router.post('/withdraw', verifyUser, requestWithdrawal);
-router.post('/webhook/payout', handlePayoutWebhook);
 
 export default router;
