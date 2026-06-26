@@ -73,3 +73,6 @@ export const handlePayoutWebhook = async (req, res) => {
   // ...
   res.status(200).send();
 };
+
+// 4. Export Alias to resolve the route import error without breaking existing code
+export const requestWithdrawal = withdrawFunds;
