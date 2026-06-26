@@ -21,13 +21,11 @@ const WalletCard = ({ token }) => {
         
         const data = await res.json();
         
-        // Ensure balance and totalEarned default to 0 if API returns null/undefined
         setWallet({ 
             balance: Number(data.walletBalance) || 0, 
             totalEarned: Number(data.totalEarned) || 0 
         });
         
-        // Fixed: explicitly checking for 'verified' status returned from your backend
         setUserProfileData({
           isPayoutBlocked: data.isPayoutBlocked === true,
           isVerified: data.verificationStatus === 'verified'
@@ -41,10 +39,33 @@ const WalletCard = ({ token }) => {
     fetchWalletData();
   }, [token]);
 
-  const handleWithdrawal = () => {
-    // Re-check verification before proceeding
-    if (!userProfileData.isVerified || userProfileData.isPayoutBlocked) return;
-    alert('Withdrawal request initialized.');
+  const handleWithdrawal = async () => {
+    // Re-check verification and constraints
+    if (!userProfileData.isVerified || userProfileData.isPayoutBlocked || wallet.balance <= 0) return;
+
+    try {
+      const res = await fetch('https://kiwi-list-api.onrender.com/api/users/me/withdraw', {
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json' 
+        },
+        body: JSON.stringify({ amount: wallet.balance })
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert('Withdrawal request processed successfully.');
+        // Refresh wallet state after withdrawal
+        setWallet(prev => ({ ...prev, balance: 0 }));
+      } else {
+        alert(data.error || 'Withdrawal failed. Please contact support.');
+      }
+    } catch (err) {
+      console.error("Withdrawal error:", err);
+      alert('Network error. Please try again.');
+    }
   };
 
   if (loading) {
