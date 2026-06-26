@@ -1,7 +1,10 @@
-import { db } from '../config/firebase.js'; // Ensure your Firebase config is correct
+import { db } from '../config/firebase.js';
+import axios from 'axios';
+import crypto from 'crypto';
 
+// 1. Request Withdrawal
 export const requestWithdrawal = async (req, res) => {
-  const { amount, accountDetails } = req.body;
+  const { amount, account_number, account_bank, bank_name } = req.body;
   const userId = req.user.uid;
 
   try {
@@ -9,26 +12,47 @@ export const requestWithdrawal = async (req, res) => {
       const userRef = db.collection('users').doc(userId);
       const userDoc = await transaction.get(userRef);
 
-      if (!userDoc.exists) throw new Error("User not found");
-      if ((userDoc.data().balance || 0) < amount) throw new Error("Insufficient funds");
+      if (!userDoc.exists || userDoc.data().balance < amount) {
+        throw new Error("Insufficient funds");
+      }
 
       // Deduct balance
       transaction.update(userRef, { balance: userDoc.data().balance - amount });
 
-      // Create pending payout record
+      // Create pending payout
       const payoutRef = db.collection('payouts').doc();
       transaction.set(payoutRef, {
-        userId,
-        amount,
-        accountDetails,
-        status: 'pending',
-        createdAt: new Date().toISOString()
+        userId, amount, status: 'pending', account_number, 
+        account_bank, bank_name, createdAt: new Date().toISOString()
       });
     });
 
-    res.status(200).json({ message: "Withdrawal request submitted successfully" });
+    res.status(200).json({ message: "Withdrawal request submitted" });
   } catch (error) {
-    console.error("Withdrawal Error:", error);
-    res.status(500).json({ error: error.message || "Internal Server Error" });
+    res.status(400).json({ error: error.message });
   }
+};
+
+// 2. Webhook Listener
+export const handlePayoutWebhook = async (req, res) => {
+  const signature = req.headers["verif-hash"];
+  if (signature !== process.env.FLW_SECRET_HASH) return res.status(401).send();
+
+  const { event, data } = req.body;
+
+  if (event === 'transfer.completed') {
+    await db.collection('payouts').where('reference', '==', data.reference)
+      .get().then(snapshot => snapshot.forEach(doc => doc.ref.update({ status: 'completed' })));
+  } else if (event === 'transfer.failed') {
+    // Rollback: Refund user
+    const payout = await db.collection('payouts').where('reference', '==', data.reference).get();
+    if (!payout.empty) {
+      const p = payout.docs[0].data();
+      await db.collection('users').doc(p.userId).update({
+        balance: db.FieldValue.increment(p.amount)
+      });
+      await payout.docs[0].ref.update({ status: 'failed' });
+    }
+  }
+  res.status(200).send();
 };
