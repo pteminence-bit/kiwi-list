@@ -2,12 +2,29 @@ import { db } from '../config/firebase.js';
 import axios from 'axios';
 import crypto from 'crypto';
 
+// Helper function to resolve bank account
+const resolveAccount = async (account_number, account_bank) => {
+  const response = await axios.post('https://api.flutterwave.com/v3/accounts/resolve', {
+    account_number,
+    account_bank
+  }, { 
+    headers: { Authorization: `Bearer ${process.env.FLW_SECRET_KEY}` } 
+  });
+  return response.data.data; // Returns { account_number, account_name, ... }
+};
+
 // 1. Request Withdrawal
 export const requestWithdrawal = async (req, res) => {
   const { amount, account_number, account_bank, bank_name } = req.body;
   const userId = req.user.uid;
 
   try {
+    // BANK VALIDATION CHECK
+    const resolvedAccount = await resolveAccount(account_number, account_bank);
+    if (!resolvedAccount || !resolvedAccount.account_name) {
+      throw new Error("Could not verify bank account details");
+    }
+
     await db.runTransaction(async (transaction) => {
       const userRef = db.collection('users').doc(userId);
       const userDoc = await transaction.get(userRef);
