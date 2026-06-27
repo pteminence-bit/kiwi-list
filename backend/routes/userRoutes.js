@@ -16,58 +16,32 @@ const BANK_CODES = {
   "moniepoint": "50515", "premiumtrust": "105"
 };
 
-// Helper function
 const resolveAccount = async (account_number, account_bank) => {
   const response = await axios.post('https://api.flutterwave.com/v3/accounts/resolve', {
-    account_number,
-    account_bank
-  }, { 
-    headers: { Authorization: `Bearer ${process.env.FLW_SECRET_KEY}` } 
-  });
+    account_number, account_bank
+  }, { headers: { Authorization: `Bearer ${process.env.FLW_SECRET_KEY}` } });
   return response.data.data;
 };
 
-// --- GET SUPPORTED BANKS ---
-router.get('/banks', verifyUser, (req, res) => {
-  res.json(Object.keys(BANK_CODES));
-});
-
-// --- WITHDRAWAL PIPELINE ---
 router.post('/me/withdraw', verifyUser, async (req, res) => {
   const { amount, account_number, bank_name } = req.body;
-  const userId = req.user.uid;
-
   try {
-    const normalizedBank = bank_name?.toLowerCase().trim();
-    const account_bank = BANK_CODES[normalizedBank];
+    const account_bank = BANK_CODES[bank_name?.toLowerCase().trim()];
+    if (!account_bank) throw new Error("Unsupported bank name.");
+    
+    const resolved = await resolveAccount(account_number, account_bank);
+    if (!resolved?.account_name) throw new Error("Bank details verification failed.");
 
-    if (!account_bank) {
-      throw new Error(`Bank '${bank_name}' is not supported or not recognized.`);
-    }
-
-    const resolvedAccount = await resolveAccount(account_number, account_bank);
-    if (!resolvedAccount || !resolvedAccount.account_name) {
-      throw new Error("Could not verify bank account details");
-    }
-
-    await db.runTransaction(async (transaction) => {
-      const userRef = db.collection('users').doc(userId);
-      const userDoc = await transaction.get(userRef);
-
-      if (!userDoc.exists || (userDoc.data().balance ?? 0) < amount) {
-        throw new Error("Insufficient funds");
-      }
-
-      transaction.update(userRef, { balance: userDoc.data().balance - amount });
-
-      const payoutRef = db.collection('payouts').doc();
-      transaction.set(payoutRef, {
-        userId, amount, status: 'pending', account_number, 
-        account_bank, bank_name, createdAt: new Date().toISOString()
+    await db.runTransaction(async (t) => {
+      const userRef = db.collection('users').doc(req.user.uid);
+      const user = await t.get(userRef);
+      if ((user.data().balance ?? 0) < amount) throw new Error("Insufficient funds.");
+      t.update(userRef, { balance: user.data().balance - amount });
+      t.set(db.collection('payouts').doc(), {
+        userId: req.user.uid, amount, status: 'pending', account_number, account_bank, bank_name, createdAt: new Date().toISOString()
       });
     });
-
-    res.status(200).json({ message: "Withdrawal request submitted" });
+    res.json({ message: "Withdrawal request submitted" });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
