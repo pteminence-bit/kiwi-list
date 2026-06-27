@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Wallet, ArrowUpRight, ShieldAlert, X, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Wallet, ArrowUpRight, ShieldAlert, X } from 'lucide-react';
 
 const WalletCard = ({ token }) => {
   const [wallet, setWallet] = useState({ balance: 0, totalEarned: 0 });
@@ -9,16 +9,16 @@ const WalletCard = ({ token }) => {
     isVerified: false
   });
   
-  // Modal States
+  // Modal state
   const [showModal, setShowModal] = useState(false);
-  const [withdrawAmount, setWithdrawAmount] = useState('');
-  const [feedback, setFeedback] = useState({ type: '', msg: '' });
+  const [amount, setAmount] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     if (!token) return;
     const fetchWalletData = async () => {
       try {
-        const res = await fetch('https://kiwi-list-api.onrender.com/api/users/me/wallet', {
+        const res = await fetch('https://kiwi-list-api.onrender.com/api/users/me/wallet/', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -45,16 +45,17 @@ const WalletCard = ({ token }) => {
   }, [token]);
 
   const handleWithdrawal = async () => {
-    const amount = Number(withdrawAmount);
-    if (amount < 1000) {
-      setFeedback({ type: 'error', msg: 'Minimum withdrawal is ₦1,000' });
+    const numericAmount = parseFloat(amount);
+    if (numericAmount < 2000) {
+      alert('Minimum withdrawal amount is ₦2,000.');
       return;
     }
-    if (amount > wallet.balance) {
-      setFeedback({ type: 'error', msg: 'Insufficient balance' });
+    if (numericAmount > wallet.balance) {
+      alert('Insufficient balance.');
       return;
     }
 
+    setIsProcessing(true);
     try {
       const res = await fetch('https://kiwi-list-api.onrender.com/api/users/me/withdraw', {
         method: 'POST',
@@ -62,20 +63,24 @@ const WalletCard = ({ token }) => {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json' 
         },
-        body: JSON.stringify({ amount })
+        body: JSON.stringify({ amount: numericAmount })
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        setFeedback({ type: 'success', msg: 'Withdrawal request processed successfully.' });
-        setWallet(prev => ({ ...prev, balance: prev.balance - amount }));
-        setTimeout(() => { setShowModal(false); setFeedback({ type: '', msg: '' }); }, 2000);
+        alert('Withdrawal request processed successfully.');
+        setWallet(prev => ({ ...prev, balance: prev.balance - numericAmount }));
+        setShowModal(false);
+        setAmount('');
       } else {
-        setFeedback({ type: 'error', msg: data.error || 'Withdrawal failed.' });
+        alert(data.error || 'Withdrawal failed. Please contact support.');
       }
     } catch (err) {
-      setFeedback({ type: 'error', msg: 'Network error. Please try again.' });
+      console.error("Withdrawal error:", err);
+      alert('Network error. Please try again.');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -89,36 +94,6 @@ const WalletCard = ({ token }) => {
 
   return (
     <div className="p-4 md:p-8 bg-slate-50 min-h-screen w-full flex flex-col items-center justify-start">
-      {/* Withdrawal Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-200">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="font-bold text-slate-900">Withdraw Funds</h2>
-              <button onClick={() => setShowModal(false)}><X size={20} className="text-slate-400"/></button>
-            </div>
-            <input 
-              type="number" 
-              placeholder="Enter amount (Min ₦1,000)"
-              className="w-full p-3 border border-slate-200 rounded-lg mb-4 outline-none focus:border-blue-500"
-              value={withdrawAmount}
-              onChange={(e) => setWithdrawAmount(e.target.value)}
-            />
-            {feedback.msg && (
-              <div className={`text-xs mb-4 p-2 rounded flex items-center gap-2 ${feedback.type === 'error' ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
-                {feedback.type === 'error' ? <ShieldAlert size={14}/> : <CheckCircle2 size={14}/>} {feedback.msg}
-              </div>
-            )}
-            <button 
-              onClick={handleWithdrawal}
-              className="w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700"
-            >
-              Confirm Withdrawal
-            </button>
-          </div>
-        </div>
-      )}
-
       <div className="w-full max-w-md mt-4">
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-white shadow-xl w-full">
           <div className="flex items-center justify-between mb-6">
@@ -180,6 +155,32 @@ const WalletCard = ({ token }) => {
           )}
         </div>
       </div>
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <div className="flex justify-between items-center mb-4 text-black">
+              <h2 className="font-bold text-lg">Withdraw Funds</h2>
+              <button onClick={() => setShowModal(false)}><X size={20} /></button>
+            </div>
+            <p className="text-black text-sm mb-4">Enter amount to withdraw (Min: ₦1,000)</p>
+            <input 
+              type="number"
+              className="w-full p-3 border border-gray-300 rounded-lg mb-6 text-black"
+              placeholder="₦0.00"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
+            <button 
+              onClick={handleWithdrawal}
+              disabled={isProcessing}
+              className="w-full py-3 bg-blue-600 text-white font-bold rounded-lg"
+            >
+              {isProcessing ? 'Processing...' : 'Confirm Withdrawal'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
