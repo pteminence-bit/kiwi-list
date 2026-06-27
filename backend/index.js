@@ -59,6 +59,7 @@ app.use('/api/listings', listingRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/users/me', userRoutes);
 app.use('/api/webhooks', webhookRoutes); 
 app.use('/api/payments', paymentController);
 app.use('/api/payments', paymentRoutes);
