@@ -81,8 +81,9 @@ const WalletCard = ({ token }) => {
       const result = await res.json();
       
       if (!res.ok) {
-        throw new Error(result.error || "Withdrawal failed");
-      }
+        console.error("SERVER REJECTION DETAIL:", result); 
+       throw new Error(result.error || "Withdrawal failed");
+}
 
       alert('Withdrawal request processed successfully.');
       setWallet(prev => ({ ...prev, balance: prev.balance - numericAmount }));
