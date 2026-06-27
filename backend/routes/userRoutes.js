@@ -3,7 +3,7 @@ import { db } from '../config/firebase.js';
 import { verifyUser } from '../middleware/authMiddleware.js';
 import axios from 'axios';
 
-const router = express.Router();
+router = express.Router();
 
 // Bank Code Mapping
 const BANK_CODES = {
@@ -35,7 +35,9 @@ router.get('/banks', verifyUser, (req, res) => {
 
 // --- WITHDRAWAL PIPELINE ---
 router.post('/me/withdraw', verifyUser, async (req, res) => {
-  const { amount, account_number, bank_name } = req.body;
+  const { amount, account_number, bank_name } = req.body; // Correct keys
+  const normalizedBank = bank_name?.toLowerCase().trim();
+  const account_bank = BANK_CODES[normalizedBank];
   const userId = req.user.uid;
 
   try {
