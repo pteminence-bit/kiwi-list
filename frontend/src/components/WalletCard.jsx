@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Wallet, ArrowUpRight, ShieldAlert, X } from 'lucide-react';
 
+const BACKEND_BASE_URL = 'https://kiwi-list-api.onrender.com';
+
 const WalletCard = ({ token }) => {
   const [wallet, setWallet] = useState({ balance: 0, totalEarned: 0 });
   const [loading, setLoading] = useState(true);
   const [userProfileData, setUserProfileData] = useState({
     isPayoutBlocked: false,
-    isVerified: false
+    isVerified: false,
+    bankDetails: { accountNumber: '', bankCode: '', bankName: '' } // Added bankDetails state
   });
 
   // Modal state
@@ -18,13 +21,19 @@ const WalletCard = ({ token }) => {
     if (!token) return;
     const fetchWalletData = async () => {
       try {
-        const res = await fetch('https://kiwi-list-api.onrender.com/api/users/me/wallet/', {
+        const res = await fetch(`${BACKEND_BASE_URL}/api/users/me/wallet/`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
 
         if (!res.ok) throw new Error("Failed to fetch wallet");
 
         const data = await res.json();
+        
+        // Fetch full profile to get bank details for withdrawal
+        const profileRes = await fetch(`${BACKEND_BASE_URL}/api/users/me/`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const profileData = await profileRes.json();
 
         setWallet({
           balance: Number(data.walletBalance) || 0,
@@ -33,7 +42,12 @@ const WalletCard = ({ token }) => {
 
         setUserProfileData({
           isPayoutBlocked: data.isPayoutBlocked === true,
-          isVerified: data.verificationStatus === 'verified'
+          isVerified: data.verificationStatus === 'verified',
+          bankDetails: {
+            accountNumber: profileData.accountNumber || '',
+            bankCode: profileData.account_bank || '', // Ensure this matches backend field
+            bankName: profileData.bankName || ''
+          }
         });
       } catch (err) {
         console.error("Wallet fetch error:", err);
@@ -46,8 +60,8 @@ const WalletCard = ({ token }) => {
 
   const handleWithdrawal = async () => {
     const numericAmount = parseFloat(amount);
-    if (numericAmount < 2000) {
-      alert('Minimum withdrawal amount is ₦2,000.');
+    if (numericAmount < 1000) { // Updated to match backend min 1000
+      alert('Minimum withdrawal amount is ₦1,000.');
       return;
     }
     if (numericAmount > wallet.balance) {
@@ -57,24 +71,29 @@ const WalletCard = ({ token }) => {
 
     setIsProcessing(true);
     try {
-      const res = await fetch('https://kiwi-list-api.onrender.com/api/users/me/withdraw', {
+      const res = await fetch(`${BACKEND_BASE_URL}/api/users/me/withdraw`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
         },
-        body: JSON.stringify({ amount: numericAmount })
+        body: JSON.stringify({ 
+          amount: numericAmount,
+          account_number: userProfileData.bankDetails.accountNumber,
+          account_bank: userProfileData.bankDetails.bankCode,
+          bank_name: userProfileData.bankDetails.bankName
+        })
       });
-
-      const data = await res.json();
-
+      
+      const result = await res.json();
       if (res.ok) {
         alert('Withdrawal request processed successfully.');
         setWallet(prev => ({ ...prev, balance: prev.balance - numericAmount }));
         setShowModal(false);
         setAmount('');
       } else {
-        alert(data.error || 'Withdrawal failed. Please contact support.');
+        console.error("Backend Error:", result.error);
+        alert(result.error || 'Withdrawal failed.');
       }
     } catch (err) {
       console.error("Withdrawal error:", err);
