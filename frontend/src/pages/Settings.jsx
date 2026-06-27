@@ -4,7 +4,13 @@ import { User, Phone, FileText, UserCheck, Upload, Loader2, CheckCircle, Save, B
 const BACKEND_BASE_URL = 'https://kiwi-list-api.onrender.com';
 
 const Settings = ({ token, isVerified, onProfileUpdate }) => {
-  const [profile, setProfile] = useState({ displayName: '', phoneNumber: '', bio: '' });
+  const [profile, setProfile] = useState({ 
+    displayName: '', 
+    phoneNumber: '', 
+    bio: '', 
+    bankName: '', 
+    accountNumber: '' 
+  });
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMsg, setProfileMsg] = useState({ type: '', text: '' });
@@ -14,10 +20,6 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
   const [submitting, setSubmitting] = useState(false);
   const [kycMsg, setKycMsg] = useState({ type: '', text: '' });
 
-  // NEW: Bank Setup State
-  const [bankData, setBankData] = useState({ accountName: '', accountNumber: '', bankName: '' });
-  const [bankSaving, setBankSaving] = useState(false);
-
   useEffect(() => {
     if (!token) return;
     const fetchProfileData = async () => {
@@ -25,7 +27,13 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
         const res = await fetch(`${BACKEND_BASE_URL}/api/users/me`, { headers: { 'Authorization': `Bearer ${token}` } });
         if (res.ok) {
           const data = await res.json();
-          setProfile({ displayName: data.displayName || '', phoneNumber: data.phoneNumber || '', bio: data.bio || '' });
+          setProfile({ 
+            displayName: data.displayName || '', 
+            phoneNumber: data.phoneNumber || '', 
+            bio: data.bio || '',
+            bankName: data.bankName || '',
+            accountNumber: data.accountNumber || ''
+          });
         }
       } catch (err) { console.error(err); } finally { setProfileLoading(false); }
     };
@@ -42,25 +50,10 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
         body: JSON.stringify(profile)
       });
       if (res.ok) {
-        setProfileMsg({ type: 'success', text: 'Profile updated!' });
+        setProfileMsg({ type: 'success', text: 'Settings updated successfully!' });
         if (onProfileUpdate) onProfileUpdate();
       } else throw new Error('Update failed');
     } catch (err) { setProfileMsg({ type: 'error', text: err.message }); } finally { setProfileSaving(false); }
-  };
-
-  // NEW: Bank Save Handler
-  const handleBankSave = async (e) => {
-    e.preventDefault();
-    setBankSaving(true);
-    try {
-      const res = await fetch(`${BACKEND_BASE_URL}/api/users/bank-setup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(bankData)
-      });
-      if (res.ok) alert('Bank details saved successfully!');
-      else throw new Error('Failed to save bank details');
-    } catch (err) { alert(err.message); } finally { setBankSaving(false); }
   };
 
   const handleFileUpload = async (e) => {
@@ -103,35 +96,30 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
           <p className="text-sm text-slate-400">Manage your identity, bank details, and KYC verification.</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Basic Identity */}
+        <form onSubmit={handleProfileSave} className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
             <h3 className="flex items-center gap-2 font-bold text-white mb-6 border-b border-slate-800 pb-4"><User size={18} className="text-blue-500" /> Basic Identity</h3>
-            <form onSubmit={handleProfileSave} className="space-y-4">
+            <div className="space-y-4">
               <input className="w-full p-3 bg-slate-950 border border-slate-800 rounded-lg text-white" value={profile.displayName} onChange={e => setProfile({...profile, displayName: e.target.value})} placeholder="Display Name" />
               <input className="w-full p-3 bg-slate-950 border border-slate-800 rounded-lg text-white" value={profile.phoneNumber} onChange={e => setProfile({...profile, phoneNumber: e.target.value})} placeholder="WhatsApp Number" />
               <textarea className="w-full p-3 bg-slate-950 border border-slate-800 rounded-lg text-white h-24" value={profile.bio} onChange={e => setProfile({...profile, bio: e.target.value})} placeholder="Broker Bio" />
-              <button className="w-full py-3 bg-blue-600 text-white font-bold rounded-lg flex items-center justify-center gap-2">
-                {profileSaving ? <Loader2 className="animate-spin" /> : <Save size={16} />} Save
-              </button>
-            </form>
+            </div>
           </div>
 
-          {/* Bank Setup */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
             <h3 className="flex items-center gap-2 font-bold text-white mb-6 border-b border-slate-800 pb-4"><Building2 size={18} className="text-blue-500" /> Payout Bank Setup</h3>
-            <form onSubmit={handleBankSave} className="space-y-4">
-              <input className="w-full p-3 bg-slate-950 border border-slate-800 rounded-lg text-white" required placeholder="Account Name" value={bankData.accountName} onChange={e => setBankData({...bankData, accountName: e.target.value})} />
-              <input className="w-full p-3 bg-slate-950 border border-slate-800 rounded-lg text-white" required placeholder="Account Number" value={bankData.accountNumber} onChange={e => setBankData({...bankData, accountNumber: e.target.value})} />
-              <input className="w-full p-3 bg-slate-950 border border-slate-800 rounded-lg text-white" required placeholder="Bank Name" value={bankData.bankName} onChange={e => setBankData({...bankData, bankName: e.target.value})} />
-              <button className="w-full py-3 bg-emerald-600 text-white font-bold rounded-lg flex items-center justify-center gap-2">
-                {bankSaving ? <Loader2 className="animate-spin" /> : <Save size={16} />} Save Bank Details
+            <div className="space-y-4">
+              <input className="w-full p-3 bg-slate-950 border border-slate-800 rounded-lg text-white" placeholder="Bank Name" value={profile.bankName} onChange={e => setProfile({...profile, bankName: e.target.value})} />
+              <input className="w-full p-3 bg-slate-950 border border-slate-800 rounded-lg text-white" placeholder="Account Number" value={profile.accountNumber} onChange={e => setProfile({...profile, accountNumber: e.target.value})} />
+              <button type="submit" className="w-full py-3 bg-blue-600 text-white font-bold rounded-lg flex items-center justify-center gap-2">
+                {profileSaving ? <Loader2 className="animate-spin" /> : <Save size={16} />} Save All Changes
               </button>
-            </form>
+            </div>
           </div>
+        </form>
 
-          {/* KYC */}
-          <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6">
+        <div className="mt-8">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
             {isVerified ? (
               <div className="bg-emerald-900/20 border border-emerald-900 p-6 rounded-xl flex items-start gap-4">
                 <CheckCircle className="text-emerald-500 shrink-0" size={32} />
