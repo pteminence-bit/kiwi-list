@@ -36,7 +36,11 @@ router.post('/me/withdraw', verifyUser, async (req, res) => {
     await db.runTransaction(async (t) => {
       const userRef = db.collection('users').doc(req.user.uid);
       const user = await t.get(userRef);
-      if (!user.exists || (user.data().balance ?? 0) < amount) throw new Error("Insufficient funds.");
+      const currentBalance = user.data().balance ?? user.data().walletBalance ?? 0;
+  
+    if (!user.exists || currentBalance < amount) {
+    throw new Error("Insufficient funds.");
+   }
       
       t.update(userRef, { balance: user.data().balance - amount });
       t.set(db.collection('payouts').doc(), {
