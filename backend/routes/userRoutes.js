@@ -8,7 +8,7 @@ const router = express.Router();
 const BANK_CODES = {
   "access bank": "044", "citibank": "023", "diamond bank": "063", "ecobank": "050",
   "fidelity bank": "070", "first bank": "011", "fcmb": "214", "gtbank": "058",
-  "heritage bank": "030", "jaiz bank": "301", "keystone bank": "082", "opay": "999991",
+  "heritage bank": "030", "jaiz bank": "301", "keystone bank": "082", "opay": "099",
   "palmpay": "999992", "polaris bank": "076", "providus bank": "101", "stanbic ibtc": "221",
   "standard chartered": "068", "sterling bank": "232", "suntrust bank": "100", "union bank": "032",
   "united bank for africa": "033", "unity bank": "215", "wema bank": "035", "zenith bank": "057",
