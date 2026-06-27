@@ -3,7 +3,7 @@ import { db } from '../config/firebase.js';
 import { verifyUser } from '../middleware/authMiddleware.js';
 import axios from 'axios';
 
-router = express.Router();
+const router = express.Router();
 
 // Bank Code Mapping
 const BANK_CODES = {
