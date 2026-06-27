@@ -1,17 +1,60 @@
 import express from 'express';
 import { db } from '../config/firebase.js';
 import { verifyUser } from '../middleware/authMiddleware.js';
+import axios from 'axios';
 
 const router = express.Router();
 
+// Helper function
+const resolveAccount = async (account_number, account_bank) => {
+  const response = await axios.post('https://api.flutterwave.com/v3/accounts/resolve', {
+    account_number,
+    account_bank
+  }, { 
+    headers: { Authorization: `Bearer ${process.env.FLW_SECRET_KEY}` } 
+  });
+  return response.data.data;
+};
+
+// --- WITHDRAWAL PIPELINE ---
+router.post('/me/withdraw', verifyUser, async (req, res) => {
+  const { amount, account_number, account_bank, bank_name } = req.body;
+  const userId = req.user.uid;
+
+  try {
+    const resolvedAccount = await resolveAccount(account_number, account_bank);
+    if (!resolvedAccount || !resolvedAccount.account_name) {
+      throw new Error("Could not verify bank account details");
+    }
+
+    await db.runTransaction(async (transaction) => {
+      const userRef = db.collection('users').doc(userId);
+      const userDoc = await transaction.get(userRef);
+
+      if (!userDoc.exists || (userDoc.data().balance ?? 0) < amount) {
+        throw new Error("Insufficient funds");
+      }
+
+      transaction.update(userRef, { balance: userDoc.data().balance - amount });
+
+      const payoutRef = db.collection('payouts').doc();
+      transaction.set(payoutRef, {
+        userId, amount, status: 'pending', account_number, 
+        account_bank, bank_name, createdAt: new Date().toISOString()
+      });
+    });
+
+    res.status(200).json({ message: "Withdrawal request submitted" });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// --- EXISTING ROUTES ---
 router.get('/me/inventory', verifyUser, async (req, res) => {
   try {
-    const unlockSnapshot = await db.collection('unlocks')
-      .where('userId', '==', req.user.uid)
-      .get();
-      
+    const unlockSnapshot = await db.collection('unlocks').where('userId', '==', req.user.uid).get();
     const listingIds = unlockSnapshot.docs.map(doc => doc.data().listingId);
-    
     if (listingIds.length === 0) return res.json([]);
 
     const listings = await Promise.all(
@@ -20,26 +63,21 @@ router.get('/me/inventory', verifyUser, async (req, res) => {
         return doc.exists ? { id: doc.id, ...doc.data() } : null;
       })
     );
-
     res.json(listings.filter(item => item !== null));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// --- GET CURRENT USER'S WALLET BALANCE ---
 router.get('/me/wallet', verifyUser, async (req, res) => {
   try {
     const userDoc = await db.collection('users').doc(req.user.uid).get();
     if (!userDoc.exists) return res.status(404).json({ error: "User not found" });
-    
     const userData = userDoc.data();
-
     res.json({
       walletBalance: userData.balance ?? userData.walletBalance ?? 0,
       totalEarned: userData.totalEarned ?? 0,
       platformTier: userData.platformTier || "KIWI Premium Split",
-      // FIXED: Ensure verificationStatus is explicitly passed to the frontend
       verificationStatus: userData.verificationStatus || 'unverified',
       isPayoutBlocked: userData.isPayoutBlocked === true
     });
@@ -48,28 +86,15 @@ router.get('/me/wallet', verifyUser, async (req, res) => {
   }
 });
 
-// --- GET CURRENT USER'S TRANSACTION HISTORY ---
 router.get('/me/transactions', verifyUser, async (req, res) => {
   try {
-    const snapshot = await db.collection('transactions')
-      .where('userId', '==', req.user.uid)
-      .orderBy('createdAt', 'desc')
-      .get();
-      
+    const snapshot = await db.collection('transactions').where('userId', '==', req.user.uid).orderBy('createdAt', 'desc').get();
     const txs = snapshot.docs.map(doc => {
       const data = doc.data();
-      return { 
-        id: doc.id, 
-        description: data.description || "Platform Transaction",
-        timestamp: data.timestamp || data.createdAt || new Date().toISOString(),
-        type: data.type || "earning", 
-        amount: data.amount || 0
-      };
+      return { id: doc.id, description: data.description || "Platform Transaction", timestamp: data.timestamp || data.createdAt || new Date().toISOString(), type: data.type || "earning", amount: data.amount || 0 };
     });
-    
     res.json(txs);
   } catch (error) {
-    console.error("Transaction Fetch Error:", error.message);
     if (error.message.includes("FAILED_PRECONDITION")) {
       const fallbackSnapshot = await db.collection('transactions').where('userId', '==', req.user.uid).get();
       const fallbackTxs = fallbackSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -79,7 +104,6 @@ router.get('/me/transactions', verifyUser, async (req, res) => {
   }
 });
 
-// --- GET DETAILED ACCOUNT METADATA ---
 router.get('/me', verifyUser, async (req, res) => {
   try {
     const userDoc = await db.collection('users').doc(req.user.uid).get();
@@ -90,47 +114,25 @@ router.get('/me', verifyUser, async (req, res) => {
   }
 });
 
-// --- TARGET PROFILE SAVE PIPELINE ---
 router.put('/settings', verifyUser, async (req, res) => {
   const { displayName, phoneNumber, bio, bankName, accountNumber } = req.body;
-
   try {
     const userRef = db.collection('users').doc(req.user.uid);
-    const updateData = { updatedAt: new Date().toISOString() };
-
-    if (displayName !== undefined) updateData.displayName = displayName;
-    if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber;
-    if (bio !== undefined) updateData.bio = bio;
-    if (bankName !== undefined) updateData.bankName = bankName;
-    if (accountNumber !== undefined) updateData.accountNumber = accountNumber;
-
-    await userRef.set(updateData, { merge: true });
-    res.json({ message: "Settings and profile metrics updated successfully" });
+    await userRef.set({ displayName, phoneNumber, bio, bankName, accountNumber, updatedAt: new Date().toISOString() }, { merge: true });
+    res.json({ message: "Settings updated successfully" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// --- SUBMIT KYC CREDENTIALS PIPELINE ---
 router.post('/submit-kyc', verifyUser, async (req, res) => {
   const { fullName, idType, idNumber, documentUrl } = req.body;
-
   try {
-    if (!documentUrl || typeof documentUrl !== 'string') {
-      return res.status(400).json({ error: "A single valid verification document file URL is required." });
-    }
-
-    // Update User KYC
+    if (!documentUrl) return res.status(400).json({ error: "Document URL is required." });
     await db.collection('users').doc(req.user.uid).set({
-      verificationStatus: 'pending',
-      legalFullName: fullName,
-      kycIdType: idType,
-      kycIdNumber: idNumber,
-      kycDocumentUrl: documentUrl,
-      kycSubmittedAt: new Date().toISOString()
+      verificationStatus: 'pending', legalFullName: fullName, kycIdType: idType, kycIdNumber: idNumber, kycDocumentUrl: documentUrl, kycSubmittedAt: new Date().toISOString()
     }, { merge: true });
-    
-    res.json({ message: "KYC credentials packet queued successfully." });
+    res.json({ message: "KYC submitted." });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

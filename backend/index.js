@@ -8,22 +8,18 @@ import adminRoutes from './routes/adminRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import webhookRoutes from './routes/webhookRoutes.js';
 import listingRoutes from './routes/listingRoutes.js';
-import paymentController from './routes/paymentRoutes.js'; 
 import userRoutes from './routes/userRoutes.js';
-import payoutRoutes from './routes/payoutRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 
 dotenv.config();
 
 const app = express();
 
-// Whitelist configuration
 const allowedOrigins = [
-  'https://kiwi-list-ifnr.onrender.com', // Frontend instance URL
-  'http://localhost:5173'                // Local Vite development environment
+  'https://kiwi-list-ifnr.onrender.com',
+  'http://localhost:5173'
 ];
 
-// FIXED: Added regex matching to automatically allow local network Wi-Fi IPs for mobile testing
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
@@ -40,12 +36,9 @@ app.use(cors({
   credentials: true
 }));
 
-// FIXED: Increased data thresholds to 50MB to handle large mobile image uploads and payloads
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// --- Core API Root Gateway ---
-// FIXED: Added root route handler to safely catch Render instance wake-up pings (GET/HEAD /)
 app.get('/', (req, res) => {
   res.json({ 
     status: "active", 
@@ -54,23 +47,18 @@ app.get('/', (req, res) => {
   });
 });
 
-// --- API Routes ---
+// --- Cleaned API Routes ---
 app.use('/api/listings', listingRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/users/me', userRoutes);
 app.use('/api/webhooks', webhookRoutes); 
-app.use('/api/payments', paymentController);
 app.use('/api/payments', paymentRoutes);
-app.use('/api/users/me', payoutRoutes);
 
-// Health check route
 app.get('/api/health', (req, res) => {
   res.json({ status: "Kiwi-List API is up and running smoothly" });
 });
 
-// Test route to verify database connection
 app.get('/api/test-db', async (req, res) => {
   try {
     const testRef = db.collection('system_logs').doc('health_check');
@@ -81,7 +69,6 @@ app.get('/api/test-db', async (req, res) => {
   }
 });
 
-// 404 Route Not Found Handling
 app.use((req, res, next) => {
   console.log(`Incoming Unmatched Request: ${req.method} ${req.url}`);
   res.status(404).json({
@@ -92,12 +79,9 @@ app.use((req, res, next) => {
   });
 });
 
-// FIXED: Catch-All Global Error Handler Middleware
 app.use((err, req, res, next) => {
   console.error("❌ Engine Error Intercepted:", err.message);
-  
   const statusCode = err.status || (err.message.includes('CORS') ? 403 : 500);
-  
   res.status(statusCode).json({
     success: false,
     error: err.message || "An unhandled engine operational failure occurred.",
