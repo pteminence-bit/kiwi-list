@@ -1,5 +1,4 @@
 // backend/index.js
-app.use(express.json({ limit: '20kb' }));
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -11,6 +10,8 @@ import webhookRoutes from './routes/webhookRoutes.js';
 import listingRoutes from './routes/listingRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
+
+app.use(express.json({ limit: '20kb' }));
 
 dotenv.config();
 

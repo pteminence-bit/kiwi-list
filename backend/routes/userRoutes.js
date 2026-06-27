@@ -24,10 +24,11 @@ const resolveAccount = async (account_number, account_bank) => {
 };
 
 router.post('/me/withdraw', verifyUser, async (req, res) => {
+  console.log("DEBUG: Incoming body:", req.body);
   const { amount, account_number, bank_name } = req.body;
   try {
     const account_bank = BANK_CODES[bank_name?.toLowerCase().trim()];
-    if (!account_bank) throw new Error("Unsupported bank name.");
+    if (!bank_name) throw new Error("Unsupported bank name.");
     
     const resolved = await resolveAccount(account_number, account_bank);
     if (!resolved?.account_name) throw new Error("Bank details verification failed.");
