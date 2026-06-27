@@ -28,6 +28,11 @@ const resolveAccount = async (account_number, account_bank) => {
   return response.data.data;
 };
 
+// --- GET SUPPORTED BANKS ---
+router.get('/banks', verifyUser, (req, res) => {
+  res.json(Object.keys(BANK_CODES));
+});
+
 // --- WITHDRAWAL PIPELINE ---
 router.post('/me/withdraw', verifyUser, async (req, res) => {
   const { amount, account_number, bank_name } = req.body;

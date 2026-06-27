@@ -12,6 +12,7 @@ const WalletCard = ({ token }) => {
     accountNumber: '',
     bankName: ''
   });
+  const [banks, setBanks] = useState([]); // Added to store supported banks
 
   const [showModal, setShowModal] = useState(false);
   const [amount, setAmount] = useState('');
@@ -19,18 +20,19 @@ const WalletCard = ({ token }) => {
 
   useEffect(() => {
     if (!token) return;
-    const fetchWalletData = async () => {
+    const fetchAllData = async () => {
       try {
-        // Fetch wallet and profile simultaneously
-        const [walletRes, profileRes] = await Promise.all([
+        const [walletRes, profileRes, banksRes] = await Promise.all([
           fetch(`${BACKEND_BASE_URL}/api/users/me/wallet/`, { headers: { 'Authorization': `Bearer ${token}` } }),
-          fetch(`${BACKEND_BASE_URL}/api/users/me/`, { headers: { 'Authorization': `Bearer ${token}` } })
+          fetch(`${BACKEND_BASE_URL}/api/users/me/`, { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch(`${BACKEND_BASE_URL}/api/users/banks`, { headers: { 'Authorization': `Bearer ${token}` } })
         ]);
 
-        if (!walletRes.ok || !profileRes.ok) throw new Error("Failed to fetch data");
+        if (!walletRes.ok || !profileRes.ok) throw new Error("Failed to fetch user data");
 
         const walletData = await walletRes.json();
         const profileData = await profileRes.json();
+        const banksData = banksRes.ok ? await banksRes.json() : [];
 
         setWallet({
           balance: Number(walletData.walletBalance) || 0,
@@ -43,17 +45,23 @@ const WalletCard = ({ token }) => {
           accountNumber: profileData.accountNumber || '',
           bankName: profileData.bankName || ''
         });
+        setBanks(banksData);
       } catch (err) {
         console.error("Fetch error:", err);
       } finally {
         setLoading(false);
       }
     };
-    fetchWalletData();
+    fetchAllData();
   }, [token]);
 
   const handleWithdrawal = async () => {
     const numericAmount = parseFloat(amount);
+    
+    // Find bank code from the fetched list based on user's saved bank name
+    const selectedBank = banks.find(b => b.name === userProfileData.bankName);
+    const bankCode = selectedBank ? selectedBank.code : userProfileData.bankName;
+
     if (numericAmount < 1000) {
       alert('Minimum withdrawal amount is ₦1,000.');
       return;
@@ -74,23 +82,29 @@ const WalletCard = ({ token }) => {
         body: JSON.stringify({ 
           amount: numericAmount,
           account_number: userProfileData.accountNumber,
-          // Note: Backend expects account_bank (code). Ensure user sets bank name correctly.
-          account_bank: userProfileData.bankName, 
+          account_bank: bankCode, 
           bank_name: userProfileData.bankName
         })
       });
       
       const result = await res.json();
-      if (res.ok) {
-        alert('Withdrawal request processed successfully.');
-        setWallet(prev => ({ ...prev, balance: prev.balance - numericAmount }));
-        setShowModal(false);
-        setAmount('');
-      } else {
-        alert(result.error || 'Withdrawal failed.');
+      
+      if (!res.ok) {
+        // Detailed Debugging Output
+        console.error("Withdrawal Failed Details:", {
+          status: res.status,
+          error: result.error,
+          payload: { amount: numericAmount, account: userProfileData.accountNumber, bank: bankCode }
+        });
+        throw new Error(result.error || `Server responded with ${res.status}`);
       }
+
+      alert('Withdrawal request processed successfully.');
+      setWallet(prev => ({ ...prev, balance: prev.balance - numericAmount }));
+      setShowModal(false);
+      setAmount('');
     } catch (err) {
-      alert('Network error. Please try again.');
+      alert(err.message || 'Network error. Please check console.');
     } finally {
       setIsProcessing(false);
     }
