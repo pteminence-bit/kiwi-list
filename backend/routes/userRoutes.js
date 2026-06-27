@@ -5,6 +5,18 @@ import axios from 'axios';
 
 const router = express.Router();
 
+// Bank Code Mapping
+const BANK_CODES = {
+  "access bank": "044", "citibank": "023", "diamond bank": "063", "ecobank": "050",
+  "fidelity bank": "070", "first bank": "011", "fcmb": "214", "gtbank": "058",
+  "heritage bank": "030", "jaiz bank": "301", "keystone bank": "082", "opay": "999991",
+  "palmpay": "999992", "polaris bank": "076", "providus bank": "101", "stanbic ibtc": "221",
+  "standard chartered": "068", "sterling bank": "232", "suntrust bank": "100", 
+  "union bank": "032", "united bank for africa": "033", "unity bank": "215",
+  "wema bank": "035", "zenith bank": "057", "lotus bank": "303", "titan trust": "102",
+  "paystack-titan": "103", "kuda bank": "50211", "moniepoint": "50515", "premiumtrust": "105"
+};
+
 // Helper function
 const resolveAccount = async (account_number, account_bank) => {
   const response = await axios.post('https://api.flutterwave.com/v3/accounts/resolve', {
@@ -18,10 +30,18 @@ const resolveAccount = async (account_number, account_bank) => {
 
 // --- WITHDRAWAL PIPELINE ---
 router.post('/me/withdraw', verifyUser, async (req, res) => {
-  const { amount, account_number, account_bank, bank_name } = req.body;
+  const { amount, account_number, bank_name } = req.body;
   const userId = req.user.uid;
 
   try {
+    // Validate Bank Name and get Code
+    const normalizedBank = bank_name?.toLowerCase().trim();
+    const account_bank = BANK_CODES[normalizedBank];
+
+    if (!account_bank) {
+      throw new Error(`Bank '${bank_name}' is not supported or not recognized.`);
+    }
+
     const resolvedAccount = await resolveAccount(account_number, account_bank);
     if (!resolvedAccount || !resolvedAccount.account_name) {
       throw new Error("Could not verify bank account details");
