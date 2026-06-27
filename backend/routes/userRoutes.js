@@ -46,6 +46,8 @@ router.post('/me/withdraw', verifyUser, async (req, res) => {
     });
     res.json({ message: "Withdrawal request submitted" });
   } catch (error) {
+    const errorMessage = error.response?.data?.message || error.message;
+    console.error("ACTUAL BACKEND ERROR:", errorMessage);
     res.status(400).json({ error: error.message });
   }
 });
