@@ -24,11 +24,12 @@ const resolveAccount = async (account_number, account_bank) => {
 };
 
 router.post('/me/withdraw', verifyUser, async (req, res) => {
-  console.log("DEBUG: Incoming body:", req.body);
   const { amount, account_number, bank_name } = req.body;
   try {
-    const account_bank = BANK_CODES[bank_name?.toLowerCase().trim()];
-    if (!bank_name) throw new Error("Unsupported bank name.");
+    if (!bank_name) throw new Error("Bank name is required.");
+    
+    const account_bank = BANK_CODES[bank_name.toLowerCase().trim()];
+    if (!account_bank) throw new Error("Unsupported bank name. Please update your profile settings.");
     
     const resolved = await resolveAccount(account_number, account_bank);
     if (!resolved?.account_name) throw new Error("Bank details verification failed.");
@@ -36,7 +37,8 @@ router.post('/me/withdraw', verifyUser, async (req, res) => {
     await db.runTransaction(async (t) => {
       const userRef = db.collection('users').doc(req.user.uid);
       const user = await t.get(userRef);
-      if ((user.data().balance ?? 0) < amount) throw new Error("Insufficient funds.");
+      if (!user.exists || (user.data().balance ?? 0) < amount) throw new Error("Insufficient funds.");
+      
       t.update(userRef, { balance: user.data().balance - amount });
       t.set(db.collection('payouts').doc(), {
         userId: req.user.uid, amount, status: 'pending', account_number, account_bank, bank_name, createdAt: new Date().toISOString()

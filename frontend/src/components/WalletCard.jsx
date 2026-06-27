@@ -12,7 +12,6 @@ const WalletCard = ({ token }) => {
     accountNumber: '',
     bankName: ''
   });
-  const [banks, setBanks] = useState([]);
 
   const [showModal, setShowModal] = useState(false);
   const [amount, setAmount] = useState('');
@@ -22,17 +21,15 @@ const WalletCard = ({ token }) => {
     if (!token) return;
     const fetchAllData = async () => {
       try {
-        const [walletRes, profileRes, banksRes] = await Promise.all([
+        const [walletRes, profileRes] = await Promise.all([
           fetch(`${BACKEND_BASE_URL}/api/users/me/wallet/`, { headers: { 'Authorization': `Bearer ${token}` } }),
-          fetch(`${BACKEND_BASE_URL}/api/users/me/`, { headers: { 'Authorization': `Bearer ${token}` } }),
-          fetch(`${BACKEND_BASE_URL}/api/users/banks`, { headers: { 'Authorization': `Bearer ${token}` } })
+          fetch(`${BACKEND_BASE_URL}/api/users/me/`, { headers: { 'Authorization': `Bearer ${token}` } })
         ]);
 
         if (!walletRes.ok || !profileRes.ok) throw new Error("Failed to fetch user data");
 
         const walletData = await walletRes.json();
         const profileData = await profileRes.json();
-        const banksData = banksRes.ok ? await banksRes.json() : [];
 
         setWallet({
           balance: Number(walletData.walletBalance) || 0,
@@ -45,7 +42,6 @@ const WalletCard = ({ token }) => {
           accountNumber: profileData.accountNumber || '',
           bankName: profileData.bankName || ''
         });
-        setBanks(banksData);
       } catch (err) {
         console.error("Fetch error:", err);
       } finally {
