@@ -19,6 +19,15 @@ const BANK_CODES = {
 
 // Helper function
 const resolveAccount = async (account_number, account_bank) => {
+  // 1. Get your list of banks/codes
+  const bankCodes = await getBankCodes(); 
+  
+  // 2. Find the code
+  const match = bankCodes.find(b => b.name.toLowerCase() === account_bank.toLowerCase());
+  
+  if (!match) {
+    throw new Error(`Bank '${account_bank}' not found in our supported list.`);
+  }
   const response = await axios.post('https://api.flutterwave.com/v3/accounts/resolve', {
     account_number,
     account_bank
