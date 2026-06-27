@@ -46,11 +46,11 @@ router.post('/me/withdraw', verifyUser, async (req, res) => {
     });
     res.json({ message: "Withdrawal request submitted" });
   } catch (error) {
-    const errorMessage = error.response?.data?.message || error.message;
-    console.error("ACTUAL BACKEND ERROR:", errorMessage);
-    res.status(400).json({ error: error.message });
+    const flwError = error.response?.data?.message || error.message;
+    console.error("DETAILED FLUTTERWAVE ERROR:", flwError);
+    res.status(400).json({ error: flwError });
   }
-});
+}); // 🧠 FIXED: Closed the router.post handler cleanly here
 
 // --- EXISTING ROUTES ---
 router.get('/me/inventory', verifyUser, async (req, res) => {
