@@ -5,15 +5,14 @@ import axios from 'axios';
 
 const router = express.Router();
 
-const BANK_CODES = {
-  "access bank": "044", "citibank": "023", "diamond bank": "063", "ecobank": "050",
-  "fidelity bank": "070", "first bank": "011", "fcmb": "214", "gtbank": "058",
-  "heritage bank": "030", "jaiz bank": "301", "keystone bank": "082", "opay": "099",
-  "palmpay": "999992", "polaris bank": "076", "providus bank": "101", "stanbic ibtc": "221",
-  "standard chartered": "068", "sterling bank": "232", "suntrust bank": "100", "union bank": "032",
-  "united bank for africa": "033", "unity bank": "215", "wema bank": "035", "zenith bank": "057",
-  "lotus bank": "303", "titan trust": "102", "paystack-titan": "103", "kuda bank": "50211",
-  "moniepoint": "50515", "premiumtrust": "105"
+const getBankCode = async (bankName) => {
+  const response = await axios.get('https://api.flutterwave.com/v3/banks/NG', {
+    headers: { Authorization: `Bearer ${process.env.FLW_SECRET_KEY}` }
+  });
+  const bank = response.data.data.find(b => 
+    b.name.toLowerCase().trim() === bankName.toLowerCase().trim()
+  );
+  return bank ? bank.code : null;
 };
 
 const resolveAccount = async (account_number, account_bank) => {
@@ -28,7 +27,7 @@ router.post('/me/withdraw', verifyUser, async (req, res) => {
   try {
     if (!bank_name) throw new Error("Bank name is required.");
     
-    const account_bank = BANK_CODES[bank_name.toLowerCase().trim()];
+    const account_bank = await getBankCode(bank_name);
     if (!account_bank) throw new Error("Unsupported bank name. Please update your profile settings.");
     
     const resolved = await resolveAccount(account_number, account_bank);
@@ -50,7 +49,7 @@ router.post('/me/withdraw', verifyUser, async (req, res) => {
     console.error("DETAILED FLUTTERWAVE ERROR:", flwError);
     res.status(400).json({ error: flwError });
   }
-}); // 🧠 FIXED: Closed the router.post handler cleanly here
+});
 
 // --- EXISTING ROUTES ---
 router.get('/me/inventory', verifyUser, async (req, res) => {
