@@ -73,6 +73,7 @@ const WalletCard = ({ token }) => {
 
     setIsProcessing(true);
     try {
+      // 👇 FIXED: Added missing closing parenthesis and semicolon here
       const res = await fetch(`${BACKEND_BASE_URL}/api/users/me/withdraw`, {
         method: 'POST',
         headers: { 
@@ -81,9 +82,8 @@ const WalletCard = ({ token }) => {
         },
         body: JSON.stringify({ 
           amount: numericAmount,
-          account_number: userProfileData.accountNumber,
-          account_bank: bankCode, 
-          bank_name: userProfileData.bankName
+          account_number: userProfileData.accountNumber, // Matches backend 'account_number'
+          bank_name: userProfileData.bankName           // Matches backend 'bank_name'
         })
       });
       

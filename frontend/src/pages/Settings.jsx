@@ -9,7 +9,8 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
     phoneNumber: '', 
     bio: '', 
     bankName: '', 
-    accountNumber: '' 
+    accountNumber: ''
+     
   });
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileSaving, setProfileSaving] = useState(false);
