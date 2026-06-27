@@ -1,4 +1,5 @@
 // backend/index.js
+app.use(express.json({ limit: '20kb' }));
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
