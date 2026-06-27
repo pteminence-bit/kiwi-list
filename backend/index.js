@@ -11,11 +11,11 @@ import listingRoutes from './routes/listingRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 
-app.use(express.json({ limit: '20kb' }));
-
 dotenv.config();
 
 const app = express();
+
+app.use(express.json({ limit: '20kb' }));
 
 const allowedOrigins = [
   'https://kiwi-list-ifnr.onrender.com',
