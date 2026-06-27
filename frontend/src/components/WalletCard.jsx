@@ -4,11 +4,11 @@ import { Wallet, ArrowUpRight, ShieldAlert, X } from 'lucide-react';
 const WalletCard = ({ token }) => {
   const [wallet, setWallet] = useState({ balance: 0, totalEarned: 0 });
   const [loading, setLoading] = useState(true);
-  const [userProfileData, setUserProfileData] = useState({ 
+  const [userProfileData, setUserProfileData] = useState({
     isPayoutBlocked: false,
     isVerified: false
   });
-  
+
   // Modal state
   const [showModal, setShowModal] = useState(false);
   const [amount, setAmount] = useState('');
@@ -21,16 +21,16 @@ const WalletCard = ({ token }) => {
         const res = await fetch('https://kiwi-list-api.onrender.com/api/users/me/wallet/', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        
+
         if (!res.ok) throw new Error("Failed to fetch wallet");
-        
+
         const data = await res.json();
-        
-        setWallet({ 
-            balance: Number(data.walletBalance) || 0, 
-            totalEarned: Number(data.totalEarned) || 0 
+
+        setWallet({
+          balance: Number(data.walletBalance) || 0,
+          totalEarned: Number(data.totalEarned) || 0
         });
-        
+
         setUserProfileData({
           isPayoutBlocked: data.isPayoutBlocked === true,
           isVerified: data.verificationStatus === 'verified'
@@ -59,9 +59,9 @@ const WalletCard = ({ token }) => {
     try {
       const res = await fetch('https://kiwi-list-api.onrender.com/api/users/me/withdraw', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json' 
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ amount: numericAmount })
       });
@@ -104,7 +104,7 @@ const WalletCard = ({ token }) => {
               <span className="text-sm text-slate-400 font-medium">My Wallet Balance</span>
             </div>
           </div>
-          
+
           <div className="text-4xl font-black tracking-tight mb-6 text-white">
             ₦{wallet.balance.toLocaleString()}
           </div>
@@ -118,7 +118,7 @@ const WalletCard = ({ token }) => {
             </div>
             <div>
               <div className="text-xs text-slate-500 mb-1 flex items-center gap-1 text-amber-500">
-                 Premium Split
+                Premium Split
               </div>
               <div className="text-lg font-bold text-amber-400">70% Payout</div>
             </div>
@@ -132,19 +132,19 @@ const WalletCard = ({ token }) => {
           )}
 
           {!userProfileData.isVerified ? (
-            <button 
+            <button
               className="w-full py-3.5 bg-slate-800 text-slate-500 font-semibold rounded-xl cursor-not-allowed text-sm"
               disabled
             >
               Verification Required
             </button>
           ) : (
-            <button 
+            <button
               disabled={userProfileData.isPayoutBlocked || wallet.balance <= 0}
               onClick={() => setShowModal(true)}
               className={`w-full py-3 px-6 rounded-lg text-white font-bold tracking-wide transition ${
-                userProfileData.isPayoutBlocked 
-                  ? 'bg-slate-700 cursor-not-allowed opacity-60' 
+                userProfileData.isPayoutBlocked
+                  ? 'bg-slate-700 cursor-not-allowed opacity-60'
                   : wallet.balance <= 0
                     ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
                     : 'bg-blue-600 hover:bg-blue-700'
@@ -164,14 +164,14 @@ const WalletCard = ({ token }) => {
               <button onClick={() => setShowModal(false)}><X size={20} /></button>
             </div>
             <p className="text-black text-sm mb-4">Enter amount to withdraw (Min: ₦1,000)</p>
-            <input 
+            <input
               type="number"
               className="w-full p-3 border border-gray-300 rounded-lg mb-6 text-black"
               placeholder="₦0.00"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
             />
-            <button 
+            <button
               onClick={handleWithdrawal}
               disabled={isProcessing}
               className="w-full py-3 bg-blue-600 text-white font-bold rounded-lg"
