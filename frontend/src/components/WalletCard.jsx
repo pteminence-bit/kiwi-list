@@ -79,18 +79,23 @@ const WalletCard = ({ token }) => {
       });
       
       const result = await res.json();
-      
-      if (!res.ok) {
-        console.error("SERVER REJECTION DETAIL:", result); 
-       throw new Error(result.error || "Withdrawal failed");
-}
+      if (!res.ok) throw new Error(result.error || "Withdrawal failed");
 
       alert('Withdrawal request processed successfully.');
-      setWallet(prev => ({ ...prev, balance: prev.balance - numericAmount }));
+      const walletRes = await fetch(`${BACKEND_BASE_URL}/api/users/me/wallet/`, { 
+        headers: { 'Authorization': `Bearer ${token}` } 
+      });
+      const freshWalletData = await walletRes.json();
+      
+      setWallet({
+        balance: Number(freshWalletData.walletBalance) || 0,
+        totalEarned: Number(freshWalletData.totalEarned) || 0
+      });
+
       setShowModal(false);
       setAmount('');
     } catch (err) {
-      alert(err.message || 'Network error. Please check console.');
+      alert(err.message || 'Network error.');
     } finally {
       setIsProcessing(false);
     }
