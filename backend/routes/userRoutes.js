@@ -106,7 +106,7 @@ router.get('/me/transactions', verifyUser, async (req, res) => {
     const snapshot = await db.collection('transactions').where('userId', '==', req.user.uid).orderBy('createdAt', 'desc').get();
     const txs = snapshot.docs.map(doc => {
       const data = doc.data();
-      return { id: doc.id, description: data.description || "Platform Transaction", timestamp: data.timestamp || data.createdAt || new Date().toISOString(), type: data.type || "earning", amount: data.amount || 0 };
+      return { id: doc.id, description: data.description || "Platform Transaction", timestamp: data.createdAt || data.timestamp || new Date().toISOString(), type: data.type || "earning", amount: data.amount || 0 };
     });
     res.json(txs);
   } catch (error) {
