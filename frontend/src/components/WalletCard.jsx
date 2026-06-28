@@ -4,7 +4,7 @@ import { Wallet, ArrowUpRight, ShieldAlert, X } from 'lucide-react';
 const BACKEND_BASE_URL = 'https://kiwi-list-api.onrender.com';
 
 const WalletCard = ({ token }) => {
-  const [wallet, setWallet] = useState({ balance: 0, totalEarned: 0 });
+  const [wallet, setWallet] = useState({ walletBalance: 0, totalEarned: 0 });
   const [loading, setLoading] = useState(true);
   const [userProfileData, setUserProfileData] = useState({
     isPayoutBlocked: false,
@@ -88,7 +88,7 @@ const WalletCard = ({ token }) => {
       const freshWalletData = await walletRes.json();
       
       setWallet({
-        balance: Number(freshWalletData.walletBalance) || 0,
+        walletBalance: Number(freshWalletData.walletBalance) || 0,
         totalEarned: Number(freshWalletData.totalEarned) || 0
       });
 
