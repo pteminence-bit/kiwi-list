@@ -46,10 +46,11 @@ const WalletCard = ({ token }) => {
         });
 
         setUserProfileData({
-          isPayoutBlocked: walletData.isPayoutBlocked === true,
-          isVerified: walletData.verificationStatus === 'verified',
-          accountNumber: profileData.accountNumber || '',
-          bankName: profileData.bankName || ''
+          // Adjusted fallback checking: matches data fields mapped directly inside /me or /me/wallet endpoints
+          isPayoutBlocked: walletData.isPayoutBlocked === true || profileData.isPayoutBlocked === true,
+          isVerified: walletData.verificationStatus === 'verified' || profileData.verificationStatus === 'verified',
+          accountNumber: profileData.accountNumber || walletData.accountNumber || '',
+          bankName: profileData.bankName || walletData.bankName || ''
         });
         setTransactions(filteredTx);
       } catch (err) {
@@ -135,7 +136,7 @@ const WalletCard = ({ token }) => {
             <button key={tx.id} onClick={() => setSelectedTx(tx)} className="w-full flex justify-between items-center px-4 py-3 border-b last:border-0 border-slate-50 hover:bg-slate-50 transition text-left">
               <div>
                 <p className="text-slate-900 font-medium text-sm">{tx.description || tx.type}</p>
-                <p className="text-slate-400 text-[10px] mt-0.5 uppercase">{new Date(tx.createdAt).toLocaleDateString()}</p>
+                <p className="text-slate-400 text-[10px] mt-0.5 uppercase">{new Date(tx.timestamp || tx.createdAt).toLocaleDateString()}</p>
               </div>
               <span className={`font-mono font-bold text-sm ${tx.type === 'withdrawal' ? "text-red-600" : "text-emerald-700"}`}>
                 {tx.type === 'withdrawal' ? '-' : '+'}₦{Math.abs(tx.amount).toLocaleString()}
@@ -153,20 +154,20 @@ const WalletCard = ({ token }) => {
               {selectedTx.type === 'withdrawal' ? (
                 <>
                   <p><b>Description:</b> {selectedTx.description}</p>
-                  <p><b>Account:</b> {selectedTx.account_number}</p>
-                  <p><b>Amount:</b> ₦{selectedTx.amount.toLocaleString()}</p>
-                  <p><b>Bank:</b> {selectedTx.bank_name}</p>
-                  <p><b>Date:</b> {new Date(selectedTx.createdAt).toLocaleString()}</p>
-                  <p><b>Status:</b> {selectedTx.status}</p>
+                  <p><b>Account:</b> {selectedTx.account_number || 'N/A'}</p>
+                  <p><b>Amount:</b> ₦{Math.abs(selectedTx.amount).toLocaleString()}</p>
+                  <p><b>Bank:</b> {selectedTx.bank_name || 'N/A'}</p>
+                  <p><b>Date:</b> {new Date(selectedTx.timestamp || selectedTx.createdAt).toLocaleString()}</p>
+                  <p><b>Status:</b> {selectedTx.status || 'Success'}</p>
                 </>
               ) : (
                 <>
                   <p><b>Amount:</b> ₦{selectedTx.amount.toLocaleString()}</p>
-                  <p><b>Date:</b> {new Date(selectedTx.createdAt).toLocaleString()}</p>
-                  <p><b>FLW ID:</b> {selectedTx.flw_id}</p>
-                  <p><b>Listing ID:</b> {selectedTx.listingId}</p>
-                  <p><b>Status:</b> {selectedTx.status}</p>
-                  <p><b>TX Ref:</b> {selectedTx.tx_ref}</p>
+                  <p><b>Date:</b> {new Date(selectedTx.timestamp || selectedTx.createdAt).toLocaleString()}</p>
+                  <p><b>FLW ID:</b> {selectedTx.flw_id || 'N/A'}</p>
+                  <p><b>Listing ID:</b> {selectedTx.listingId || 'N/A'}</p>
+                  <p><b>Status:</b> {selectedTx.status || 'Success'}</p>
+                  <p><b>TX Ref:</b> {selectedTx.tx_ref || 'N/A'}</p>
                 </>
               )}
             </div>
