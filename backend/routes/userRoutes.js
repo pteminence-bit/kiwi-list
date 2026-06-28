@@ -42,7 +42,7 @@ router.post('/me/withdraw', verifyUser, async (req, res) => {
    }
       
      const fieldToUpdate = user.data().walletBalance;
-  t.update(userRef, { [fieldToUpdate]: currentBalance - amount });
+  t.update(userRef, { walletBalance: currentBalance - amount });
   
   t.set(db.collection('payouts').doc(), {
     userId: req.user.uid, amount, status: 'pending', account_number, account_bank, bank_name, createdAt: new Date().toISOString()
