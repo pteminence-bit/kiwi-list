@@ -4,7 +4,6 @@ import { Wallet, ArrowUpRight, ShieldAlert, X, History } from 'lucide-react';
 const BACKEND_BASE_URL = 'https://kiwi-list-api.onrender.com';
 
 const WalletCard = ({ token }) => {
-  // FIXED: Consistent use of walletBalance
   const [wallet, setWallet] = useState({ walletBalance: 0, totalEarned: 0 });
   const [loading, setLoading] = useState(true);
   const [userProfileData, setUserProfileData] = useState({
@@ -74,7 +73,6 @@ const WalletCard = ({ token }) => {
 
       alert('Withdrawal request processed successfully.');
       
-      // Refresh wallet balance from server
       const walletRes = await fetch(`${BACKEND_BASE_URL}/api/users/me/wallet/`, { headers: { 'Authorization': `Bearer ${token}` } });
       const freshWalletData = await walletRes.json();
       setWallet({
@@ -103,7 +101,6 @@ const WalletCard = ({ token }) => {
               <span className="text-sm text-slate-400 font-medium">My Wallet Balance</span>
             </div>
           </div>
-          {/* FIXED: Rendering using walletBalance */}
           <div className="text-4xl font-black tracking-tight mb-6 text-white">₦{wallet.walletBalance.toLocaleString()}</div>
           <div className="grid grid-cols-2 gap-4 border-t border-slate-800/80 pt-5 mb-6">
             <div>
@@ -130,16 +127,26 @@ const WalletCard = ({ token }) => {
         </div>
       </div>
 
-      {/* Transaction Ledger */}
-      <div className="w-full max-w-md mt-6">
-        <h3 className="flex items-center gap-2 text-slate-700 font-bold mb-3"><History size={18} /> Recent Ledger</h3>
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-          {transactions.slice(0, 5).map(tx => (
-            <div key={tx.id} className="flex justify-between py-2 border-b last:border-0 border-slate-100 text-sm">
-              <span className="text-slate-600">{tx.description}</span>
-              <span className={tx.amount < 0 ? "text-red-500" : "text-emerald-600"}>₦{Math.abs(tx.amount).toLocaleString()}</span>
-            </div>
-          ))}
+      <div className="w-full max-w-md mt-8">
+        <h3 className="flex items-center gap-2 text-slate-900 font-bold mb-4 uppercase tracking-wider text-xs border-b pb-2 border-slate-200">
+          <History size={16} /> Transaction Ledger
+        </h3>
+        <div className="bg-white border border-slate-200 rounded-2xl p-2 shadow-sm">
+          {transactions.length > 0 ? (
+            transactions.slice(0, 6).map(tx => (
+              <div key={tx.id} className="flex justify-between items-center px-4 py-3 border-b last:border-0 border-slate-50 hover:bg-slate-50 transition">
+                <div>
+                  <p className="text-slate-900 font-medium text-sm leading-tight">{tx.description}</p>
+                  <p className="text-slate-400 text-[10px] mt-0.5 uppercase tracking-widest">{new Date(tx.timestamp).toLocaleDateString()}</p>
+                </div>
+                <span className={`font-mono font-bold text-sm ${tx.amount < 0 ? "text-slate-900" : "text-emerald-700"}`}>
+                  {tx.amount < 0 ? '-' : '+'}₦{Math.abs(tx.amount).toLocaleString()}
+                </span>
+              </div>
+            ))
+          ) : (
+            <p className="text-center py-6 text-slate-400 text-sm italic">No recent transactions found.</p>
+          )}
         </div>
       </div>
 
