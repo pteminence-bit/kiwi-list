@@ -73,7 +73,7 @@ router.post('/me/withdraw', verifyUser, async (req, res) => {
 // --- EXISTING ROUTES ---
 router.get('/me/inventory', verifyUser, async (req, res) => {
   try {
-    const kiwiUserId = `kiwi-user-${req.user.email || req.user.uid}`;
+    const kiwiUserId = `kiwi-user-${req.user.email}`;
     const unlockSnapshot = await db.collection('users').doc(kiwiUserId).collection('unlocks').get();
     const listingIds = unlockSnapshot.docs.map(doc => doc.data().listingId);
     if (listingIds.length === 0) return res.json([]);
