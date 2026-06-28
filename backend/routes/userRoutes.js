@@ -37,17 +37,17 @@ router.post('/me/withdraw', verifyUser, async (req, res) => {
       const userRef = db.collection('users').doc(req.user.uid);
       const user = await t.get(userRef);
       const currentBalance = user.data().walletBalance ?? 0;
-    if (!user.exists || currentBalance < amount) {
-    throw new Error("Insufficient funds.");
-   }
       
-     const fieldToUpdate = user.data().walletBalance;
-  t.update(userRef, { walletBalance: currentBalance - amount });
-  
-  t.set(db.collection('payouts').doc(), {
-    userId: req.user.uid, amount, status: 'pending', account_number, account_bank, bank_name, createdAt: new Date().toISOString()
-  });
-});
+      if (!user.exists || currentBalance < amount) {
+        throw new Error("Insufficient funds.");
+      }
+      
+      t.update(userRef, { walletBalance: currentBalance - amount });
+      
+      t.set(db.collection('payouts').doc(), {
+        userId: req.user.uid, amount, status: 'pending', account_number, account_bank, bank_name, createdAt: new Date().toISOString()
+      });
+    });
     res.json({ message: "Withdrawal request submitted" });
   } catch (error) {
     const flwError = error.response?.data?.message || error.message;
@@ -81,7 +81,7 @@ router.get('/me/wallet', verifyUser, async (req, res) => {
     if (!userDoc.exists) return res.status(404).json({ error: "User not found" });
     const userData = userDoc.data();
     res.json({
-      walletBalance: userData.balance ?? userData.walletBalance ?? 0,
+      walletBalance: userData.walletBalance ?? userData.balance ?? 0,
       totalEarned: userData.totalEarned ?? 0,
       platformTier: userData.platformTier || "KIWI Premium Split",
       verificationStatus: userData.verificationStatus || 'unverified',
