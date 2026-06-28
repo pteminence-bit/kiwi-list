@@ -33,8 +33,8 @@ router.post('/me/withdraw', verifyUser, async (req, res) => {
     const resolved = await resolveAccount(account_number, account_bank);
     if (!resolved?.account_name) throw new Error("Bank details verification failed.");
 
-    // Format target user document ID to match kiwi-email pattern
-    const kiwiUserId = `kiwi-${req.user.email || req.user.uid}`;
+    // Enforce customized document ID format using the user's email
+    const kiwiUserId = `kiwi-user-${req.user.email || req.user.uid}`;
 
     await db.runTransaction(async (t) => {
       const userRef = db.collection('users').doc(kiwiUserId);
@@ -48,7 +48,6 @@ router.post('/me/withdraw', verifyUser, async (req, res) => {
       t.update(userRef, { walletBalance: currentBalance - amount });
       
       // ALTERATION: Save amount as negative to ensure it displays as a withdrawal in the ledger
-      // Relocated inside the specific user's document as a sub-collection
       const transactionRef = db.collection('users').doc(kiwiUserId).collection('transactions').doc();
       t.set(transactionRef, {
         userId: kiwiUserId, 
@@ -58,7 +57,6 @@ router.post('/me/withdraw', verifyUser, async (req, res) => {
         createdAt: new Date().toISOString()
       });
       
-      // Relocated inside the specific user's document as a sub-collection
       const payoutRef = db.collection('users').doc(kiwiUserId).collection('payouts').doc();
       t.set(payoutRef, {
         userId: kiwiUserId, amount, status: 'pending', account_number, account_bank, bank_name, createdAt: new Date().toISOString()
@@ -75,8 +73,7 @@ router.post('/me/withdraw', verifyUser, async (req, res) => {
 // --- EXISTING ROUTES ---
 router.get('/me/inventory', verifyUser, async (req, res) => {
   try {
-    const kiwiUserId = `kiwi-${req.user.email || req.user.uid}`;
-    // Fetches from the unlocks sub-collection inside the user's document
+    const kiwiUserId = `kiwi-user-${req.user.email || req.user.uid}`;
     const unlockSnapshot = await db.collection('users').doc(kiwiUserId).collection('unlocks').get();
     const listingIds = unlockSnapshot.docs.map(doc => doc.data().listingId);
     if (listingIds.length === 0) return res.json([]);
@@ -95,7 +92,7 @@ router.get('/me/inventory', verifyUser, async (req, res) => {
 
 router.get('/me/wallet', verifyUser, async (req, res) => {
   try {
-    const kiwiUserId = `kiwi-${req.user.email || req.user.uid}`;
+    const kiwiUserId = `kiwi-user-${req.user.email || req.user.uid}`;
     const userDoc = await db.collection('users').doc(kiwiUserId).get();
     if (!userDoc.exists) return res.status(404).json({ error: "User not found" });
     const userData = userDoc.data();
@@ -113,8 +110,7 @@ router.get('/me/wallet', verifyUser, async (req, res) => {
 
 router.get('/me/transactions', verifyUser, async (req, res) => {
   try {
-    const kiwiUserId = `kiwi-${req.user.email || req.user.uid}`;
-    // Fetches directly from the transactions sub-collection under this specific user
+    const kiwiUserId = `kiwi-user-${req.user.email || req.user.uid}`;
     const snapshot = await db.collection('users').doc(kiwiUserId).collection('transactions').orderBy('createdAt', 'desc').get();
     const txs = snapshot.docs.map(doc => {
       const data = doc.data();
@@ -123,7 +119,7 @@ router.get('/me/transactions', verifyUser, async (req, res) => {
     res.json(txs);
   } catch (error) {
     if (error.message.includes("FAILED_PRECONDITION")) {
-      const kiwiUserId = `kiwi-${req.user.email || req.user.uid}`;
+      const kiwiUserId = `kiwi-user-${req.user.email || req.user.uid}`;
       const fallbackSnapshot = await db.collection('users').doc(kiwiUserId).collection('transactions').get();
       const fallbackTxs = fallbackSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       return res.json(fallbackTxs.sort((a,b) => new Date(b.createdAt || b.timestamp) - new Date(a.createdAt || a.timestamp)));
@@ -134,7 +130,7 @@ router.get('/me/transactions', verifyUser, async (req, res) => {
 
 router.get('/me', verifyUser, async (req, res) => {
   try {
-    const kiwiUserId = `kiwi-${req.user.email || req.user.uid}`;
+    const kiwiUserId = `kiwi-user-${req.user.email || req.user.uid}`;
     const userDoc = await db.collection('users').doc(kiwiUserId).get();
     if (!userDoc.exists) return res.status(404).json({ error: "Account data not found" });
     res.json(userDoc.data());
@@ -146,7 +142,7 @@ router.get('/me', verifyUser, async (req, res) => {
 router.put('/settings', verifyUser, async (req, res) => {
   const { displayName, phoneNumber, bio, bankName, accountNumber } = req.body;
   try {
-    const kiwiUserId = `kiwi-${req.user.email || req.user.uid}`;
+    const kiwiUserId = `kiwi-user-${req.user.email || req.user.uid}`;
     const userRef = db.collection('users').doc(kiwiUserId);
     await userRef.set({ displayName, phoneNumber, bio, bankName, accountNumber, updatedAt: new Date().toISOString() }, { merge: true });
     res.json({ message: "Settings updated successfully" });
@@ -159,7 +155,7 @@ router.post('/submit-kyc', verifyUser, async (req, res) => {
   const { fullName, idType, idNumber, documentUrl } = req.body;
   try {
     if (!documentUrl) return res.status(400).json({ error: "Document URL is required." });
-    const kiwiUserId = `kiwi-${req.user.email || req.user.uid}`;
+    const kiwiUserId = `kiwi-user-${req.user.email || req.user.uid}`;
     await db.collection('users').doc(kiwiUserId).set({
       verificationStatus: 'pending', legalFullName: fullName, kycIdType: idType, kycIdNumber: idNumber, kycDocumentUrl: documentUrl, kycSubmittedAt: new Date().toISOString()
     }, { merge: true });
