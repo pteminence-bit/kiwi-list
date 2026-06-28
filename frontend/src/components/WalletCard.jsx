@@ -137,9 +137,10 @@ const WalletCard = ({ token }) => {
               <div key={tx.id} className="flex justify-between items-center px-4 py-3 border-b last:border-0 border-slate-50 hover:bg-slate-50 transition">
                 <div>
                   <p className="text-slate-900 font-medium text-sm leading-tight">{tx.description}</p>
-                  <p className="text-slate-400 text-[10px] mt-0.5 uppercase tracking-widest">{new Date(tx.timestamp).toLocaleDateString()}</p>
+                  <p className="text-slate-400 text-[10px] mt-0.5 uppercase tracking-widest">{tx.timestamp ? new Date(tx.timestamp).toLocaleDateString() : 'N/A'}</p>
                 </div>
-                <span className={`font-mono font-bold text-sm ${tx.amount < 0 ? "text-slate-900" : "text-emerald-700"}`}>
+                {/* Logic: Withdrawal (negative) displayed as -₦, others as +₦ */}
+                <span className={`font-mono font-bold text-sm ${tx.amount < 0 ? "text-red-600" : "text-emerald-700"}`}>
                   {tx.amount < 0 ? '-' : '+'}₦{Math.abs(tx.amount).toLocaleString()}
                 </span>
               </div>

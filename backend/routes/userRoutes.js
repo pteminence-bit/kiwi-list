@@ -44,6 +44,15 @@ router.post('/me/withdraw', verifyUser, async (req, res) => {
       
       t.update(userRef, { walletBalance: currentBalance - amount });
       
+      // ALTERATION: Save amount as negative to ensure it displays as a withdrawal in the ledger
+      t.set(db.collection('transactions').doc(), {
+        userId: req.user.uid, 
+        amount: -amount, 
+        description: `Withdrawal to ${bank_name}`, 
+        type: 'withdrawal', 
+        createdAt: new Date().toISOString()
+      });
+      
       t.set(db.collection('payouts').doc(), {
         userId: req.user.uid, amount, status: 'pending', account_number, account_bank, bank_name, createdAt: new Date().toISOString()
       });
