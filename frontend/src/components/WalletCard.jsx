@@ -132,19 +132,22 @@ const WalletCard = ({ token }) => {
           <History size={16} /> Transaction Ledger
         </h3>
         <div className="bg-white border border-slate-200 rounded-2xl p-2 shadow-sm">
-          {transactions.length > 0 ? (
-            transactions.slice(0, 6).map(tx => (
-              <div key={tx.id} className="flex justify-between items-center px-4 py-3 border-b last:border-0 border-slate-50 hover:bg-slate-50 transition">
-                <div>
-                  <p className="text-slate-900 font-medium text-sm leading-tight">{tx.description}</p>
-                  <p className="text-slate-400 text-[10px] mt-0.5 uppercase tracking-widest">{tx.createdAt ? new Date(tx.createdAt).toLocaleDateString() : 'N/A'}</p>
+          {/* FILTERED: Only show withdrawals (amount < 0) or premium unlocks (amount === 500) */}
+          {transactions.filter(tx => tx.amount < 0 || tx.amount === 500).length > 0 ? (
+            transactions
+              .filter(tx => tx.amount < 0 || tx.amount === 500)
+              .slice(0, 6)
+              .map(tx => (
+                <div key={tx.id} className="flex justify-between items-center px-4 py-3 border-b last:border-0 border-slate-50 hover:bg-slate-50 transition">
+                  <div>
+                    <p className="text-slate-900 font-medium text-sm leading-tight">{tx.description}</p>
+                    <p className="text-slate-400 text-[10px] mt-0.5 uppercase tracking-widest">{tx.createdAt ? new Date(tx.createdAt).toLocaleDateString() : 'N/A'}</p>
+                  </div>
+                  <span className={`font-mono font-bold text-sm ${tx.amount < 0 ? "text-red-600" : "text-emerald-700"}`}>
+                    {tx.amount < 0 ? '-' : '+'}₦{Math.abs(tx.amount).toLocaleString()}
+                  </span>
                 </div>
-                {/* Logic: Withdrawal (negative) displayed as -₦, others as +₦ */}
-                <span className={`font-mono font-bold text-sm ${tx.amount < 0 ? "text-red-600" : "text-emerald-700"}`}>
-                  {tx.amount < 0 ? '-' : '+'}₦{Math.abs(tx.amount).toLocaleString()}
-                </span>
-              </div>
-            ))
+              ))
           ) : (
             <p className="text-center py-6 text-slate-400 text-sm italic">No recent transactions found.</p>
           )}
