@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { auth } from '../firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { signInWithCustomToken } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
@@ -11,13 +11,35 @@ const Login = () => {
 
   const handleAuth = async (e) => {
     e.preventDefault();
+    
+    // Choose the target endpoint based on state
+    const endpoint = isRegister ? '/auth/signup' : '/auth/login';
+    const backendUrl = `https://kiwi-list-api.onrender.com${endpoint}`;
+
     try {
-      if (isRegister) {
-        await createUserWithEmailAndPassword(auth, email, password);
-      } else {
-        await signInWithEmailAndPassword(auth, email, password);
+      const response = await fetch(backendUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Authentication failed');
       }
-      navigate('/');
+
+      if (isRegister) {
+        // Sign-up successful. Prompt user to log in or handle confirmation message
+        alert("Account initialized successfully! Please switch to Sign In to authenticate.");
+        setIsRegister(false);
+      } else {
+        // Login successful. Use the custom generated token from your backend to sign in locally
+        await signInWithCustomToken(auth, data.token);
+        navigate('/');
+      }
     } catch (error) {
       alert(error.message);
     }
@@ -33,12 +55,12 @@ const Login = () => {
 
         <form onSubmit={handleAuth} className="space-y-4">
           <input 
-            type="email" placeholder="Email Address" 
+            type="email" placeholder="Email Address" required
             className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
             onChange={(e) => setEmail(e.target.value)}
           />
           <input 
-            type="password" placeholder="Password" 
+            type="password" placeholder="Password" required
             className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
             onChange={(e) => setPassword(e.target.value)}
           />

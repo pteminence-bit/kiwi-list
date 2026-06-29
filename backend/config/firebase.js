@@ -1,22 +1,21 @@
-// backend/config/firebase.js
-import admin from 'firebase-admin';
-import { readFile } from 'fs/promises';
+import { initializeApp, cert } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
+import { getFirestore } from "firebase-admin/firestore";
+import fs from "fs";
 
-let serviceAccount;
+// 1. Load your secure Firebase Admin Service Account JSON file.
+// Make sure this file actually exists on your backend container and is hidden via .gitignore
+const serviceAccount = JSON.parse(
+  fs.readFileSync(new URL("../firebase-service-account.json", import.meta.url))
+);
 
-if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
-  // Production environment configuration (Render)
-  serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
-} else {
-  // Local machine fallback development environment configuration
-  serviceAccount = JSON.parse(
-    await readFile(new URL('../firebase-service-account.json', import.meta.url))
-  );
-}
-
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
+// 2. Initialize the Admin SDK app, embedding the web API Key 
+// so that `db.app.options.apiKey` resolves correctly in your login route!
+const adminApp = initializeApp({
+  credential: cert(serviceAccount),
+  // Paste your extracted Web API Key here:
+  apiKey: "AIzaSyBvy_Qr-4yryox-tChNzuaVKA4tnl_smHg" 
 });
 
-export const db = admin.firestore();
-export const auth = admin.auth();
+export const auth = getAuth(adminApp);
+export const db = getFirestore(adminApp);

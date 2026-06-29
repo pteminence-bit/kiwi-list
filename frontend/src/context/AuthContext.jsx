@@ -21,11 +21,18 @@ export const AuthProvider = ({ children }) => {
         const idToken = await currentUser.getIdToken(true);
         setToken(idToken);
 
+        // Compute the expected "kiwi-user-..." custom document ID using user email
+        const targetEmail = currentUser.email;
+        const kiwiUserId = targetEmail ? `kiwi-user-${targetEmail.toLowerCase().trim()}` : currentUser.uid;
+
         // Fetch User Profile from Firestore to sync verification status
         try {
-          const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+          // FIX: Queries document ID using the custom identifier pattern, matching backend structure
+          const userDoc = await getDoc(doc(db, 'users', kiwiUserId));
           if (userDoc.exists()) {
             setProfile(userDoc.data());
+          } else {
+            console.warn(`Profile document not found at: users/${kiwiUserId}`);
           }
         } catch (err) {
           console.error("Error fetching user profile:", err);

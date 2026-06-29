@@ -12,12 +12,22 @@ export const verifyUser = async (req, res, next) => {
     const decodedToken = await auth.verifyIdToken(token);
     req.user = decodedToken;
 
-    const userRef = db.collection('users').doc(decodedToken.uid);
+    if (!decodedToken.email) {
+      return res.status(400).json({ error: "User email missing from authorization payload token." });
+    }
+
+    // Convert raw token email into the matching internal custom string structure
+    const sanitizedEmail = decodedToken.email.toLowerCase().trim().replace(/[@.]/g, '-');
+    const kiwiUserId = `kiwi-user-${sanitizedEmail}`;
+
+    // Target the customized document ID format instead of the raw decodedToken.uid
+    const userRef = db.collection('users').doc(kiwiUserId);
     const doc = await userRef.get();
 
     if (!doc.exists) {
       // Use set with specific fields to guarantee initialization for new accounts
       await userRef.set({
+        id: kiwiUserId,
         email: decodedToken.email || "",
         displayName: decodedToken.name || "User",
         walletBalance: 0,
@@ -32,8 +42,8 @@ export const verifyUser = async (req, res, next) => {
       
       // Admin suspension check
       if (userData.isDisabled === true) {
-      return res.status(403).json({ error: "Your account has been suspended by an administrator." });
-    }
+        return res.status(403).json({ error: "Your account has been suspended by an administrator." });
+      }
 
       // DATA MIGRATION: Ensure missing fields exist for older accounts
       if (userData.walletBalance === undefined || userData.verificationStatus === undefined) {
