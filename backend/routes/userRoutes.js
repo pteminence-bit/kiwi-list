@@ -22,7 +22,7 @@ const resolveAccount = async (account_number, account_bank) => {
   return response.data.data;
 };
 
-// --- AUTHENTICATION & SIGNUP CONTROL (Fixes delivery issue) ---
+// --- AUTHENTICATION & SIGNUP CONTROL (Uses Direct Environment Key Configuration) ---
 router.post('/auth/signup', async (req, res) => {
   const { email, password, displayName } = req.body;
   try {
@@ -56,9 +56,9 @@ router.post('/auth/signup', async (req, res) => {
     });
 
     // 3. Request Firebase Identity Engine to dispatch the verification email directly
-    const apiKey = db.app.options.apiKey;
+    const apiKey = process.env.FIREBASE_WEB_API_KEY;
     if (!apiKey) {
-      throw new Error("Firebase Web API Key is missing from your initialization config.");
+      throw new Error("FIREBASE_WEB_API_KEY is missing from your environment variables.");
     }
 
     const emailUrl = `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${apiKey}`;
@@ -78,7 +78,7 @@ router.post('/auth/signup', async (req, res) => {
   }
 });
 
-// --- AUTHENTICATION SIGN-IN CONTROL ---
+// --- AUTHENTICATION SIGN-IN CONTROL (Uses Direct Environment Key Configuration) ---
 router.post('/auth/login', async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -88,9 +88,9 @@ router.post('/auth/login', async (req, res) => {
 
     const cleanEmail = email.toLowerCase().trim();
 
-    const apiKey = db.app.options.apiKey; 
+    const apiKey = process.env.FIREBASE_WEB_API_KEY; 
     if (!apiKey) {
-      throw new Error("Firebase Web API Key is missing from your initialization config.");
+      throw new Error("FIREBASE_WEB_API_KEY is missing from your environment variables.");
     }
 
     const signInUrl = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`;
@@ -104,7 +104,8 @@ router.post('/auth/login', async (req, res) => {
     const sanitizedEmail = cleanEmail.replace(/[@.]/g, '-');
     const customUid = `kiwi-user-${sanitizedEmail}`;
 
-    const customToken = await db.app.auth().createCustomToken(customUid);
+    // FIX: Swapped out db.app.auth() to prevent crash on reading undefined properties
+    const customToken = await auth.createCustomToken(customUid);
 
     res.status(200).json({
       message: "Login signature approved.",
