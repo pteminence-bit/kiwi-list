@@ -50,7 +50,7 @@ app.get('/', (req, res) => {
 
 // --- 🔐 Standalone Auth Pass-Through Routing ---
 // This ensures your frontend Login.jsx calls directly to /auth/login and /auth/signup match perfectly!
-app.use('/auth', userRoutes); 
+app.use('/', userRoutes); 
 
 // --- Cleaned API Routes ---
 app.use('/api/listings', listingRoutes);
