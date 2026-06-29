@@ -7,7 +7,7 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [profile, setProfile] = useState(null); // Added: Store Firestore user metadata
+  const [profile, setProfile] = useState(null); // Store Firestore user metadata
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(null);
 
@@ -21,13 +21,15 @@ export const AuthProvider = ({ children }) => {
         const idToken = await currentUser.getIdToken(true);
         setToken(idToken);
 
-        // Compute the expected "kiwi-user-..." custom document ID using user email
+        // FIX: Clean the email string by replacing '@' and '.' with hyphens to match backend custom ID structure
         const targetEmail = currentUser.email;
-        const kiwiUserId = targetEmail ? `kiwi-user-${targetEmail.toLowerCase().trim()}` : currentUser.uid;
+        const kiwiUserId = targetEmail 
+          ? `kiwi-user-${targetEmail.toLowerCase().trim().replace(/[@.]/g, '-')}` 
+          : currentUser.uid;
 
         // Fetch User Profile from Firestore to sync verification status
         try {
-          // FIX: Queries document ID using the custom identifier pattern, matching backend structure
+          // Queries document ID using the sanitized custom identifier pattern
           const userDoc = await getDoc(doc(db, 'users', kiwiUserId));
           if (userDoc.exists()) {
             setProfile(userDoc.data());

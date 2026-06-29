@@ -26,15 +26,20 @@ const DashboardLayout = () => {
 
   useEffect(() => {
     const checkAdminStatus = async () => {
-      if (user) {
+      if (user && user.email) {
         try {
-          const userDocRef = doc(db, 'users', user.uid);
+          // Sanitizes the email string exactly like the backend to point to the correct document ID
+          const sanitizedEmail = user.email.toLowerCase().trim().replace(/[@.]/g, '-');
+          const customUserDocId = `kiwi-user-${sanitizedEmail}`;
+
+          const userDocRef = doc(db, 'users', customUserDocId);
           const userDocSnap = await getDoc(userDocRef);
+          
           if (userDocSnap.exists()) {
             setIsAdmin(userDocSnap.data().role === 'admin');
           }
         } catch (error) {
-          console.error(error);
+          console.error("DashboardLayout Admin Check Error: ", error);
         }
       }
     };

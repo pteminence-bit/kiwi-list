@@ -12,6 +12,16 @@ const MarketplaceFeed = ({ token }) => {
   const [galleryIdx, setGalleryIdx] = useState(0);
   const isFetching = useRef(false);
 
+  // Structural sanity wrapper matching your custom normalized string model layout
+  const sanitizedUser = React.useMemo(() => {
+    if (!user || !user.email) return user;
+    const sanitizedEmail = user.email.toLowerCase().trim().replace(/[@.]/g, '-');
+    return {
+      ...user,
+      uid: `kiwi-user-${sanitizedEmail}` // Injects the sanitized version safely into client card parameters
+    };
+  }, [user]);
+
   const fetchFeed = async () => {
     if (isFetching.current) return;
     isFetching.current = true;
@@ -43,7 +53,12 @@ const MarketplaceFeed = ({ token }) => {
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) {
+      // FIX: Employs standard documentElement measurements to reliably track infinite scroll triggers across responsive screens
+      const threshold = 200;
+      const totalHeight = document.documentElement.scrollHeight;
+      const currentScroll = window.innerHeight + window.scrollY;
+
+      if (totalHeight - currentScroll <= threshold) {
         fetchFeed();
       }
     };
@@ -114,7 +129,7 @@ const MarketplaceFeed = ({ token }) => {
                 listing={listing} 
                 token={token} 
                 onUnlock={() => handleUnlockContact(listing.id)}
-                currentUser={user}
+                currentUser={sanitizedUser} // 👈 Passes the corrected normalized UID layout cleanly
               />
             </div>
           ))}

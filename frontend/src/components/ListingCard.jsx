@@ -53,11 +53,12 @@ const ListingCard = ({ listing, onUnlock, token, currentUser }) => {
   }, [listing.id]);
 
   return (
-    <div className="flex flex-col text-slate-200 w-full">
+    // FIX: Explicitly forces full width sizing on mobile and iOS engines while maintaining maximum container boundaries
+    <div className="flex flex-col text-slate-200 w-full max-w-md mx-auto bg-slate-900/40 rounded-2xl border border-slate-800/60 overflow-hidden shadow-xl mb-4">
       {/* Header */}
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-indigo-500" />
+          <div className="w-9 h-9 rounded-full bg-indigo-500 shrink-0" />
           <div>
             <p className="text-xs font-bold text-white flex items-center gap-1">
               KIWI-list Verified Agent 
@@ -70,21 +71,23 @@ const ListingCard = ({ listing, onUnlock, token, currentUser }) => {
         </div>
         <AlertTriangle 
           size={16} 
-          className="text-slate-600 hover:text-red-500 cursor-pointer" 
+          className="text-slate-600 hover:text-red-500 cursor-pointer shrink-0" 
           onClick={handleReport}
         />
       </div>
 
       {/* Media Display */}
       {images.length > 0 && (
-        <div className="relative aspect-[4/3] w-full bg-black">
+        // FIX: Structural 4/3 containment enforcing perfect fluid width coverage without iOS background alignment gaps
+        <div className="relative aspect-[4/3] w-full bg-black overflow-hidden select-none">
           <img 
             src={images[0]} 
             alt="Property"
-            className="w-full h-full object-contain"
+            // FIX: "w-full h-full object-cover" ensures native viewport fills without breaking layout structures
+            className="w-full h-full object-cover object-center transform scale-100 touch-pan-y"
           />
           {images.length > 1 && (
-            <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-1 rounded-full backdrop-blur-sm">
+            <div className="absolute bottom-3 right-3 bg-black/70 text-white text-[10px] px-2.5 py-1 rounded-full backdrop-blur-md border border-white/5 font-bold">
               + {images.length - 1} more
             </div>
           )}
@@ -99,8 +102,8 @@ const ListingCard = ({ listing, onUnlock, token, currentUser }) => {
         </div>
         
         <div className="space-y-1">
-          <p className="text-xs text-slate-500 font-bold uppercase">{listing.title}</p>
-          <p className="text-xs text-slate-300 leading-relaxed">{listing.description}</p>
+          <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">{listing.title}</p>
+          <p className="text-xs text-slate-300 leading-relaxed break-words">{listing.description}</p>
         </div>
         
         <div className="flex gap-4 pt-1">
@@ -109,13 +112,15 @@ const ListingCard = ({ listing, onUnlock, token, currentUser }) => {
         </div>
 
         {/* Payment / Contact Logic */}
-        {isPremium && !isOwner ? (
-          <PaymentButton onUnlock={onUnlock} />
-        ) : (
-          <div className="mt-2 py-2.5 bg-slate-800 text-slate-400 text-[10px] text-center font-bold uppercase rounded-lg border border-slate-700">
-            Contact: {listing.contactDetails?.phone || 'Available'}
-          </div>
-        )}
+        <div className="pt-1">
+          {isPremium && !isOwner ? (
+            <PaymentButton onUnlock={onUnlock} />
+          ) : (
+            <div className="w-full py-3 bg-slate-800 text-slate-400 text-xs text-center font-bold uppercase rounded-xl border border-slate-700/60 shadow-inner">
+              Contact: {listing.contactDetails?.phone || 'Available'}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

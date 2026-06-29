@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-// 👇 UPDATED: Explicitly verified imports to include sendEmailVerification and signOut
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification, signOut } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore'; 
-import { auth, db } from '../firebase';
+// Removed client-side registration/login methods, keeping token sign-in and signOut
+import { signInWithCustomToken, signOut } from 'firebase/auth';
+import { auth } from '../firebase';
 import { LogIn, UserPlus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
@@ -25,48 +24,42 @@ const AuthPage = () => {
     setError('');
     setLoading(true);
 
+    // Choose the target endpoint based on state mapping
+    const endpoint = isLogin ? '/auth/login' : '/auth/signup';
+    const backendUrl = `https://kiwi-list-api.onrender.com${endpoint}`;
+
     try {
-      if (isLogin) {
-        // Authenticate existing user
-        await signInWithEmailAndPassword(auth, email, password);
-      } else {
-        // 1. Capture user credentials from Firebase Authentication
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const registeredUser = userCredential.user;
+      // 1. Send authentication credentials to your central secure Node.js Render container
+      const response = await fetch(backendUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-        // 2. Force user document instantiation to satisfy Admin Account Guard criteria
-        await setDoc(doc(db, "users", registeredUser.uid), {
-          id: registeredUser.uid,
-          email: email,
-          role: "user",
-          isDisabled: false,
-          isPayoutBlocked: false, // Essential for withdrawal logic
-          verificationStatus: "unverified", // Default state
-          walletBalance: 0,             // Initialize wallet balance
-          totalEarned: 0,         // Initialize total earned
-          createdAt: new Date().toISOString()
-        });
+      const data = await response.json();
 
-        // 👇 THE FIX: Define the custom route parameters explicitly in your code
-        const actionCodeSettings = {
-          url: 'https://kiwi-list-ifnr.onrender.com/login?verified=true', 
-          handleCodeInApp: true,
-        };
+      if (!response.ok) {
+        throw new Error(data.error || 'Authentication failed');
+      }
 
-        // 3. UPDATED: Dispatches verification tracking link payload with custom actions parameter mapping
-        await sendEmailVerification(registeredUser, actionCodeSettings);
-        alert("Verification email sent! Please check your inbox before logging in.");
-
-        // 4. UPDATED: Clears current active session to block automated context routing redirects
-        await signOut(auth);
-
-        // Reset state and swap view cleanly back to login form layout
+      if (!isLogin) {
+        // --- SIGNUP FLOW ---
+        // Your backend has now generated the custom layout ID and dispatched the verification link.
+        alert("Verification email triggered! Please check your inbox before logging in.");
+        
+        // Clear active form context and drop back to login card state view
         setEmail('');
         setPassword('');
         setIsLogin(true);
+      } else {
+        // --- LOGIN FLOW ---
+        // Authenticate the user browser instance utilizing the secure custom-minted layout token
+        await signInWithCustomToken(auth, data.token);
       }
     } catch (err) {
-      // Format common Firebase error messages nicely
+      // Format backend and local errors cleanly
       const cleanError = err.message.replace('Firebase: ', '').replace(/auth\/|-/g, ' ');
       setError(cleanError.charAt(0).toUpperCase() + cleanError.slice(1));
     } finally {

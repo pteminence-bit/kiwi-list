@@ -1,4 +1,3 @@
-// backend/index.js
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -49,11 +48,15 @@ app.get('/', (req, res) => {
   });
 });
 
+// --- 🔐 Standalone Auth Pass-Through Routing ---
+// This ensures your frontend Login.jsx calls directly to /auth/login and /auth/signup match perfectly!
+app.use('/auth', userRoutes); 
+
 // --- Cleaned API Routes ---
 app.use('/api/listings', listingRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/users', userRoutes);
+app.use('/api/users', userRoutes); // Keeps profile, settings, and kyc mapped under /api/users
 app.use('/api/webhooks', webhookRoutes); 
 app.use('/api/payments', paymentRoutes);
 

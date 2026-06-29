@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { ShieldCheck, UploadCloud, AlertCircle, CheckCircle2, ArrowLeft, Trash2, FileText } from 'lucide-react';
+import { ShieldCheck, UploadCloud, AlertCircle, ArrowLeft, Trash2, FileText } from 'lucide-react';
 
 const BACKEND_BASE_URL = window.location.hostname === 'localhost' 
-  ? 'http://localhost:5000' // 👈 Change 5000 to whatever port your local Node backend runs on
+  ? 'http://localhost:5000' 
   : 'https://kiwi-list-api.onrender.com';
 
 const KycSubmission = ({ token, onBack }) => {
@@ -11,7 +11,7 @@ const KycSubmission = ({ token, onBack }) => {
     idType: 'NIN',
     idNumber: '',
   });
-  const [documentUrls, setDocumentUrls] = useState([]); // FIXED: Array structure to hold 1-2 files
+  const [documentUrls, setDocumentUrls] = useState([]); 
   const [uploading, setUploading] = useState(false);
   const [status, setStatus] = useState({ type: null, message: '' });
 
@@ -31,7 +31,6 @@ const KycSubmission = ({ token, onBack }) => {
     const selectedFiles = Array.from(e.target.files);
     if (selectedFiles.length === 0) return;
 
-    // Guard constraint check checking cumulative capacities
     if (documentUrls.length + selectedFiles.length > 2) {
       setStatus({ type: 'error', message: 'You can upload a maximum of 2 verification documents (e.g., front and back).' });
       return;
@@ -41,13 +40,13 @@ const KycSubmission = ({ token, onBack }) => {
     setStatus({ type: null, message: '' });
 
     const uploadData = new FormData();
-    // Append files array items into form state
     selectedFiles.forEach(file => {
       uploadData.append('files', file); 
     });
 
     try {
-      const res = await fetch(`${BACKEND_BASE_URL}/api/upload`, {
+      // Adjusted upload edge point to your core router structure
+      const res = await fetch(`${BACKEND_BASE_URL}/upload`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
         body: uploadData
@@ -56,8 +55,6 @@ const KycSubmission = ({ token, onBack }) => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to stream assets to storage edge.');
       
-      // Assumes your uploadController returns either a single object url path 
-      // or an array of structural upload assets inside an array structure
       const newUrls = Array.isArray(data) ? data.map(item => item.url) : [data.url || data.fileUrl];
       setDocumentUrls(prev => [...prev, ...newUrls].slice(0, 2));
       setStatus({ type: 'success', message: 'Document(s) processed and cached successfully!' });
@@ -84,15 +81,20 @@ const KycSubmission = ({ token, onBack }) => {
     setStatus({ type: null, message: '' });
 
     try {
-      const res = await fetch(`${BACKEND_BASE_URL}/api/users/submit-kyc`, {
+      // FIX: Changed endpoint from '/api/users/submit-kyc' to '/submit-kyc' to match your exact backend router layout
+      const res = await fetch(`${BACKEND_BASE_URL}/submit-kyc`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          ...formData,
-          documentUrls // FIXED: Passing arrays into data context payload hooks
+          fullName: formData.fullName,
+          idType: formData.idType,
+          idNumber: formData.idNumber,
+          // FIX: Your backend expects a string 'documentUrl'. We combine the URLs with commas 
+          // to perfectly match the backend properties without altering backend code.
+          documentUrl: documentUrls.join(', ') 
         })
       });
 
@@ -177,7 +179,6 @@ const KycSubmission = ({ token, onBack }) => {
             </div>
           </div>
 
-          {/* Upload Dropzone Frame */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold uppercase tracking-wider text-slate-400 font-mono">Upload Identity Capture (1-2 Images)</label>
             
@@ -185,7 +186,7 @@ const KycSubmission = ({ token, onBack }) => {
               <div className="relative border-2 border-dashed border-slate-200 rounded-xl p-6 bg-slate-50/50 hover:bg-slate-50 transition flex flex-col items-center justify-center text-center cursor-pointer mb-3">
                 <input 
                   type="file" 
-                  multiple // FIXED: Added to support multiple file selection dialog loops
+                  multiple 
                   accept="image/*,application/pdf" 
                   onChange={handleFileUpload}
                   className="absolute inset-0 opacity-0 cursor-pointer" 
@@ -201,7 +202,6 @@ const KycSubmission = ({ token, onBack }) => {
               </div>
             )}
 
-            {/* List Array Render of Uploaded Submissions */}
             {documentUrls.length > 0 && (
               <div className="space-y-2 mt-2">
                 {documentUrls.map((url, index) => (

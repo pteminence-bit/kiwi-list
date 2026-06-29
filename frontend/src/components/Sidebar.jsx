@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { getAuth, signOut } from 'firebase/auth';
+import { signOut } from 'firebase/auth';
+import { auth } from '../firebase'; // FIX: Dynamically maps straight to your configured client authentication engine instance
 import { LayoutDashboard, Wallet, Building2, ClipboardList, Settings, LogOut, X, PlusCircle, Bell, Package } from 'lucide-react';
 
 const Sidebar = ({ isAdmin, isOpen, setIsOpen }) => {
@@ -33,11 +34,16 @@ const Sidebar = ({ isAdmin, isOpen, setIsOpen }) => {
   }
 
   const handleLogout = async () => {
-    const auth = getAuth();
     if (window.confirm("Logout of KIWI-list?")) {
-      await signOut(auth);
-      setIsOpen(false);
-      navigate('/');
+      try {
+        // FIX: Triggers explicit token cleanup matching your client app's session state context
+        await signOut(auth);
+        setIsOpen(false);
+        navigate('/login'); // Redirect directly to your update unified login view
+      } catch (error) {
+        console.error("Logout runtime error:", error.message);
+        alert("Failed to securely tear down login session. Please reload.");
+      }
     }
   };
 
@@ -60,7 +66,7 @@ const Sidebar = ({ isAdmin, isOpen, setIsOpen }) => {
               const active = location.pathname === item.path;
               return (
                 <Link key={item.name} to={item.path} onClick={() => setIsOpen(false)} 
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold uppercase ${active ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-800'}`}>
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold uppercase transition ${active ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-800'}`}>
                   <Icon size={16} /> {item.name}
                 </Link>
               );
@@ -68,7 +74,7 @@ const Sidebar = ({ isAdmin, isOpen, setIsOpen }) => {
           </nav>
         </div>
 
-        <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-red-400 text-xs font-bold uppercase">
+        <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-red-400 text-xs font-bold uppercase transition outline-none">
           <LogOut size={16} /> Logout
         </button>
       </aside>

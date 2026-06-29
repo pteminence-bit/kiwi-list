@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle, ArrowRight, Loader2 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { API_BASE_URL } from '../config'; // Ensure this is imported
+import { auth } from '../firebase'; 
+import { onAuthStateChanged } from 'firebase/auth'; // Added for robust session hook tracking
+import { API_BASE_URL } from '../config'; 
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
@@ -10,30 +12,51 @@ const PaymentSuccess = () => {
   const reference = searchParams.get('reference');
 
   useEffect(() => {
-    // Simulate backend verification check
-    const verifyTransaction = async () => {
+    if (!reference) {
+      navigate('/');
+      return;
+    }
+
+    // Wrap verification logic inside an active session listener hook 
+    // to prevent premature authorization failure checks during page boot
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        // Session hasn't initialized or user is unauthenticated
+        console.warn("Waiting for authentication session context listener...");
+        return;
+      }
+
       try {
-        const response = await fetch(`${API_BASE_URL}/api/payments/verify?reference=${reference}`);
+        // Fetch valid runtime authorization Bearer token context
+        const token = await user.getIdToken();
+
+        // Query verification against the custom backend API layout
+        const response = await fetch(`${API_BASE_URL}/api/payments/verify?reference=${reference}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
         const data = await response.json();
 
         if (response.ok) {
           setVerifying(false);
         } else {
-          // Handle failed verification
           console.error("Payment verification failed:", data.error);
-          alert("Verification failed. Please contact support.");
+          alert(data.error || "Verification failed. Please contact support.");
           navigate('/');
         }
       } catch (err) {
         console.error("Network error during verification", err);
+        alert("A network connection error occurred during verification.");
+        navigate('/');
       }
-    };
-    
-    if (reference) {
-      verifyTransaction();
-    } else {
-      navigate('/');
-    }
+    });
+
+    // Cleanup session subscription hook listener
+    return () => unsubscribe();
   }, [reference, navigate]);
 
   return (

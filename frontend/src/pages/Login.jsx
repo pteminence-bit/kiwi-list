@@ -12,7 +12,6 @@ const Login = () => {
   const handleAuth = async (e) => {
     e.preventDefault();
     
-    // Choose the target endpoint based on state
     const endpoint = isRegister ? '/auth/signup' : '/auth/login';
     const backendUrl = `https://kiwi-list-api.onrender.com${endpoint}`;
 
@@ -32,11 +31,10 @@ const Login = () => {
       }
 
       if (isRegister) {
-        // Sign-up successful. Prompt user to log in or handle confirmation message
-        alert("Account initialized successfully! Please switch to Sign In to authenticate.");
+        alert("Account initialized! Please switch to Sign In to authenticate.");
         setIsRegister(false);
       } else {
-        // Login successful. Use the custom generated token from your backend to sign in locally
+        // Log in clean with the backend minted custom token matching the sanitized UID format
         await signInWithCustomToken(auth, data.token);
         navigate('/');
       }

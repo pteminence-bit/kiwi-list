@@ -41,7 +41,7 @@ const CreateListing = ({ token }) => {
       // 👇 EXACT REPLACEMENT BLOCK START
       const listingPayload = {
         title: formData.title,
-        description: formData.description, // Ensure this matches your backend schema
+        description: formData.description,
         price: Number(formData.price),
         address: formData.address,
         beds: Number(formData.beds),
@@ -65,6 +65,8 @@ const CreateListing = ({ token }) => {
       // 👆 EXACT REPLACEMENT BLOCK END
 
       const listingData = await listingResponse.json();
+      if (!listingResponse.ok) throw new Error(listingData.error || "Failed to create listing profile asset.");
+
       if (listingResponse.ok) {
         formData.tier === 'premium' ? initializePremiumPayment(listingData.id) : (alert("Published successfully!"), window.location.href = "/");
       }
@@ -76,13 +78,21 @@ const CreateListing = ({ token }) => {
   };
 
   const initializePremiumPayment = async (listingId) => {
-    const res = await fetch(`${API_BASE_URL}/api/payments/initialize`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ amount: 3000, purpose: 'premium_listing', listingId })
-    });
-    const data = await res.json();
-    if (data.checkoutUrl) window.location.href = data.checkoutUrl;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/payments/initialize`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ amount: 3000, purpose: 'premium_listing', listingId })
+      });
+      const data = await res.json();
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      } else {
+        throw new Error(data.error || "Could not spin up payment processor gateway.");
+      }
+    } catch (err) {
+      alert(err.message);
+    }
   };
 
   return (

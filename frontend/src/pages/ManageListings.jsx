@@ -72,63 +72,79 @@ const ManageListings = ({ token }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm">
-              {myListings.map((property) => (
-                <tr key={property.id} className="hover:bg-slate-50/50">
-                  <td className="px-6 py-4">
-                    <div className="font-semibold text-slate-900">{property.title}</div>
-                    <div className="text-xs text-slate-400 truncate max-w-[200px]">{property.address}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${property.tier === 'premium' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>
-                      {property.tier || 'free'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 font-bold text-slate-900 whitespace-nowrap">₦{property.price?.toLocaleString()}</td>
-                  <td className="px-6 py-4">
-                    <span className={`text-[10px] font-bold uppercase ${property.status === 'active' ? 'text-emerald-600' : 'text-amber-600'}`}>
-                      {property.status || 'pending'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-center text-slate-500 flex items-center justify-center gap-1">
-                    <Eye size={14} /> {property.views || 0}
-                  </td>
-                  {/* FIXED: Added min-w-full to action cell to prevent collapsing */}
-                  <td className="px-6 py-4 text-right min-w-[120px]">
-                    <div className="flex justify-end gap-2">
-                      <button onClick={() => handleEdit(property.id)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors"><Edit size={18} /></button>
-                      <button onClick={() => handleDelete(property.id)} className="p-2 text-slate-400 hover:text-red-600 transition-colors"><Trash2 size={18} /></button>
-                    </div>
+              {myListings.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="px-6 py-10 text-center text-slate-400">
+                    No property listings found.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                myListings.map((property) => (
+                  <tr key={property.id} className="hover:bg-slate-50/50">
+                    <td className="px-6 py-4">
+                      <div className="font-semibold text-slate-900">{property.title}</div>
+                      <div className="text-xs text-slate-400 truncate max-w-[200px]">{property.address}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${property.tier === 'premium' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>
+                        {property.tier || 'free'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 font-bold text-slate-900 whitespace-nowrap">₦{property.price?.toLocaleString()}</td>
+                    <td className="px-6 py-4">
+                      <span className={`text-[10px] font-bold uppercase ${property.status === 'active' ? 'text-emerald-600' : 'text-amber-600'}`}>
+                        {property.status || 'pending'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      {/* FIX: Contained flex utilities in a wrapper div inside td element */}
+                      <div className="flex items-center justify-center gap-1 text-slate-500">
+                        <Eye size={14} /> <span>{property.views || 0}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-right min-w-[120px]">
+                      <div className="flex justify-end gap-2">
+                        <button onClick={() => handleEdit(property.id)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors"><Edit size={18} /></button>
+                        <button onClick={() => handleDelete(property.id)} className="p-2 text-slate-400 hover:text-red-600 transition-colors"><Trash2 size={18} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
 
         {/* CARD VIEW (Mobile) */}
         <div className="grid grid-cols-1 gap-4 md:hidden">
-          {myListings.map((property) => (
-            <div key={property.id} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="mb-2 flex justify-between items-start">
-                <h3 className="font-bold text-slate-900 text-base leading-snug">{property.title}</h3>
-                <span className={`shrink-0 ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase ${property.tier === 'premium' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>
-                  {property.tier || 'free'}
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 mb-4">{property.address}</p>
-              
-              <div className="flex items-center justify-between border-t border-slate-100 pt-4">
-                <span className="font-black text-slate-900 text-lg">₦{property.price?.toLocaleString()}</span>
-                <div className="flex items-center gap-4">
-                  <span className="text-xs font-medium text-slate-500 flex items-center gap-1.5"><Eye size={16} /> {property.views}</span>
-                  <div className="flex gap-1">
-                    <button onClick={() => handleEdit(property.id)} className="h-12 w-12 flex items-center justify-center bg-slate-50 rounded-xl text-slate-600 active:bg-slate-100"><Edit size={20} /></button>
-                    <button onClick={() => handleDelete(property.id)} className="h-12 w-12 flex items-center justify-center bg-red-50 rounded-xl text-red-600 active:bg-red-100"><Trash2 size={20} /></button>
+          {myListings.length === 0 ? (
+            <div className="rounded-xl border border-slate-200 bg-white p-6 text-center text-slate-400 text-sm">
+              No property listings found.
+            </div>
+          ) : (
+            myListings.map((property) => (
+              <div key={property.id} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="mb-2 flex justify-between items-start">
+                  <h3 className="font-bold text-slate-900 text-base leading-snug">{property.title}</h3>
+                  <span className={`shrink-0 ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase ${property.tier === 'premium' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>
+                    {property.tier || 'free'}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 mb-4">{property.address}</p>
+                
+                <div className="flex items-center justify-between border-t border-slate-100 pt-4">
+                  <span className="font-black text-slate-900 text-lg">₦{property.price?.toLocaleString()}</span>
+                  <div className="flex items-center gap-4">
+                    <span className="text-xs font-medium text-slate-500 flex items-center gap-1.5"><Eye size={16} /> {property.views || 0}</span>
+                    <div className="flex gap-1">
+                      <button onClick={() => handleEdit(property.id)} className="h-12 w-12 flex items-center justify-center bg-slate-50 rounded-xl text-slate-600 active:bg-slate-100"><Edit size={20} /></button>
+                      <button onClick={() => handleDelete(property.id)} className="h-12 w-12 flex items-center justify-center bg-red-50 rounded-xl text-red-600 active:bg-red-100"><Trash2 size={20} /></button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
     </div>
