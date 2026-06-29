@@ -1,5 +1,5 @@
 import express from 'express';
-import { db } from '../config/firebase.js';
+import { db, auth } from '../config/firebase.js';
 import { verifyUser } from '../middleware/authMiddleware.js';
 import axios from 'axios';
 
@@ -35,7 +35,7 @@ router.post('/auth/signup', async (req, res) => {
     const customUid = `kiwi-user-${sanitizedEmail}`;
 
     // Create the authentic profile using the Firebase Admin SDK attached to your db app instance
-    const userRecord = await db.app.auth().createUser({
+    const userRecord = await auth.createUser({
       uid: customUid,
       email: email,
       password: password,
@@ -56,7 +56,7 @@ router.post('/auth/signup', async (req, res) => {
     });
 
     // Programmatically trigger a secure verification link out to the user
-    const verificationLink = await db.app.auth().generateEmailVerificationLink(email);
+    const verificationLink = await auth.generateEmailVerificationLink(email);
     console.log(`Verification link triggered for ${email}: ${verificationLink}`);
 
     res.status(201).json({ 
