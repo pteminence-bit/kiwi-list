@@ -35,7 +35,7 @@ router.post('/auth/signup', async (req, res) => {
     const sanitizedEmail = cleanEmail.replace(/[@.]/g, '-');
     const customUid = `kiwi-user-${sanitizedEmail}`;
 
-    // 1. Create account with your clean custom identifier format
+    // 1. Create the account with your clean custom identifier format via Admin SDK
     const userRecord = await auth.createUser({
       uid: customUid,
       email: cleanEmail,
@@ -56,51 +56,29 @@ router.post('/auth/signup', async (req, res) => {
       createdAt: new Date().toISOString()
     });
 
-    // 3. Generate verification link cleanly via Admin SDK (prevents INVALID_ID_TOKEN)
-    const actionCodeSettings = {
-      url: `https://kiwi-list-ifnr.onrender.com/login`, // Redirect target after they click verify
-    };
-    const verificationLink = await auth.generateEmailVerificationLink(cleanEmail, actionCodeSettings);
-
-    // 4. Extract parameters from the link to safely send it through the Firebase Email Relay Engine
-    const linkUrl = new URL(verificationLink);
-    const oobCode = linkUrl.searchParams.get('oobCode');
     const apiKey = process.env.FIREBASE_WEB_API_KEY;
-
     if (!apiKey) {
       throw new Error("FIREBASE_WEB_API_KEY is missing from your environment variables.");
     }
 
-    // Dispatch the email template via Firebase REST endpoint using the out-of-band code directly
-    const emailData = JSON.stringify({
+    // 3. Mint a custom token via the Admin SDK for your unique custom UID structure
+    const customToken = await auth.createCustomToken(customUid);
+
+    // 4. Exchange the custom token for a real Firebase client idToken
+    const exchangeUrl = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=${apiKey}`;
+    const exchangeResponse = await axios.post(exchangeUrl, {
+      token: customToken,
+      returnSecureToken: true
+    });
+
+    const clientTargetIdToken = exchangeResponse.data.idToken;
+
+    // 5. Safely invoke the REST engine to dispatch the official verification mail using the proper Client context token
+    const emailUrl = `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${apiKey}`;
+    await axios.post(emailUrl, {
       requestType: "VERIFY_EMAIL",
-      oobCode: oobCode
+      idToken: clientTargetIdToken
     });
-
-    const options = {
-      hostname: 'identitytoolkit.googleapis.com',
-      path: `/v1/accounts:sendOobCode?key=${apiKey}`,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': emailData.length
-      }
-    };
-
-    const emailRequest = https.request(options, (response) => {
-      let data = '';
-      response.on('data', (chunk) => { data += chunk; });
-      response.on('end', () => {
-        console.log("Firebase Verification Mailer Relay Response:", data);
-      });
-    });
-
-    emailRequest.on('error', (err) => {
-      console.error("Mailer relay communication failure:", err.message);
-    });
-
-    emailRequest.write(emailData);
-    emailRequest.end();
 
     res.status(201).json({ 
       message: "User registered successfully. Verification email dispatched to your inbox.",
