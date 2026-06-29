@@ -2,6 +2,7 @@ import express from 'express';
 import { db, auth } from '../config/firebase.js';
 import { verifyUser } from '../middleware/authMiddleware.js';
 import axios from 'axios';
+import https from 'https';
 
 const router = express.Router();
 
@@ -22,7 +23,7 @@ const resolveAccount = async (account_number, account_bank) => {
   return response.data.data;
 };
 
-// --- AUTHENTICATION & SIGNUP CONTROL (Uses Direct Environment Key Configuration) ---
+// --- AUTHENTICATION & SIGNUP CONTROL (Fixed Verification Loop) ---
 router.post('/auth/signup', async (req, res) => {
   const { email, password, displayName } = req.body;
   try {
@@ -34,7 +35,7 @@ router.post('/auth/signup', async (req, res) => {
     const sanitizedEmail = cleanEmail.replace(/[@.]/g, '-');
     const customUid = `kiwi-user-${sanitizedEmail}`;
 
-    // 1. Create account with your clean custom layout string format
+    // 1. Create account with your clean custom identifier format
     const userRecord = await auth.createUser({
       uid: customUid,
       email: cleanEmail,
@@ -43,7 +44,7 @@ router.post('/auth/signup', async (req, res) => {
       emailVerified: false
     });
 
-    // 2. Build the system document base
+    // 2. Build the system document base in Firestore
     await db.collection('users').doc(customUid).set({
       id: customUid,
       email: cleanEmail,
@@ -55,17 +56,51 @@ router.post('/auth/signup', async (req, res) => {
       createdAt: new Date().toISOString()
     });
 
-    // 3. Request Firebase Identity Engine to dispatch the verification email directly
+    // 3. Generate verification link cleanly via Admin SDK (prevents INVALID_ID_TOKEN)
+    const actionCodeSettings = {
+      url: `https://kiwi-list-ifnr.onrender.com/login`, // Redirect target after they click verify
+    };
+    const verificationLink = await auth.generateEmailVerificationLink(cleanEmail, actionCodeSettings);
+
+    // 4. Extract parameters from the link to safely send it through the Firebase Email Relay Engine
+    const linkUrl = new URL(verificationLink);
+    const oobCode = linkUrl.searchParams.get('oobCode');
     const apiKey = process.env.FIREBASE_WEB_API_KEY;
+
     if (!apiKey) {
       throw new Error("FIREBASE_WEB_API_KEY is missing from your environment variables.");
     }
 
-    const emailUrl = `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${apiKey}`;
-    await axios.post(emailUrl, {
+    // Dispatch the email template via Firebase REST endpoint using the out-of-band code directly
+    const emailData = JSON.stringify({
       requestType: "VERIFY_EMAIL",
-      email: cleanEmail
+      oobCode: oobCode
     });
+
+    const options = {
+      hostname: 'identitytoolkit.googleapis.com',
+      path: `/v1/accounts:sendOobCode?key=${apiKey}`,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': emailData.length
+      }
+    };
+
+    const emailRequest = https.request(options, (response) => {
+      let data = '';
+      response.on('data', (chunk) => { data += chunk; });
+      response.on('end', () => {
+        console.log("Firebase Verification Mailer Relay Response:", data);
+      });
+    });
+
+    emailRequest.on('error', (err) => {
+      console.error("Mailer relay communication failure:", err.message);
+    });
+
+    emailRequest.write(emailData);
+    emailRequest.end();
 
     res.status(201).json({ 
       message: "User registered successfully. Verification email dispatched to your inbox.",
@@ -78,7 +113,7 @@ router.post('/auth/signup', async (req, res) => {
   }
 });
 
-// --- AUTHENTICATION SIGN-IN CONTROL (Uses Direct Environment Key Configuration) ---
+// --- AUTHENTICATION SIGN-IN CONTROL ---
 router.post('/auth/login', async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -87,7 +122,6 @@ router.post('/auth/login', async (req, res) => {
     }
 
     const cleanEmail = email.toLowerCase().trim();
-
     const apiKey = process.env.FIREBASE_WEB_API_KEY; 
     if (!apiKey) {
       throw new Error("FIREBASE_WEB_API_KEY is missing from your environment variables.");
@@ -104,7 +138,6 @@ router.post('/auth/login', async (req, res) => {
     const sanitizedEmail = cleanEmail.replace(/[@.]/g, '-');
     const customUid = `kiwi-user-${sanitizedEmail}`;
 
-    // FIX: Swapped out db.app.auth() to prevent crash on reading undefined properties
     const customToken = await auth.createCustomToken(customUid);
 
     res.status(200).json({
