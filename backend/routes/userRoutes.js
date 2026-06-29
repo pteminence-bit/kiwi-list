@@ -22,7 +22,7 @@ const resolveAccount = async (account_number, account_bank) => {
   return response.data.data;
 };
 
-// --- AUTHENTICATION & SIGNUP CONTROL (Fixes default UID & verification email) ---
+// --- AUTHENTICATION & SIGNUP CONTROL (Fixes delivery issue) ---
 router.post('/auth/signup', async (req, res) => {
   const { email, password, displayName } = req.body;
   try {
@@ -30,23 +30,23 @@ router.post('/auth/signup', async (req, res) => {
       return res.status(400).json({ error: "Email and password are required." });
     }
 
-    // Sanitize email to remove invalid Auth UID characters (@ and .) to fix INVALID_UID errors
-    const sanitizedEmail = email.toLowerCase().trim().replace(/[@.]/g, '-');
+    const cleanEmail = email.toLowerCase().trim();
+    const sanitizedEmail = cleanEmail.replace(/[@.]/g, '-');
     const customUid = `kiwi-user-${sanitizedEmail}`;
 
-    // Create the authentic profile using the Firebase Admin SDK attached to your db app instance
+    // 1. Create account with your clean custom layout string format
     const userRecord = await auth.createUser({
       uid: customUid,
-      email: email,
+      email: cleanEmail,
       password: password,
       displayName: displayName || "",
       emailVerified: false
     });
 
-    // Initialize their matching structured base document instantly
+    // 2. Build the system document base
     await db.collection('users').doc(customUid).set({
       id: customUid,
-      email: email,
+      email: cleanEmail,
       displayName: displayName || "",
       walletBalance: 0,
       totalEarned: 0,
@@ -55,20 +55,30 @@ router.post('/auth/signup', async (req, res) => {
       createdAt: new Date().toISOString()
     });
 
-    // Programmatically trigger a secure verification link out to the user
-    const verificationLink = await auth.generateEmailVerificationLink(email);
-    console.log(`Verification link triggered for ${email}: ${verificationLink}`);
+    // 3. Request Firebase Identity Engine to dispatch the verification email directly
+    const apiKey = db.app.options.apiKey;
+    if (!apiKey) {
+      throw new Error("Firebase Web API Key is missing from your initialization config.");
+    }
+
+    const emailUrl = `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${apiKey}`;
+    await axios.post(emailUrl, {
+      requestType: "VERIFY_EMAIL",
+      email: cleanEmail
+    });
 
     res.status(201).json({ 
-      message: "User registered successfully with custom identifier. Verification link generated.",
+      message: "User registered successfully. Verification email dispatched to your inbox.",
       uid: userRecord.uid 
     });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    const errorMsg = error.response?.data?.error?.message || error.message;
+    console.error("SIGNUP PIPELINE ERROR:", errorMsg);
+    res.status(400).json({ error: errorMsg });
   }
 });
 
-// --- AUTHENTICATION SIGN-IN CONTROL (Validates password & mints custom token) ---
+// --- AUTHENTICATION SIGN-IN CONTROL ---
 router.post('/auth/login', async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -78,7 +88,6 @@ router.post('/auth/login', async (req, res) => {
 
     const cleanEmail = email.toLowerCase().trim();
 
-    // 1. Authenticate password securely via Firebase Identity Toolkit REST API
     const apiKey = db.app.options.apiKey; 
     if (!apiKey) {
       throw new Error("Firebase Web API Key is missing from your initialization config.");
@@ -92,11 +101,9 @@ router.post('/auth/login', async (req, res) => {
       returnSecureToken: true
     });
 
-    // 2. Convert raw entry to the matching internal system custom string structure
     const sanitizedEmail = cleanEmail.replace(/[@.]/g, '-');
     const customUid = `kiwi-user-${sanitizedEmail}`;
 
-    // 3. Generate a secure Firebase Custom Identity Token mapping their precise customized UID
     const customToken = await db.app.auth().createCustomToken(customUid);
 
     res.status(200).json({
@@ -129,7 +136,6 @@ router.post('/me/withdraw', verifyUser, async (req, res) => {
     const resolved = await resolveAccount(account_number, account_bank);
     if (!resolved?.account_name) throw new Error("Bank details verification failed.");
 
-    // Parse standard token contextual custom user matching patterns using sanitized email format
     const sanitizedEmail = req.user.email.toLowerCase().trim().replace(/[@.]/g, '-');
     const kiwiUserId = `kiwi-user-${sanitizedEmail}`;
 
@@ -144,7 +150,6 @@ router.post('/me/withdraw', verifyUser, async (req, res) => {
       
       t.update(userRef, { walletBalance: currentBalance - amount });
       
-      // ALTERATION: Save amount as negative to ensure it displays as a withdrawal in the ledger
       const transactionRef = db.collection('users').doc(kiwiUserId).collection('transactions').doc();
       t.set(transactionRef, {
         userId: kiwiUserId, 
