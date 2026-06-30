@@ -34,19 +34,7 @@ const CreateListing = ({ token: propsToken }) => {
 
     setLoading(true);
     try {
-      const filePayload = new FormData();
-      images.forEach(file => filePayload.append('images', file));
-
-      const uploadResponse = await fetch(`${API_BASE_URL}/api/upload/listings`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-        body: filePayload
-      });
-      
-      const uploadData = await uploadResponse.json();
-      if (!uploadResponse.ok) throw new Error(uploadData.error || "Image deployment failed");
-
-      // 👇 EXACT REPLACEMENT BLOCK START
+      // Clean, direct payload assembly using the URLs provided by ImageUploader
       const listingPayload = {
         title: formData.title,
         description: formData.description,
@@ -55,7 +43,7 @@ const CreateListing = ({ token: propsToken }) => {
         beds: Number(formData.beds),
         baths: Number(formData.baths),
         tier: formData.tier,
-        images: uploadData.urls, 
+        images: images, // 👈 Directly feeds the hosted array of string URLs from your state
         contactDetails: { 
           phone: formData.phone, 
           email: formData.email 
@@ -70,7 +58,6 @@ const CreateListing = ({ token: propsToken }) => {
         },
         body: JSON.stringify(listingPayload)
       });
-      // 👆 EXACT REPLACEMENT BLOCK END
 
       const listingData = await listingResponse.json();
       if (!listingResponse.ok) throw new Error(listingData.error || "Failed to create listing profile asset.");
