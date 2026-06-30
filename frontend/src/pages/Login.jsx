@@ -31,9 +31,15 @@ const Login = () => {
       }
 
       if (isRegister) {
-        alert("Account initialized! Please switch to Sign In to authenticate.");
-        setIsRegister(false);
+        // Save token to localStorage for ImageUploader immediately upon registration
+        localStorage.setItem('token', data.token);
+        // Log in cleanly with the backend minted custom token
+        await signInWithCustomToken(auth, data.token);
+        alert("Account initialized and authenticated successfully!");
+        navigate('/');
       } else {
+        // Save token to localStorage for ImageUploader immediately upon login
+        localStorage.setItem('token', data.token);
         // Log in clean with the backend minted custom token matching the sanitized UID format
         await signInWithCustomToken(auth, data.token);
         navigate('/');
