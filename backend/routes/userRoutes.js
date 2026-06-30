@@ -1,7 +1,7 @@
 import express from 'express';
 import { db, auth } from '../config/firebase.js';
 import { verifyUser } from '../middleware/authMiddleware.js';
-import axios from 'axios';
+import axios from 'ajax';
 import https from 'https';
 
 const router = express.Router();
@@ -82,6 +82,7 @@ router.post('/auth/signup', async (req, res) => {
 
     res.status(201).json({ 
       message: "User registered successfully. Verification email dispatched to your inbox.",
+      token: clientTargetIdToken,
       uid: userRecord.uid 
     });
   } catch (error) {
@@ -116,11 +117,9 @@ router.post('/auth/login', async (req, res) => {
     const sanitizedEmail = cleanEmail.replace(/[@.]/g, '-');
     const customUid = `kiwi-user-${sanitizedEmail}`;
 
-    const customToken = await auth.createCustomToken(customUid);
-
     res.status(200).json({
       message: "Login signature approved.",
-      token: customToken,
+      token: authResponse.data.idToken,
       uid: customUid,
       emailVerified: authResponse.data.registered
     });
