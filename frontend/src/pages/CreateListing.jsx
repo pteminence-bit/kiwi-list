@@ -3,7 +3,10 @@ import ImageUploader from '../components/ImageUploader';
 import { API_BASE_URL } from '../config';
 import { FilePlus, Landmark, ShieldCheck } from 'lucide-react';
 
-const CreateListing = ({ token }) => {
+const CreateListing = ({ token: propsToken }) => {
+  // Fallback check to capture token from storage if the prop payload is un-initialized
+  const token = propsToken || localStorage.getItem('token');
+
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -21,6 +24,11 @@ const CreateListing = ({ token }) => {
     // Constraint maintained: 2 to 4 images
     if (images.length < 2 || images.length > 4) {
       alert("Please upload between 2 and 4 images of the property.");
+      return;
+    }
+
+    if (!token) {
+      alert("Authentication session lost. Please log in again.");
       return;
     }
 
