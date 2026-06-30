@@ -35,14 +35,24 @@ router.post('/auth/signup', async (req, res) => {
     const sanitizedEmail = cleanEmail.replace(/[@.]/g, '-');
     const customUid = `kiwi-user-${sanitizedEmail}`;
 
-    // 1. Create the account with your clean custom identifier format via Admin SDK
-    const userRecord = await auth.createUser({
-      uid: customUid,
-      email: cleanEmail,
-      password: password,
-      displayName: displayName || "",
-      emailVerified: false
-    });
+    let userRecord;
+    try {
+      // 1. Create the account with your clean custom identifier format via Admin SDK
+      userRecord = await auth.createUser({
+        uid: customUid,
+        email: cleanEmail,
+        password: password,
+        displayName: displayName || "",
+        emailVerified: false
+      });
+    } catch (createError) {
+      // If user profile record already exists, catch it gracefully instead of crashing
+      if (createError.code === 'auth/uid-already-exists' || createError.code === 'auth/email-already-in-use') {
+        userRecord = await auth.getUser(customUid);
+      } else {
+        throw createError;
+      }
+    }
 
     // 2. Build the system document base in Firestore
     await db.collection('users').doc(customUid).set({
@@ -54,7 +64,7 @@ router.post('/auth/signup', async (req, res) => {
       role: "user",
       verificationStatus: "unverified",
       createdAt: new Date().toISOString()
-    });
+    }, { merge: true });
 
     const apiKey = process.env.FIREBASE_WEB_API_KEY;
     if (!apiKey) {
@@ -82,7 +92,7 @@ router.post('/auth/signup', async (req, res) => {
 
     res.status(201).json({ 
       message: "User registered successfully. Verification email dispatched to your inbox.",
-      token: clientTargetIdToken,
+      token: customToken,
       uid: userRecord.uid 
     });
   } catch (error) {
@@ -117,9 +127,12 @@ router.post('/auth/login', async (req, res) => {
     const sanitizedEmail = cleanEmail.replace(/[@.]/g, '-');
     const customUid = `kiwi-user-${sanitizedEmail}`;
 
+    // Mint a custom token so the client side can safely call signInWithCustomToken()
+    const customToken = await auth.createCustomToken(customUid);
+
     res.status(200).json({
       message: "Login signature approved.",
-      token: authResponse.data.idToken,
+      token: customToken,
       uid: customUid,
       emailVerified: authResponse.data.registered
     });
