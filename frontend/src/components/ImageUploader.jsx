@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { auth } from '../firebase'; // Ensure this path points to your initialized client firebase instance
 import { ImagePlus, X, Loader2 } from 'lucide-react';
 
 const BACKEND_BASE_URL = 'https://kiwi-list-api.onrender.com';
@@ -16,24 +17,31 @@ const ImageUploader = ({ onImagesSelected }) => {
       return;
     }
 
+    // 1. Grab the current user directly from the live Firebase Auth instance
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      alert("No authenticated user session found. Please log in again.");
+      return;
+    }
+
     setUploading(true);
 
     try {
-      // 1. Process files locally for instant UI previews
+      // 2. Force Firebase to fetch or renew the current valid authentication token string dynamically
+      const token = await currentUser.getIdToken(true);
+
+      if (!token) {
+        throw new Error("No token provided. Please log in again.");
+      }
+
+      // 3. Process files locally for instant UI previews
       const newPreviews = newFiles.map(file => URL.createObjectURL(file));
       setPreviews(prev => [...prev, ...newPreviews]);
 
-      // 2. Map through raw files and post them straight to your Render upload endpoint
+      // 4. Map through raw files and post them straight to your Render upload endpoint
       const uploadPromises = newFiles.map(async (file) => {
         const formData = new FormData();
         formData.append('file', file);
-
-        // Fetch using the session authorization token key variants
-        const token = localStorage.getItem('token') || localStorage.getItem('firebaseToken') || localStorage.getItem('authToken') || ''; 
-        
-        if (!token) {
-          throw new Error("No token provided. Please log in again.");
-        }
         
         const res = await fetch(`${BACKEND_BASE_URL}/api/upload/file`, {
           method: 'POST',
