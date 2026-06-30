@@ -28,12 +28,16 @@ const ImageUploader = ({ onImagesSelected }) => {
         const formData = new FormData();
         formData.append('file', file);
 
-        // Fetch using the session authorization token if needed, or open pass-through depending on route guards
-        const token = localStorage.getItem('token') || ''; 
+        // Fetch using the session authorization token key variants
+        const token = localStorage.getItem('token') || localStorage.getItem('firebaseToken') || localStorage.getItem('authToken') || ''; 
+        
+        if (!token) {
+          throw new Error("No token provided. Please log in again.");
+        }
         
         const res = await fetch(`${BACKEND_BASE_URL}/api/upload/file`, {
           method: 'POST',
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+          headers: { 'Authorization': `Bearer ${token}` },
           body: formData
         });
 
