@@ -1,7 +1,7 @@
 import express from 'express';
 import { db, auth } from '../config/firebase.js';
 import { verifyUser } from '../middleware/authMiddleware.js';
-import axios from 'ajax';
+import axios from 'axios';
 import https from 'https';
 
 const router = express.Router();
