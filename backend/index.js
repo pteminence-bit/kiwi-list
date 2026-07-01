@@ -5,7 +5,6 @@ import dotenv from 'dotenv';
 import { db } from './config/firebase.js';
 import adminRoutes from './routes/adminRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
-import webhookRoutes from './routes/webhookRoutes.js';
 import listingRoutes from './routes/listingRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
@@ -60,7 +59,6 @@ app.use('/api/listings', listingRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/users', userRoutes);     // Handles profile, settings, and kyc under /api/users
-app.use('/api/webhooks', webhookRoutes); 
 app.use('/api/payments', paymentRoutes);
 app.use('/api/chats', chatRoutes);       // Mounted secure premium/free listing chat ecosystem
 
