@@ -18,7 +18,7 @@ import Settings from './pages/Settings';
 import AuthPage from './pages/AuthPage';
 import PaymentSuccess from './pages/PaymentSuccess'; 
 import Inventory from './components/Inventory';
-import ChatWorkspace from './pages/ChatsPage'; // Imported premium/free core communication hub
+import ChatsPage from './pages/ChatsPage'; // FIX: Aligned import name directly with route declaration usage
 
 const DashboardLayout = () => {
   const { user, loading } = useAuth();
