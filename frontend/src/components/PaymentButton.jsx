@@ -4,47 +4,57 @@ import { auth } from '../firebase';
 
 const BACKEND_BASE_URL = 'https://kiwi-list-api.onrender.com';
 
-const PaymentButton = ({ listingId, token: propToken, onUnlockSuccess }) => {
+const PaymentButton = () => {
   const [loading, setLoading] = useState(false);
   const [accessToken, setAccessToken] = useState(null);
 
   useEffect(() => {
-    // 1. Core Priority: Use explicit token prop passed from parent context
-    if (propToken) {
-      setAccessToken(propToken);
-      return;
-    }
-
-    // 2. Secondary Priority: Fallback immediately to explicit localStorage persistence string 
+    // 1. Check persistent localStorage string directly
     const savedToken = localStorage.getItem('token');
     if (savedToken) {
       setAccessToken(savedToken);
     }
 
-    // 3. Adaptive Priority: Keep real-time observer running in case SDK initializes late
+    // 2. Real-time Firebase observer fallback
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
         try {
           const liveToken = await user.getIdToken();
           setAccessToken(liveToken);
         } catch (err) {
-          console.error("Failed to recover live auth session token:", err);
+          console.error("Failed to recover live token session:", err);
         }
       } else if (!localStorage.getItem('token')) {
-        // Only clear state if localStorage is also completely empty
         setAccessToken(null);
       }
     });
 
     return () => unsubscribe();
-  }, [propToken]);
+  }, []);
 
   const handleUnlock = async (e) => {
-    e.stopPropagation(); // Prevents card selection or link click bubbling
+    e.stopPropagation(); // Prevents layout bubbling anomalies
     if (loading || !accessToken) return;
 
     const confirmUnlock = window.confirm("Unlock this contact details? The matching tier transaction debit will be applied to your balance.");
     if (!confirmUnlock) return;
+
+    // Extracting the context listing ID directly out of the nearest structural interactive card tracking payload
+    const parentCard = e.currentTarget.closest('[data-full-gallery]');
+    let listingId = null;
+    
+    if (parentCard) {
+      // Safely recover the layout identification key relative to the clicked context feed container
+      const key = Object.keys(parentCard.__reactFiber$ || parentCard._reactRootContainer || {}).find(k => k.startsWith('__reactFiber'));
+      if (key && parentCard[key]?.key) {
+        listingId = parentCard[key].key;
+      }
+    }
+
+    if (!listingId) {
+      alert("Error: Unable to verify property reference signature context locally.");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -64,7 +74,7 @@ const PaymentButton = ({ listingId, token: propToken, onUnlockSuccess }) => {
       }
 
       alert("Contact unlocked successfully!");
-      if (onUnlockSuccess) onUnlockSuccess(data);
+      window.location.reload(); // Instantly displays verified structural state update
       
     } catch (error) {
       console.error("Unlock error:", error.message);
