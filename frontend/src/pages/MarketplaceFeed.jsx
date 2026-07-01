@@ -3,7 +3,7 @@ import { Search, SlidersHorizontal, X, ChevronLeft, ChevronRight } from 'lucide-
 import ListingCard from '../components/ListingCard';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
-import { auth } from '../firebase'; // 👈 Direct Firebase instance check added as a reliable fallback
+import { auth } from '../firebase'; 
 
 const MarketplaceFeed = ({ token }) => {
   const { user } = useAuth();
@@ -15,15 +15,31 @@ const MarketplaceFeed = ({ token }) => {
 
   // Structural sanity wrapper matching your custom normalized string model layout
   const sanitizedUser = React.useMemo(() => {
-    // Fallback to active client instance if context state is initializing
     const activeUser = user || auth.currentUser; 
-    if (!activeUser || !activeUser.email) return activeUser;
+    if (!activeUser) return null;
+    
+    // Fallback if user profile doesn't have an email field populated yet
+    if (!activeUser.email) return activeUser;
     
     const sanitizedEmail = activeUser.email.toLowerCase().trim().replace(/[@.]/g, '-');
-    return {
-      ...activeUser,
-      uid: `kiwi-user-${sanitizedEmail}` // Injects the sanitized version safely into client card parameters
-    };
+    const customKiwiUid = `kiwi-user-${sanitizedEmail}`;
+
+    // Proxies the user object to match against BOTH raw Firebase UIDs and custom formatted string patterns
+    return new Proxy(activeUser, {
+      get(target, prop) {
+        if (prop === 'uid') {
+          // If the card checks listing.ownerId, this matches if it equals the custom string OR the raw Firebase auth ID
+          return {
+            toString() { return customKiwiUid; },
+            valueOf() { return customKiwiUid; },
+            [Symbol.toPrimitive]() { return customKiwiUid; },
+            // Direct equality fallback helper inside evaluation structures
+            equals(id) { return id === customKiwiUid || id === target.uid; }
+          };
+        }
+        return Reflect.get(target, prop);
+      }
+    });
   }, [user]);
 
   const fetchFeed = async () => {
@@ -57,7 +73,6 @@ const MarketplaceFeed = ({ token }) => {
 
   useEffect(() => {
     const handleScroll = () => {
-      // FIX: Employs standard documentElement measurements to reliably track infinite scroll triggers across responsive screens
       const threshold = 200;
       const totalHeight = document.documentElement.scrollHeight;
       const currentScroll = window.innerHeight + window.scrollY;
@@ -110,6 +125,14 @@ const MarketplaceFeed = ({ token }) => {
     );
   }
 
+  // Double-check if the listing card is checking user ownership using an internal `.equals()` method or primitive coercion
+  const cleanUserPass-through = sanitizedUser ? {
+    ...sanitizedUser,
+    uid: (user || auth.currentUser)?.uid === listings[0]?.ownerId 
+      ? listings[0]?.ownerId 
+      : `kiwi-user-${(user || auth.currentUser)?.email?.toLowerCase().trim().replace(/[@.]/g, '-')}`
+  } : null;
+
   return (
     <div className="w-full h-full pb-12">
       <div className="sticky top-0 z-20 bg-slate-950/95 backdrop-blur-sm p-4 mb-2 border-b border-slate-800">
@@ -122,21 +145,30 @@ const MarketplaceFeed = ({ token }) => {
 
       <div className="flex flex-col items-center px-2">
         <div className="w-full max-w-lg space-y-6">
-          {listings.map(listing => (
-            <div 
-              key={listing.id} 
-              onClick={handleImageLightboxCapture} 
-              data-full-gallery={JSON.stringify((listing.images || []).map(img => img.startsWith('http') ? img : `https://pub-580c3d172e3f4533b065d241e61ee132.r2.dev/${img.replace(/^\//, '')}`))}
-              className="bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 shadow-xl cursor-pointer"
-            >
-              <ListingCard 
-                listing={listing} 
-                token={token} 
-                onUnlock={() => handleUnlockContact(listing.id)}
-                currentUser={sanitizedUser} // 👈 Passes the corrected normalized UID layout cleanly
-              />
-            </div>
-          ))}
+          {listings.map(listing => {
+            const currentActiveSession = user || auth.currentUser;
+            const computedUserUid = currentActiveSession 
+              ? (listing.ownerId === currentActiveSession.uid || listing.ownerId === `kiwi-user-${currentActiveSession.email?.toLowerCase().trim().replace(/[@.]/g, '-')}`
+                  ? listing.ownerId 
+                  : `kiwi-user-${currentActiveSession.email?.toLowerCase().trim().replace(/[@.]/g, '-')}`)
+              : null;
+
+            return (
+              <div 
+                key={listing.id} 
+                onClick={handleImageLightboxCapture} 
+                data-full-gallery={JSON.stringify((listing.images || []).map(img => img.startsWith('http') ? img : `https://pub-580c3d172e3f4533b065d241e61ee132.r2.dev/${img.replace(/^\//, '')}`))}
+                className="bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 shadow-xl cursor-pointer"
+              >
+                <ListingCard 
+                  listing={listing} 
+                  token={token} 
+                  onUnlock={() => handleUnlockContact(listing.id)}
+                  currentUser={currentActiveSession ? { ...currentActiveSession, uid: computedUserUid } : null} 
+                />
+              </div>
+            );
+          })}
         </div>
       </div>
 
