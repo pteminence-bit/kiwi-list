@@ -11,12 +11,7 @@ const ListingCard = ({ listing, onUnlock, token, currentUser }) => {
   );
 
   const isPremium = listing.tier === 'premium';
-  
-  // FIX: Checks against raw Firebase UID or normalized platform string parameters safely
-  const isOwner = currentUser && (
-    listing.ownerId === currentUser.uid || 
-    listing.ownerId === `kiwi-user-${currentUser.email?.toLowerCase().trim().replace(/[@.]/g, '-')}`
-  );
+  const isOwner = currentUser && listing.ownerId === currentUser.uid;
 
   const handleReport = async (e) => {
     e.stopPropagation(); 
@@ -139,7 +134,13 @@ const ListingCard = ({ listing, onUnlock, token, currentUser }) => {
         {/* Payment / Contact Logic */}
         <div className="pt-1">
           {isPremium && !isOwner ? (
-            <PaymentButton onUnlock={onUnlock} />
+            <PaymentButton 
+              listingId={listing.id} 
+              token={token} 
+              onUnlockSuccess={() => {
+                if (onUnlock) onUnlock();
+              }} 
+            />
           ) : (
             <div className="w-full py-3 bg-slate-800/40 text-slate-300 text-xs text-center font-bold tracking-wide uppercase rounded-xl border border-slate-700/40 shadow-sm backdrop-blur-sm">
               Contact: <span className="text-indigo-400">{listing.contactDetails?.phone || 'Available'}</span>
