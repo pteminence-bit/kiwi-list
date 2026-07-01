@@ -18,7 +18,7 @@ import Settings from './pages/Settings';
 import AuthPage from './pages/AuthPage';
 import PaymentSuccess from './pages/PaymentSuccess'; 
 import Inventory from './components/Inventory';
-import ChatWorkspace from './pages/Chatspage'; // Imported premium/free core communication hub
+import ChatWorkspace from './pages/ChatsPage'; // Imported premium/free core communication hub
 
 const DashboardLayout = () => {
   const { user, loading } = useAuth();
@@ -94,7 +94,7 @@ const DashboardLayout = () => {
             <Route path="/admin" element={isAdmin ? <AdminPortal token={user.accessToken} /> : <Navigate to="/" />} />
             <Route path="/wallet" element={<WalletCard token={user.accessToken} />} />
             <Route path="/settings" element={<Settings token={user.accessToken} />} />
-            <Route path="/chats" element={<Chatspage token={user.accessToken} />} />
+            <Route path="/chats" element={<ChatsPage token={user.accessToken} />} />
             <Route path="/updates" element={<div className="p-4"><AdminUpdates /></div>} />
             <Route path="/success" element={<PaymentSuccess />} />
             <Route path="/inventory" element={<Inventory />} />
