@@ -3,6 +3,7 @@ import { Search, SlidersHorizontal, X, ChevronLeft, ChevronRight } from 'lucide-
 import ListingCard from '../components/ListingCard';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
+import { auth } from '../firebase'; // 👈 Direct Firebase instance check added as a reliable fallback
 
 const MarketplaceFeed = ({ token }) => {
   const { user } = useAuth();
@@ -14,10 +15,13 @@ const MarketplaceFeed = ({ token }) => {
 
   // Structural sanity wrapper matching your custom normalized string model layout
   const sanitizedUser = React.useMemo(() => {
-    if (!user || !user.email) return user;
-    const sanitizedEmail = user.email.toLowerCase().trim().replace(/[@.]/g, '-');
+    // Fallback to active client instance if context state is initializing
+    const activeUser = user || auth.currentUser; 
+    if (!activeUser || !activeUser.email) return activeUser;
+    
+    const sanitizedEmail = activeUser.email.toLowerCase().trim().replace(/[@.]/g, '-');
     return {
-      ...user,
+      ...activeUser,
       uid: `kiwi-user-${sanitizedEmail}` // Injects the sanitized version safely into client card parameters
     };
   }, [user]);
