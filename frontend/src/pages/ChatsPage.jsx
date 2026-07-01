@@ -1,6 +1,6 @@
 // frontend/src/pages/ChatsPage.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { db } from '../firebase';
 import { collection, doc, query, orderBy, onSnapshot, addDoc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';

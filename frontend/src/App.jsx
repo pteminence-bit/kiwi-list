@@ -18,7 +18,7 @@ import Settings from './pages/Settings';
 import AuthPage from './pages/AuthPage';
 import PaymentSuccess from './pages/PaymentSuccess'; 
 import Inventory from './components/Inventory';
-import ChatsPage from './pages/ChatsPage'; // FIX: Aligned import name directly with route declaration usage
+import ChatsPage from './pages/ChatsPage';
 
 const DashboardLayout = () => {
   const { user, loading } = useAuth();
@@ -28,14 +28,12 @@ const DashboardLayout = () => {
 
   useEffect(() => {
     const checkAdminStatus = async () => {
-      if (user && user.email) {
+      if (user?.email) {
         try {
           const sanitizedEmail = user.email.toLowerCase().trim().replace(/[@.]/g, '-');
           const customUserDocId = `kiwi-user-${sanitizedEmail}`;
-
           const userDocRef = doc(db, 'users', customUserDocId);
           const userDocSnap = await getDoc(userDocRef);
-          
           if (userDocSnap.exists()) {
             setIsAdmin(userDocSnap.data().role === 'admin');
           }
@@ -56,12 +54,9 @@ const DashboardLayout = () => {
         <div className="w-full max-w-sm bg-slate-900 border border-slate-800 p-8 rounded-xl shadow-2xl">
           <h2 className="text-xl font-black mb-2">Account Not Verified</h2>
           <p className="text-xs text-slate-400 leading-relaxed mb-6">
-            Please check your email inbox and click the verification link sent to your address to unlock dashboard access permissions.
+            Please check your email inbox and click the verification link.
           </p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="w-full bg-blue-600 hover:bg-blue-700 text-xs font-bold px-5 py-3 rounded-lg transition shadow-sm"
-          >
+          <button onClick={() => window.location.reload()} className="w-full bg-blue-600 hover:bg-blue-700 text-xs font-bold px-5 py-3 rounded-lg transition">
             I've verified my email, refresh page
           </button>
         </div>
@@ -69,23 +64,20 @@ const DashboardLayout = () => {
     );
   }
 
-  const isChatRoute = location.pathname.startsWith('/chats');
+  // Detect if we are in any chat-related route
+  const isChatRoute = location.pathname.startsWith('/chats') || location.pathname.startsWith('/chat/');
 
   return (
     <div className="flex w-full min-h-screen bg-slate-950 text-white">
       <Sidebar isAdmin={isAdmin} isOpen={mobileMenuOpen} setIsOpen={setMobileMenuOpen} />
 
-      {/* Main Container: Centered and responsive */}
       <div className="flex-1 lg:ml-64 flex min-h-screen">
-        
-        {/* Mobile Menu Toggle */}
         <div className="lg:hidden fixed top-4 right-4 z-40">
            <button onClick={() => setMobileMenuOpen(true)} className="p-2 bg-slate-900 border border-slate-800 rounded-lg shadow-lg">
              <Menu size={24} />
            </button>
         </div>
 
-        {/* Content Area: Widens dynamically on chat view screens for cleaner panel layouts */}
         <main className={`flex-1 w-full mx-auto pt-8 px-4 md:px-6 ${isChatRoute ? 'max-w-5xl' : 'max-w-2xl'}`}>
           <Routes>
             <Route path="/" element={<MarketplaceFeed token={user.accessToken} />} />
@@ -94,7 +86,10 @@ const DashboardLayout = () => {
             <Route path="/admin" element={isAdmin ? <AdminPortal token={user.accessToken} /> : <Navigate to="/" />} />
             <Route path="/wallet" element={<WalletCard token={user.accessToken} />} />
             <Route path="/settings" element={<Settings token={user.accessToken} />} />
+            {/* Unified Chat Routes */}
             <Route path="/chats" element={<ChatsPage token={user.accessToken} />} />
+            <Route path="/chat/:chatId" element={<ChatsPage token={user.accessToken} />} />
+            
             <Route path="/updates" element={<div className="p-4"><AdminUpdates /></div>} />
             <Route path="/success" element={<PaymentSuccess />} />
             <Route path="/inventory" element={<Inventory />} />
@@ -103,7 +98,6 @@ const DashboardLayout = () => {
           </Routes>
         </main>
 
-        {/* Sidebar for Desktop: Hidden on chat screens to prioritize widescreen real estate */}
         {!isChatRoute && (
           <aside className="hidden xl:block w-80 border-l border-slate-800 p-6 shrink-0">
             <div className="sticky top-8">
@@ -117,17 +111,15 @@ const DashboardLayout = () => {
   );
 };
 
-const App = () => {
-  return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/login" element={<AuthPage />} />
-          <Route path="/*" element={<DashboardLayout />} />
-        </Routes>
-      </Router>
-    </AuthProvider>
-  );
-};
+const App = () => (
+  <AuthProvider>
+    <Router>
+      <Routes>
+        <Route path="/login" element={<AuthPage />} />
+        <Route path="/*" element={<DashboardLayout />} />
+      </Routes>
+    </Router>
+  </AuthProvider>
+);
 
 export default App;
