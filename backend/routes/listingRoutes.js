@@ -1,5 +1,6 @@
 import express from 'express';
 import { db } from '../config/firebase.js';
+import { verifyUser } from '../middleware/authMiddleware.js';
 import { FieldValue } from 'firebase-admin/firestore';
 
 const router = express.Router();
