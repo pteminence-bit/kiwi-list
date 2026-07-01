@@ -1,32 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import { Loader2, Lock, Unlock } from 'lucide-react';
-import { auth } from '../firebase'; // 👈 Direct import to avoid prop-drilling errors
+import { auth } from '../firebase';
 
 const BACKEND_BASE_URL = 'https://kiwi-list-api.onrender.com';
 
 const PaymentButton = ({ listingId, token: propToken, onUnlockSuccess }) => {
   const [loading, setLoading] = useState(false);
-  const [accessToken, setAccessToken] = useState(propToken || null);
+  const [accessToken, setAccessToken] = useState(null);
 
-  // Fallback observer: If parent component fails to provide a token, look up live auth token status instantly
   useEffect(() => {
+    // 1. Core Priority: Use explicit token prop passed from parent context
     if (propToken) {
       setAccessToken(propToken);
-    } else {
-      const unsubscribe = auth.onAuthStateChanged(async (user) => {
-        if (user) {
-          try {
-            const token = await user.getIdToken();
-            setAccessToken(token);
-          } catch (err) {
-            console.error("Failed to recover live auth session token:", err);
-          }
-        } else {
-          setAccessToken(null);
-        }
-      });
-      return () => unsubscribe();
+      return;
     }
+
+    // 2. Secondary Priority: Fallback immediately to explicit localStorage persistence string 
+    const savedToken = localStorage.getItem('token');
+    if (savedToken) {
+      setAccessToken(savedToken);
+    }
+
+    // 3. Adaptive Priority: Keep real-time observer running in case SDK initializes late
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        try {
+          const liveToken = await user.getIdToken();
+          setAccessToken(liveToken);
+        } catch (err) {
+          console.error("Failed to recover live auth session token:", err);
+        }
+      } else if (!localStorage.getItem('token')) {
+        // Only clear state if localStorage is also completely empty
+        setAccessToken(null);
+      }
+    });
+
+    return () => unsubscribe();
   }, [propToken]);
 
   const handleUnlock = async (e) => {
@@ -75,7 +85,7 @@ const PaymentButton = ({ listingId, token: propToken, onUnlockSuccess }) => {
           <Loader2 className="animate-spin" size={14} />
           Processing...
         </>
-      ) : !accessToken ? ( // 👈 Evaluates the localized autonomous state
+      ) : !accessToken ? (
         <>
           <Lock size={14} />
           Sign In To Unlock
