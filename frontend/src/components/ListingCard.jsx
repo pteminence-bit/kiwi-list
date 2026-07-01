@@ -11,7 +11,12 @@ const ListingCard = ({ listing, onUnlock, token, currentUser }) => {
   );
 
   const isPremium = listing.tier === 'premium';
-  const isOwner = currentUser && listing.ownerId === currentUser.uid;
+  
+  // FIX: Checks against raw Firebase UID or normalized platform string parameters safely
+  const isOwner = currentUser && (
+    listing.ownerId === currentUser.uid || 
+    listing.ownerId === `kiwi-user-${currentUser.email?.toLowerCase().trim().replace(/[@.]/g, '-')}`
+  );
 
   const handleReport = async (e) => {
     e.stopPropagation(); 
