@@ -13,3 +13,9 @@ export default defineConfig({
     }
   }
 })
+
+export default {
+  build: {
+    sourcemap: true,
+  },
+}
