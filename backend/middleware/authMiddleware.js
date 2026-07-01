@@ -25,33 +25,40 @@ export const verifyUser = async (req, res, next) => {
     const doc = await userRef.get();
 
     if (!doc.exists) {
-      // Use set with specific fields to guarantee initialization for new accounts
+      // Aligned with signup logic and admin control system
       await userRef.set({
         id: kiwiUserId,
-        email: decodedToken.email || "",
+        email: decodedToken.email.toLowerCase().trim() || "",
         displayName: decodedToken.name || "User",
         walletBalance: 0,
         totalEarned: 0,
         role: 'user',
-        isPayoutBlocked: false, // Explicit initialization to prevent undefined errors
-        verificationStatus: 'unverified', // Explicit initialization
+        isDisabled: false, // Initialized explicitly to map with adminRoutes.js
+        isPayoutBlocked: false, // Initialized explicitly to map with wallet/admin systems
+        verificationStatus: 'unverified', 
         createdAt: new Date().toISOString()
       }, { merge: true });
     } else {
       const userData = doc.data();
       
-      // Admin suspension check
+      // Admin suspension check (matches adminRoutes.js 'disable' action)
       if (userData.isDisabled === true) {
         return res.status(403).json({ error: "Your account has been suspended by an administrator." });
       }
 
-      // DATA MIGRATION: Ensure missing fields exist for older accounts
-      if (userData.walletBalance === undefined || userData.verificationStatus === undefined) {
+      // DATA MIGRATION: Auto-repair database structure anomalies for older records
+      if (
+        userData.walletBalance === undefined || 
+        userData.verificationStatus === undefined || 
+        userData.isDisabled === undefined ||
+        userData.isPayoutBlocked === undefined
+      ) {
         await userRef.update({
           walletBalance: userData.walletBalance ?? 0,
           totalEarned: userData.totalEarned ?? 0,
           verificationStatus: userData.verificationStatus ?? 'unverified',
-          isPayoutBlocked: userData.isPayoutBlocked ?? false
+          isPayoutBlocked: userData.isPayoutBlocked ?? false,
+          isDisabled: userData.isDisabled ?? false
         });
       }
     }

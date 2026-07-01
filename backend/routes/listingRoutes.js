@@ -1,23 +1,34 @@
 import express from 'express';
 import { db } from '../config/firebase.js';
 import { FieldValue } from 'firebase-admin/firestore';
-import { verifyPayment } from '../controllers/paymentController.js';
-import { verifyUser } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
+
+// --- SYSTEM HELPER MAPPING ---
+const getKiwiUserId = (email) => {
+  if (!email) return null;
+  const cleanEmail = email.toLowerCase().trim();
+  const sanitizedEmail = cleanEmail.replace(/[@.]/g, '-');
+  return `kiwi-user-${sanitizedEmail}`;
+};
 
 // --- CREATE LISTING ---
 router.post('/create', verifyUser, async (req, res) => {
   const { title, description, price, tier, images, contactDetails, address, beds, baths } = req.body;
 
   try {
+    if (!req.user?.email) return res.status(400).json({ error: "Auth missing identity context." });
+    const kiwiUserId = getKiwiUserId(req.user.email);
+    const isPremium = tier === 'premium';
+    const premiumCost = 3000;
+
     const sanitizedImages = (images || []).map(img => {
       if (!img || typeof img !== 'string') return img;
       return img.replace(/^(\/?undefined\/)/, '');
     });
 
     const listingData = {
-      ownerId: req.user.uid,
+      ownerId: kiwiUserId, // Aligned with sanitized email structure
       title,
       description,
       price,
@@ -27,21 +38,68 @@ router.post('/create', verifyUser, async (req, res) => {
       tier,
       images: sanitizedImages,
       contactDetails,
-      status: tier === 'premium' ? 'pending_payment' : 'active',
+      status: isPremium ? 'pending_payment' : 'active', // Default status
       isFlagged: false,
       views: 0,
       createdAt: new Date().toISOString()
     };
 
-    const docRef = await db.collection('listings').add(listingData);
-    
-    res.status(201).json({ 
-      id: docRef.id, 
-      status: listingData.status,
-      message: tier === 'premium' ? "Payment required" : "Post active" 
-    });
+    // --- TRANSACTION OVERLAY FOR PREMIUM WALLET SPEND ---
+    if (isPremium) {
+      let operationSuccess = false;
+      let generatedId = null;
+
+      await db.runTransaction(async (t) => {
+        const userRef = db.collection('users').doc(kiwiUserId);
+        const userDoc = await t.get(userRef);
+        if (!userDoc.exists) throw new Error("Account context not found.");
+
+        const currentBalance = userDoc.data().walletBalance ?? 0;
+        if (currentBalance < premiumCost) {
+          throw new Error(`Insufficient wallet balance. Premium placement requires ₦${premiumCost}.`);
+        }
+
+        // Deduct premium listing placement fee
+        t.update(userRef, { walletBalance: currentBalance - premiumCost });
+
+        // Log wallet deduction activity
+        const transactionRef = db.collection('users').doc(kiwiUserId).collection('transactions').doc();
+        t.set(transactionRef, {
+          userId: kiwiUserId,
+          amount: -premiumCost,
+          description: `Premium Listing Placement Fee for: ${title}`,
+          type: 'premium_listing',
+          createdAt: new Date().toISOString()
+        });
+
+        // Set listing status directly to active because payment is settled
+        listingData.status = 'active';
+        
+        const newListingRef = db.collection('listings').doc();
+        generatedId = newListingRef.id;
+        t.set(newListingRef, listingData);
+        operationSuccess = true;
+      });
+
+      if (operationSuccess) {
+        return res.status(201).json({ 
+          id: generatedId, 
+          status: 'active',
+          message: "Premium placement active! Fee deducted via wallet balance." 
+        });
+      }
+    } else {
+      // Normal standard free active listing route pipeline
+      const docRef = await db.collection('listings').add(listingData);
+      return res.status(201).json({ 
+        id: docRef.id, 
+        status: 'active',
+        message: "Post active on KIWI marketplace feed." 
+      });
+    }
+
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(400).json({ error: error.message });
   }
 });
 
@@ -54,9 +112,7 @@ router.get('/feed', async (req, res) => {
 
     const listings = listingsSnapshot.docs.map(doc => {
       const data = doc.data();
-      const listingId = doc.id;
-      
-      const responseData = { ...data, id: listingId };
+      const responseData = { ...data, id: doc.id };
 
       if (data.tier === 'premium') {
         delete responseData.contactDetails; 
@@ -72,17 +128,20 @@ router.get('/feed', async (req, res) => {
       return new Date(b.createdAt) - new Date(a.createdAt);
     });
 
-    res.json(sortedListings);
+    return res.json(sortedListings);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 });
 
-// --- FIXED: MOVED ABOVE DYNAMIC ID PATHS TO PREVENT 404 CATCHING ---
+// --- GET USER OWNED LISTINGS ---
 router.get('/my-listings', verifyUser, async (req, res) => {
   try {
+    if (!req.user?.email) return res.status(400).json({ error: "User email missing." });
+    const kiwiUserId = getKiwiUserId(req.user.email);
+
     const snapshots = await db.collection('listings')
-      .where('ownerId', '==', req.user.uid)
+      .where('ownerId', '==', kiwiUserId)
       .get();
 
     const myListings = snapshots.docs.map(doc => ({
@@ -90,24 +149,9 @@ router.get('/my-listings', verifyUser, async (req, res) => {
       ...doc.data()
     }));
 
-    res.json(myListings);
+    return res.json(myListings);
   } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// --- FIXED: MOVED ABOVE DYNAMIC ID PATHS ---
-router.post('/api/users/submit-kyc', verifyUser, async (req, res) => {
-  const { kycDocumentUrl } = req.body;
-  try {
-    await db.collection('users').doc(req.user.uid).update({
-      verificationStatus: 'pending',
-      kycDocumentUrl: kycDocumentUrl,
-      kycSubmittedAt: new Date().toISOString()
-    });
-    res.json({ message: "KYC submitted successfully, Reviewing." });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 });
 
@@ -116,8 +160,7 @@ router.get('/:id', async (req, res) => {
   const { id } = req.params;
 
   try {
-    const listingRef = db.collection('listings').doc(id);
-    const doc = await listingRef.get();
+    const doc = await db.collection('listings').doc(id).get();
 
     if (!doc.exists) {
       return res.status(404).json({ error: "Listing not found" });
@@ -131,13 +174,11 @@ router.get('/:id', async (req, res) => {
       responseData.address = "Unlock to view location";
     }
 
-    res.json(responseData);
+    return res.json(responseData);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 });
-
-router.get('/verify', verifyUser, verifyPayment);
 
 // --- UPDATE LISTING ---
 router.put('/:id', verifyUser, async (req, res) => {
@@ -145,17 +186,23 @@ router.put('/:id', verifyUser, async (req, res) => {
   const updates = req.body;
 
   try {
+    if (!req.user?.email) return res.status(400).json({ error: "User email missing." });
+    const kiwiUserId = getKiwiUserId(req.user.email);
     const listingRef = db.collection('listings').doc(id);
     const doc = await listingRef.get();
 
-    if (!doc.exists || doc.data().ownerId !== req.user.uid) {
+    if (!doc.exists || doc.data().ownerId !== kiwiUserId) {
       return res.status(403).json({ error: "Unauthorized or not found" });
     }
 
+    // Protect immutable identity flags 
+    delete updates.ownerId;
+    delete updates.tier;
+
     await listingRef.update(updates);
-    res.json({ message: "Listing updated successfully" });
+    return res.json({ message: "Listing updated successfully" });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 });
 
@@ -164,6 +211,8 @@ router.delete('/:id', verifyUser, async (req, res) => {
   const { id } = req.params;
 
   try {
+    if (!req.user?.email) return res.status(400).json({ error: "User email missing." });
+    const kiwiUserId = getKiwiUserId(req.user.email);
     const listingRef = db.collection('listings').doc(id);
     const doc = await listingRef.get();
 
@@ -171,14 +220,14 @@ router.delete('/:id', verifyUser, async (req, res) => {
       return res.status(404).json({ error: "Listing not found" });
     }
 
-    if (doc.data().ownerId !== req.user.uid) {
+    if (doc.data().ownerId !== kiwiUserId) {
       return res.status(403).json({ error: "Unauthorized. You do not own this listing." });
     }
 
     await listingRef.delete();
-    res.json({ message: "Listing successfully removed from KIWI-list." });
+    return res.json({ message: "Listing successfully removed from KIWI-list." });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 });
 
@@ -188,18 +237,20 @@ router.patch('/:id/report', verifyUser, async (req, res) => {
   const { reason } = req.body;
 
   try {
+    if (!req.user?.email) return res.status(400).json({ error: "User email missing." });
+    const kiwiUserId = getKiwiUserId(req.user.email);
     const listingRef = db.collection('listings').doc(id);
     
     await listingRef.update({
       isFlagged: true,
       reportReason: reason || "No reason provided",
-      reportedBy: req.user.uid,
+      reportedBy: kiwiUserId,
       reportedAt: new Date().toISOString()
     });
 
-    res.json({ message: "Listing has been reported to admins for review." });
+    return res.json({ message: "Listing has been reported to admins for review." });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 });
 
@@ -207,16 +258,14 @@ router.patch('/:id/report', verifyUser, async (req, res) => {
 router.patch('/:id/view', async (req, res) => {
   const { id } = req.params;
   try {
-    const listingRef = db.collection('listings').doc(id);
-    
-    await listingRef.update({
+    await db.collection('listings').doc(id).update({
       views: FieldValue.increment(1)
     });
     
-    res.status(200).json({ message: "View count updated" });
+    return res.status(200).json({ message: "View count updated" });
   } catch (error) {
     console.error("View update error:", error);
-    res.status(500).json({ error: "Failed to increment view" });
+    return res.status(500).json({ error: "Failed to increment view" });
   }
 });
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Phone, FileText, UserCheck, Upload, Loader2, CheckCircle, Save, Building2 } from 'lucide-react';
+import { User, FileText, UserCheck, Upload, Loader2, CheckCircle, Save, Building2 } from 'lucide-react';
 
 const BACKEND_BASE_URL = 'https://kiwi-list-api.onrender.com';
 
@@ -24,7 +24,6 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
     if (!token) return;
     const fetchProfileData = async () => {
       try {
-        // FIX: Reverted to include /api/users to match app.use('/api/users', userRoutes) layout
         const res = await fetch(`${BACKEND_BASE_URL}/api/users/me`, { 
           headers: { 'Authorization': `Bearer ${token}` } 
         });
@@ -52,7 +51,6 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
     setProfileSaving(true);
     setProfileMsg({ type: '', text: '' });
     try {
-      // FIX: Appended /api/users prefix to target the mounted router block
       const res = await fetch(`${BACKEND_BASE_URL}/api/users/settings`, {
         method: 'PUT',
         headers: { 
@@ -83,7 +81,6 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
     const data = new FormData();
     data.append('file', file);
     try {
-      // ENSURED: Matches your explicit /api/upload prefix layout context
       const res = await fetch(`${BACKEND_BASE_URL}/api/upload/file`, { 
         method: 'POST', 
         headers: { 'Authorization': `Bearer ${token}` }, 
@@ -112,14 +109,18 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
     setSubmitting(true);
     setKycMsg({ type: '', text: '' });
     try {
-      // FIX: Appended /api/users routing space alignment structure
       const res = await fetch(`${BACKEND_BASE_URL}/api/users/submit-kyc`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json', 
           'Authorization': `Bearer ${token}` 
         },
-        body: JSON.stringify({ ...kycData, documentUrl: kycData.kycDocumentUrl })
+        body: JSON.stringify({ 
+          fullName: kycData.fullName,
+          idType: kycData.idType,
+          idNumber: kycData.idNumber,
+          documentUrl: kycData.kycDocumentUrl 
+        })
       });
       const data = await res.json();
       if (res.ok) {
@@ -144,7 +145,6 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
           <p className="text-sm text-slate-400">Manage your identity, bank details, and KYC verification.</p>
         </div>
 
-        {/* Messaging Feedback Indicator UI */}
         {profileMsg.text && (
           <div className={`mb-4 p-4 rounded-lg text-sm font-bold ${profileMsg.type === 'success' ? 'bg-emerald-900/20 border border-emerald-800 text-emerald-400' : 'bg-rose-900/20 border border-rose-800 text-rose-400'}`}>
             {profileMsg.text}

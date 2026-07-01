@@ -45,7 +45,6 @@ const KycSubmission = ({ token, onBack }) => {
     });
 
     try {
-      // Adjusted upload edge point to your core router structure
       const res = await fetch(`${BACKEND_BASE_URL}/upload`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
@@ -81,7 +80,6 @@ const KycSubmission = ({ token, onBack }) => {
     setStatus({ type: null, message: '' });
 
     try {
-      // FIX: Changed endpoint from '/api/users/submit-kyc' to '/submit-kyc' to match your exact backend router layout
       const res = await fetch(`${BACKEND_BASE_URL}/submit-kyc`, {
         method: 'POST',
         headers: {
@@ -92,8 +90,6 @@ const KycSubmission = ({ token, onBack }) => {
           fullName: formData.fullName,
           idType: formData.idType,
           idNumber: formData.idNumber,
-          // FIX: Your backend expects a string 'documentUrl'. We combine the URLs with commas 
-          // to perfectly match the backend properties without altering backend code.
           documentUrl: documentUrls.join(', ') 
         })
       });

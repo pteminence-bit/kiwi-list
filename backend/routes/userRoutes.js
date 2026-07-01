@@ -2,18 +2,23 @@ import express from 'express';
 import { db, auth } from '../config/firebase.js';
 import { verifyUser } from '../middleware/authMiddleware.js';
 import axios from 'axios';
-import https from 'https';
 
 const router = express.Router();
 
+// --- HELPERS ---
 const getBankCode = async (bankName) => {
-  const response = await axios.get('https://api.flutterwave.com/v3/banks/NG', {
-    headers: { Authorization: `Bearer ${process.env.FLW_SECRET_KEY}` }
-  });
-  const bank = response.data.data.find(b => 
-    b.name.toLowerCase().trim() === bankName.toLowerCase().trim()
-  );
-  return bank ? bank.code : null;
+  try {
+    const response = await axios.get('https://api.flutterwave.com/v3/banks/NG', {
+      headers: { Authorization: `Bearer ${process.env.FLW_SECRET_KEY}` }
+    });
+    const bank = response.data?.data?.find(b => 
+      b.name?.toLowerCase().trim() === bankName.toLowerCase().trim()
+    );
+    return bank ? bank.code : null;
+  } catch (error) {
+    console.error("FLW Bank List Retrieval Error:", error.message);
+    return null;
+  }
 };
 
 const resolveAccount = async (account_number, account_bank) => {
@@ -23,7 +28,14 @@ const resolveAccount = async (account_number, account_bank) => {
   return response.data.data;
 };
 
-// --- AUTHENTICATION & SIGNUP CONTROL (Fixed Verification Loop) ---
+const getKiwiUserId = (email) => {
+  if (!email) return null;
+  const cleanEmail = email.toLowerCase().trim();
+  const sanitizedEmail = cleanEmail.replace(/[@.]/g, '-');
+  return `kiwi-user-${sanitizedEmail}`;
+};
+
+// --- AUTHENTICATION & SIGNUP CONTROL ---
 router.post('/auth/signup', async (req, res) => {
   const { email, password, displayName } = req.body;
   try {
@@ -32,31 +44,27 @@ router.post('/auth/signup', async (req, res) => {
     }
 
     const cleanEmail = email.toLowerCase().trim();
-    const sanitizedEmail = cleanEmail.replace(/[@.]/g, '-');
-    const customUid = `kiwi-user-${sanitizedEmail}`;
+    const kiwiUserId = getKiwiUserId(cleanEmail);
 
     let userRecord;
     try {
-      // 1. Create the account with your clean custom identifier format via Admin SDK
       userRecord = await auth.createUser({
-        uid: customUid,
+        uid: kiwiUserId,
         email: cleanEmail,
         password: password,
         displayName: displayName || "",
         emailVerified: false
       });
     } catch (createError) {
-      // If user profile record already exists, catch it gracefully instead of crashing
       if (createError.code === 'auth/uid-already-exists' || createError.code === 'auth/email-already-in-use') {
-        userRecord = await auth.getUser(customUid);
+        userRecord = await auth.getUser(kiwiUserId);
       } else {
         throw createError;
       }
     }
 
-    // 2. Build the system document base in Firestore
-    await db.collection('users').doc(customUid).set({
-      id: customUid,
+    await db.collection('users').doc(kiwiUserId).set({
+      id: kiwiUserId,
       email: cleanEmail,
       displayName: displayName || "",
       walletBalance: 0,
@@ -67,42 +75,29 @@ router.post('/auth/signup', async (req, res) => {
     }, { merge: true });
 
     const apiKey = process.env.FIREBASE_WEB_API_KEY;
-    if (!apiKey) {
-      throw new Error("FIREBASE_WEB_API_KEY is missing from your environment variables.");
-    }
+    if (!apiKey) throw new Error("FIREBASE_WEB_API_KEY is missing.");
 
-    // 3. Mint a custom token via the Admin SDK for your unique custom UID structure
-    const customToken = await auth.createCustomToken(customUid);
+    const customToken = await auth.createCustomToken(kiwiUserId);
 
-    // 4. Exchange the custom token for a real Firebase client idToken
     const exchangeUrl = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=${apiKey}`;
-    const exchangeResponse = await axios.post(exchangeUrl, {
-      token: customToken,
-      returnSecureToken: true
-    });
-
+    const exchangeResponse = await axios.post(exchangeUrl, { token: customToken, returnSecureToken: true });
     const clientTargetIdToken = exchangeResponse.data.idToken;
 
-    // 5. Safely invoke the REST engine to dispatch the official verification mail using the proper Client context token
     const emailUrl = `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${apiKey}`;
-    await axios.post(emailUrl, {
-      requestType: "VERIFY_EMAIL",
-      idToken: clientTargetIdToken
-    });
+    await axios.post(emailUrl, { requestType: "VERIFY_EMAIL", idToken: clientTargetIdToken });
 
-    res.status(201).json({ 
-      message: "User registered successfully. Verification email dispatched to your inbox.",
+    return res.status(201).json({ 
+      message: "User registered successfully. Verification email dispatched.",
       token: customToken,
       uid: userRecord.uid 
     });
   } catch (error) {
     const errorMsg = error.response?.data?.error?.message || error.message;
     console.error("SIGNUP PIPELINE ERROR:", errorMsg);
-    res.status(400).json({ error: errorMsg });
+    return res.status(400).json({ error: errorMsg });
   }
 });
 
-// --- AUTHENTICATION SIGN-IN CONTROL ---
 router.post('/auth/login', async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -112,96 +107,192 @@ router.post('/auth/login', async (req, res) => {
 
     const cleanEmail = email.toLowerCase().trim();
     const apiKey = process.env.FIREBASE_WEB_API_KEY; 
-    if (!apiKey) {
-      throw new Error("FIREBASE_WEB_API_KEY is missing from your environment variables.");
-    }
+    if (!apiKey) throw new Error("FIREBASE_WEB_API_KEY is missing.");
 
     const signInUrl = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`;
-    
-    const authResponse = await axios.post(signInUrl, {
-      email: cleanEmail,
-      password: password,
-      returnSecureToken: true
-    });
+    const authResponse = await axios.post(signInUrl, { email: cleanEmail, password, returnSecureToken: true });
 
-    const sanitizedEmail = cleanEmail.replace(/[@.]/g, '-');
-    const customUid = `kiwi-user-${sanitizedEmail}`;
+    const kiwiUserId = getKiwiUserId(cleanEmail);
+    const customToken = await auth.createCustomToken(kiwiUserId);
 
-    // Mint a custom token so the client side can safely call signInWithCustomToken()
-    const customToken = await auth.createCustomToken(customUid);
-
-    res.status(200).json({
+    return res.status(200).json({
       message: "Login signature approved.",
       token: customToken,
-      uid: customUid,
+      uid: kiwiUserId,
       emailVerified: authResponse.data.registered
     });
   } catch (error) {
     const errorMsg = error.response?.data?.error?.message || error.message;
     console.error("LOGIN ROUTE ERROR:", errorMsg);
-
     if (errorMsg.includes("INVALID_PASSWORD") || errorMsg.includes("EMAIL_NOT_FOUND")) {
       return res.status(401).json({ error: "Invalid email or password credentials." });
     }
-    res.status(500).json({ error: "Authentication system error." });
+    return res.status(500).json({ error: "Authentication system error." });
   }
 });
 
-// --- TRANSACTIONS & WITHDRAWALS ---
-router.post('/me/withdraw', verifyUser, async (req, res) => {
-  const { amount, account_number, bank_name } = req.body;
-  try {
-    if (!bank_name) throw new Error("Bank name is required.");
-    if (!req.user?.email) throw new Error("Authenticated user email is required for custom ID routing.");
-    
-    const account_bank = await getBankCode(bank_name);
-    if (!account_bank) throw new Error("Unsupported bank name. Please update your profile settings.");
-    
-    const resolved = await resolveAccount(account_number, account_bank);
-    if (!resolved?.account_name) throw new Error("Bank details verification failed.");
+// --- FLUTTERWAVE DIRECT WEBHOOK PAYMENT RECEIVER ---
+router.post('/flw-webhook', async (req, res) => {
+  const secretHash = process.env.FLW_SECRET_HASH;
+  const signature = req.headers['verif-hash'];
+  if (secretHash && signature !== secretHash) {
+    return res.status(401).end();
+  }
 
-    const sanitizedEmail = req.user.email.toLowerCase().trim().replace(/[@.]/g, '-');
-    const kiwiUserId = `kiwi-user-${sanitizedEmail}`;
+  const { event, data } = req.body;
+  if (event === 'charge.completed' && data?.status === 'successful') {
+    const { tx_ref, amount, customer } = data;
+    if (!customer?.email) return res.status(400).json({ error: "Customer metadata missing." });
+    
+    const kiwiUserId = getKiwiUserId(customer.email);
+
+    try {
+      await db.runTransaction(async (t) => {
+        const txLogRef = db.collection('processed_payments').doc(`flw-${tx_ref}`);
+        const txLog = await t.get(txLogRef);
+        
+        if (txLog.exists) return; 
+
+        const userRef = db.collection('users').doc(kiwiUserId);
+        const userDoc = await t.get(userRef);
+        if (!userDoc.exists) return;
+
+        const currentBalance = userDoc.data().walletBalance ?? 0;
+        const depositAmount = parseFloat(amount);
+        const netDeposit = depositAmount - 100; 
+
+        if (netDeposit <= 0) throw new Error("Deposit amount too low to cover transaction fees.");
+
+        t.update(userRef, { walletBalance: currentBalance + netDeposit });
+        t.set(txLogRef, { processedAt: new Date().toISOString(), amount: depositAmount, netAmount: netDeposit });
+
+        const transactionRef = db.collection('users').doc(kiwiUserId).collection('transactions').doc();
+        t.set(transactionRef, {
+          userId: kiwiUserId,
+          amount: netDeposit,
+          description: `Flutterwave Deposit (Ref: ${tx_ref}) - ₦100 fee applied`,
+          type: 'deposit',
+          createdAt: new Date().toISOString()
+        });
+      });
+      return res.status(200).json({ message: "Webhook processed successfully" });
+    } catch (err) {
+      console.error("WEBHOOK TRANSACTION ERROR:", err.message);
+      return res.status(500).json({ error: "Failed to process hook" });
+    }
+  }
+  return res.status(200).end();
+});
+
+// --- REUSABLE WALLET DEBITS HANDLING SYSTEM ---
+const processWalletDeduction = async (res, email, cost, description, transactionType, additionalMeta = {}) => {
+  try {
+    const kiwiUserId = getKiwiUserId(email);
+    let operationSuccess = false;
 
     await db.runTransaction(async (t) => {
       const userRef = db.collection('users').doc(kiwiUserId);
       const user = await t.get(userRef);
+      if (!user.exists) throw new Error("Account context not found.");
+
       const currentBalance = user.data().walletBalance ?? 0;
+      if (currentBalance < cost) throw new Error("Insufficient wallet balance. Please top up your wallet.");
+
+      t.update(userRef, { walletBalance: currentBalance - cost });
+
+      const transactionRef = db.collection('users').doc(kiwiUserId).collection('transactions').doc();
+      t.set(transactionRef, {
+        userId: kiwiUserId,
+        amount: -cost,
+        description,
+        type: transactionType,
+        createdAt: new Date().toISOString()
+      });
+
+      if (transactionType === 'unlock') {
+        const unlockRef = db.collection('users').doc(kiwiUserId).collection('unlocks').doc(additionalMeta.listingId);
+        t.set(unlockRef, { listingId: additionalMeta.listingId, unlockedAt: new Date().toISOString() });
+      }
+      operationSuccess = true;
+    });
+
+    if (operationSuccess) {
+      return res.json({ message: "Payment processed successfully via wallet funds." });
+    } else {
+      return res.status(400).json({ error: "Transaction aborted." });
+    }
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+};
+
+// --- TRANSACTIONS & WITHDRAWALS ---
+router.post('/me/withdraw', verifyUser, async (req, res) => {
+  const { amount, account_number, bank_name } = req.body;
+  const withdrawalFee = 150;
+  const totalDeduction = parseFloat(amount) + withdrawalFee;
+
+  try {
+    if (!bank_name) throw new Error("Bank name is required.");
+    if (!req.user?.email) throw new Error("Authenticated user email is required.");
+    
+    const account_bank = await getBankCode(bank_name);
+    if (!account_bank) throw new Error("Unsupported bank name.");
+    
+    const resolved = await resolveAccount(account_number, account_bank);
+    if (!resolved?.account_name) throw new Error("Bank details verification failed.");
+
+    const kiwiUserId = getKiwiUserId(req.user.email);
+
+    await db.runTransaction(async (t) => {
+      const userRef = db.collection('users').doc(kiwiUserId);
+      const user = await t.get(userRef);
+      if (!user.exists) throw new Error("User document does not exist.");
       
-      if (!user.exists || currentBalance < amount) {
-        throw new Error("Insufficient funds.");
+      const currentBalance = user.data().walletBalance ?? 0;
+      if (currentBalance < totalDeduction) {
+        throw new Error(`Insufficient funds. You need ₦${totalDeduction} total (includes ₦150 fee).`);
       }
       
-      t.update(userRef, { walletBalance: currentBalance - amount });
+      t.update(userRef, { walletBalance: currentBalance - totalDeduction });
       
       const transactionRef = db.collection('users').doc(kiwiUserId).collection('transactions').doc();
       t.set(transactionRef, {
         userId: kiwiUserId, 
-        amount: -amount, 
-        description: `Withdrawal to ${bank_name}`, 
+        amount: -totalDeduction, 
+        description: `Withdrawal to ${bank_name} (Includes ₦150 processing fee)`, 
         type: 'withdrawal', 
         createdAt: new Date().toISOString()
       });
       
       const payoutRef = db.collection('users').doc(kiwiUserId).collection('payouts').doc();
       t.set(payoutRef, {
-        userId: kiwiUserId, amount, status: 'pending', account_number, account_bank, bank_name, createdAt: new Date().toISOString()
+        userId: kiwiUserId, amount, fee: withdrawalFee, status: 'pending', account_number, account_bank, bank_name, createdAt: new Date().toISOString()
       });
     });
-    res.json({ message: "Withdrawal request submitted" });
+    return res.json({ message: "Withdrawal request submitted successfully" });
   } catch (error) {
-    const flwError = error.response?.data?.message || error.message;
-    console.error("DETAILED FLUTTERWAVE ERROR:", flwError);
-    res.status(400).json({ error: flwError });
+    return res.status(400).json({ error: error.message });
   }
 });
 
-// --- EXISTING ROUTES ---
+// --- PROFILE, LEDGER & SETTINGS GETTERS ---
+router.post('/me/spend/unlock', verifyUser, async (req, res) => {
+  const { listingId } = req.body;
+  if (!listingId) return res.status(400).json({ error: "Listing identity required." });
+  if (!req.user?.email) return res.status(400).json({ error: "Auth missing identity context." });
+  return await processWalletDeduction(res, req.user.email, 500, "Premium Unlock Fee", "unlock", { listingId });
+});
+
+router.post('/me/spend/listing', verifyUser, async (req, res) => {
+  if (!req.user?.email) return res.status(400).json({ error: "Auth missing identity context." });
+  return await processWalletDeduction(res, req.user.email, 3000, "Premium Listing Placement Fee", "premium_listing");
+});
+
 router.get('/me/inventory', verifyUser, async (req, res) => {
   try {
-    if (!req.user?.email) return res.status(400).json({ error: "User email missing from authentication token." });
-    const sanitizedEmail = req.user.email.toLowerCase().trim().replace(/[@.]/g, '-');
-    const kiwiUserId = `kiwi-user-${sanitizedEmail}`;
+    if (!req.user?.email) return res.status(400).json({ error: "User email missing." });
+    const kiwiUserId = getKiwiUserId(req.user.email);
     
     const unlockSnapshot = await db.collection('users').doc(kiwiUserId).collection('unlocks').get();
     const listingIds = unlockSnapshot.docs.map(doc => doc.data().listingId);
@@ -213,83 +304,71 @@ router.get('/me/inventory', verifyUser, async (req, res) => {
         return doc.exists ? { id: doc.id, ...doc.data() } : null;
       })
     );
-    res.json(listings.filter(item => item !== null));
+    return res.json(listings.filter(item => item !== null));
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 });
 
 router.get('/me/wallet', verifyUser, async (req, res) => {
   try {
-    if (!req.user?.email) return res.status(400).json({ error: "User email missing from authentication token." });
-    const sanitizedEmail = req.user.email.toLowerCase().trim().replace(/[@.]/g, '-');
-    const kiwiUserId = `kiwi-user-${sanitizedEmail}`;
+    if (!req.user?.email) return res.status(400).json({ error: "User email missing." });
+    const kiwiUserId = getKiwiUserId(req.user.email);
     
     const userDoc = await db.collection('users').doc(kiwiUserId).get();
     if (!userDoc.exists) return res.status(404).json({ error: "User not found" });
     const userData = userDoc.data();
-    res.json({
-      walletBalance: userData.walletBalance ?? userData.balance ?? 0,
+    return res.json({
+      walletBalance: userData.walletBalance ?? 0,
       totalEarned: userData.totalEarned ?? 0,
       platformTier: userData.platformTier || "KIWI Premium Split",
       verificationStatus: userData.verificationStatus || 'unverified',
       isPayoutBlocked: userData.isPayoutBlocked === true
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 });
 
 router.get('/me/transactions', verifyUser, async (req, res) => {
   try {
-    if (!req.user?.email) return res.status(400).json({ error: "User email missing from authentication token." });
-    const sanitizedEmail = req.user.email.toLowerCase().trim().replace(/[@.]/g, '-');
-    const kiwiUserId = `kiwi-user-${sanitizedEmail}`;
+    if (!req.user?.email) return res.status(400).json({ error: "User email missing." });
+    const kiwiUserId = getKiwiUserId(req.user.email);
     
     const snapshot = await db.collection('users').doc(kiwiUserId).collection('transactions').orderBy('createdAt', 'desc').get();
-    const txs = snapshot.docs.map(doc => {
-      const data = doc.data();
-      return { id: doc.id, description: data.description || "Platform Transaction", timestamp: data.createdAt || data.timestamp || new Date().toISOString(), type: data.type || "earning", amount: data.amount || 0 };
-    });
-    res.json(txs);
+    return res.json(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
   } catch (error) {
     if (error.message.includes("FAILED_PRECONDITION")) {
-      const sanitizedEmail = req.user.email.toLowerCase().trim().replace(/[@.]/g, '-');
-      const kiwiUserId = `kiwi-user-${sanitizedEmail}`;
+      const kiwiUserId = getKiwiUserId(req.user.email);
       const fallbackSnapshot = await db.collection('users').doc(kiwiUserId).collection('transactions').get();
       const fallbackTxs = fallbackSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      return res.json(fallbackTxs.sort((a,b) => new Date(b.createdAt || b.timestamp) - new Date(a.createdAt || a.timestamp)));
+      return res.json(fallbackTxs.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)));
     }
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 });
 
 router.get('/me', verifyUser, async (req, res) => {
   try {
-    if (!req.user?.email) return res.status(400).json({ error: "User email missing from authentication token." });
-    const sanitizedEmail = req.user.email.toLowerCase().trim().replace(/[@.]/g, '-');
-    const kiwiUserId = `kiwi-user-${sanitizedEmail}`;
-    
-    const userDoc = await db.collection('users').doc(kiwiUserId).get();
+    if (!req.user?.email) return res.status(400).json({ error: "User email missing." });
+    const userDoc = await db.collection('users').doc(getKiwiUserId(req.user.email)).get();
     if (!userDoc.exists) return res.status(404).json({ error: "Account data not found" });
-    res.json(userDoc.data());
+    return res.json(userDoc.data());
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 });
 
 router.put('/settings', verifyUser, async (req, res) => {
   const { displayName, phoneNumber, bio, bankName, accountNumber } = req.body;
   try {
-    if (!req.user?.email) return res.status(400).json({ error: "User email missing from authentication token." });
-    const sanitizedEmail = req.user.email.toLowerCase().trim().replace(/[@.]/g, '-');
-    const kiwiUserId = `kiwi-user-${sanitizedEmail}`;
-    
-    const userRef = db.collection('users').doc(kiwiUserId);
-    await userRef.set({ displayName, phoneNumber, bio, bankName, accountNumber, updatedAt: new Date().toISOString() }, { merge: true });
-    res.json({ message: "Settings updated successfully" });
+    if (!req.user?.email) return res.status(400).json({ error: "User email missing." });
+    await db.collection('users').doc(getKiwiUserId(req.user.email)).set({ 
+      displayName, phoneNumber, bio, bankName, accountNumber, updatedAt: new Date().toISOString() 
+    }, { merge: true });
+    return res.json({ message: "Settings updated successfully" });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 });
 
@@ -297,16 +376,14 @@ router.post('/submit-kyc', verifyUser, async (req, res) => {
   const { fullName, idType, idNumber, documentUrl } = req.body;
   try {
     if (!documentUrl) return res.status(400).json({ error: "Document URL is required." });
-    if (!req.user?.email) return res.status(400).json({ error: "User email missing from authentication token." });
-    const sanitizedEmail = req.user.email.toLowerCase().trim().replace(/[@.]/g, '-');
-    const kiwiUserId = `kiwi-user-${sanitizedEmail}`;
+    if (!req.user?.email) return res.status(400).json({ error: "User email missing." });
     
-    await db.collection('users').doc(kiwiUserId).set({
+    await db.collection('users').doc(getKiwiUserId(req.user.email)).set({
       verificationStatus: 'pending', legalFullName: fullName, kycIdType: idType, kycIdNumber: idNumber, kycDocumentUrl: documentUrl, kycSubmittedAt: new Date().toISOString()
     }, { merge: true });
-    res.json({ message: "KYC submitted." });
+    return res.json({ message: "KYC submitted." });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 });
 

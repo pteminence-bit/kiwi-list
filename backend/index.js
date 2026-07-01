@@ -9,13 +9,13 @@ import webhookRoutes from './routes/webhookRoutes.js';
 import listingRoutes from './routes/listingRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
+import chatRoutes from './routes/chatRoutes.js'; // Added to support your new secure chats subsystem
 
 dotenv.config();
 
 const app = express();
 
-app.use(express.json({ limit: '20kb' }));
-
+// --- CORS POLICY DEFINITION ---
 const allowedOrigins = [
   'https://kiwi-list-ifnr.onrender.com',
   'http://localhost:5173'
@@ -37,9 +37,12 @@ app.use(cors({
   credentials: true
 }));
 
+// --- PARSERS CONFIGURATION ---
+// Combined and streamlined duplicate JSON definitions to prevent payload evaluation crashes
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
+// --- BASE STATUS GETTER ---
 app.get('/', (req, res) => {
   res.json({ 
     status: "active", 
@@ -48,18 +51,20 @@ app.get('/', (req, res) => {
   });
 });
 
-// --- 🔐 Standalone Auth Pass-Through Routing ---
-// This ensures your frontend Login.jsx calls directly to /auth/login and /auth/signup match perfectly!
+// --- 🔐 STANDALONE AUTH PASS-THROUGH ROUTING ---
+// Maps root /auth/login and /auth/signup entries directly
 app.use('/', userRoutes); 
 
-// --- Cleaned API Routes ---
+// --- ROUTER ENGINE MOUNTING LINES ---
 app.use('/api/listings', listingRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/users', userRoutes); // Keeps profile, settings, and kyc mapped under /api/users
+app.use('/api/users', userRoutes);     // Handles profile, settings, and kyc under /api/users
 app.use('/api/webhooks', webhookRoutes); 
 app.use('/api/payments', paymentRoutes);
+app.use('/api/chats', chatRoutes);       // Mounted secure premium/free listing chat ecosystem
 
+// --- HEALTH & DATABASE TESTING CHECKS ---
 app.get('/api/health', (req, res) => {
   res.json({ status: "Kiwi-List API is up and running smoothly" });
 });
@@ -74,16 +79,18 @@ app.get('/api/test-db', async (req, res) => {
   }
 });
 
+// --- CATCH-ALL 404 UNMATCHED ROUTE ROUTING ---
 app.use((req, res, next) => {
   console.log(`Incoming Unmatched Request: ${req.method} ${req.url}`);
   res.status(404).json({
     error: `Route not found on engine.`,
     requestedPath: req.url,
     requestedMethod: req.method,
-    hint: "Verify if your endpoint prefix matches the route router mapping."
+    hint: "Verify if your endpoint prefix matches the engine's target routing tree tables."
   });
 });
 
+// --- CENTRAL OP CRASH GUARD / ERROR INTERCEPTOR ---
 app.use((err, req, res, next) => {
   console.error("❌ Engine Error Intercepted:", err.message);
   const statusCode = err.status || (err.message.includes('CORS') ? 403 : 500);

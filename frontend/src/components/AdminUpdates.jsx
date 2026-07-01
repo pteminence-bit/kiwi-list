@@ -1,7 +1,7 @@
 // components/AdminUpdates.jsx
 import React, { useState, useEffect } from 'react';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
-import { auth, db } from '../firebase'; // Ensure 'auth' is imported to verify sessions client-side
+import { auth, db } from '../firebase'; 
 import { onAuthStateChanged } from 'firebase/auth';
 import { Megaphone } from 'lucide-react';
 
@@ -12,7 +12,6 @@ const AdminUpdates = () => {
   useEffect(() => {
     let unsubscribeSnapshot = null;
 
-    // Monitor auth state to prevent listening to protected paths while request.auth is null
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       if (user) {
         const q = query(collection(db, 'adminUpdates'), orderBy('timestamp', 'desc'));
@@ -29,7 +28,6 @@ const AdminUpdates = () => {
           setLoading(false);
         });
       } else {
-        // If logged out, clear active broadcast records and close open listener pipelines
         if (unsubscribeSnapshot) unsubscribeSnapshot();
         setUpdates([]);
         setLoading(false);
@@ -63,7 +61,7 @@ const AdminUpdates = () => {
       {updates.map((update) => (
         <div 
           key={update.id} 
-          className="bg-[#1e293b] border-l-4 border-l-blue-500 p-4 rounded-r-lg shadow-md transition-all hover:bg-[#253246]"
+          className="bg-slate-900 border-l-4 border-l-blue-500 p-4 rounded-r-lg shadow-md transition-all hover:bg-slate-800/80"
         >
           <div className="flex items-center gap-2 mb-2 text-blue-400">
             <Megaphone size={12} />

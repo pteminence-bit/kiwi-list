@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom'; // Added useNavigate
+import { useParams, useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
-import { Landmark, Loader2 } from 'lucide-react';
+import { Landmark, Loader2, ArrowLeft } from 'lucide-react';
 
 const EditListing = ({ token }) => {
   const { id } = useParams();
-  const navigate = useNavigate(); // Hook for state-preserving redirects
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
     title: '', 
     description: '', 
@@ -19,9 +20,11 @@ const EditListing = ({ token }) => {
 
   // Fetch current listing data
   useEffect(() => {
-    if (!token) return;
+    if (!token || !id) return;
+    
     const fetchListing = async () => {
       try {
+        setError(null);
         const response = await fetch(`${API_BASE_URL}/api/listings/${id}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -37,18 +40,18 @@ const EditListing = ({ token }) => {
             baths: data.baths || ''
           });
         } else {
-          throw new Error(data.error || "Failed to load listing");
+          throw new Error(data.error || "Failed to load listing details");
         }
       } catch (err) {
-        alert(err.message);
+        setError(err.message);
       } finally {
         setLoading(false);
       }
     };
+    
     fetchListing();
   }, [id, token]);
 
-  // Optimized single change handler for all inputs
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -60,15 +63,17 @@ const EditListing = ({ token }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
+    setError(null);
+    
     try {
-      // Strips structural fields (like tier or ownerId) to safely pass Firestore Security Rules
+      // Clean up inputs to pass native primitives rather than string states
       const updatePayload = {
-        title: formData.title,
-        description: formData.description,
+        title: formData.title.trim(),
+        description: formData.description.trim(),
         price: Number(formData.price),
-        address: formData.address,
-        beds: Number(formData.beds),
-        baths: Number(formData.baths)
+        address: formData.address.trim(),
+        beds: parseInt(formData.beds, 10),
+        baths: parseInt(formData.baths, 10)
       };
 
       const response = await fetch(`${API_BASE_URL}/api/listings/${id}`, {
@@ -83,31 +88,44 @@ const EditListing = ({ token }) => {
       const data = await response.json();
 
       if (response.ok) {
-        alert("Listing updated successfully!");
-        navigate("/manage"); // Soft SPA routing redirect
+        navigate("/manage");
       } else {
         throw new Error(data.error || "Update failed");
       }
     } catch (err) {
-      alert(err.message);
-    } finally {
+      setError(err.message);
       setSaving(false);
     }
   };
 
   if (loading) {
     return (
-      <div className="flex min-h-[400px] items-center justify-center text-slate-400">
-        <Loader2 className="animate-spin mr-2" /> Loading listing details...
+      <div className="flex min-h-[400px] flex-col items-center justify-center text-slate-400 gap-3">
+        <Loader2 className="animate-spin text-blue-500" size={32} />
+        <p className="text-sm font-medium tracking-wide">Loading listing details...</p>
       </div>
     );
   }
 
   return (
-    <div className="p-8 max-w-2xl mx-auto text-white bg-slate-950 rounded-2xl border border-slate-900 mt-6">
-      <h2 className="text-xl font-black mb-6 flex items-center gap-2 border-b border-slate-900 pb-4">
-        <Landmark className="w-6 h-6 text-blue-500" /> Edit Listing
-      </h2>
+    <div className="p-8 max-w-2xl mx-auto text-white bg-slate-950 rounded-2xl border border-slate-900 mt-6 shadow-xl">
+      <div className="flex items-center justify-between mb-6 border-b border-slate-900 pb-4">
+        <h2 className="text-xl font-black flex items-center gap-2">
+          <Landmark className="w-6 h-6 text-blue-500" /> Edit Listing
+        </h2>
+        <button 
+          onClick={() => navigate('/manage')}
+          className="flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-white transition-colors"
+        >
+          <ArrowLeft size={14} /> Back to Management
+        </button>
+      </div>
+
+      {error && (
+        <div className="mb-6 p-4 bg-red-950/40 border border-red-900/50 rounded-xl text-red-400 text-sm font-medium leading-relaxed">
+          {error}
+        </div>
+      )}
       
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -115,7 +133,7 @@ const EditListing = ({ token }) => {
           <input 
             name="title" 
             type="text"
-            value={formData.title || ''} 
+            value={formData.title} 
             onChange={handleChange} 
             className="w-full p-3 bg-slate-900 border border-slate-800 rounded-lg text-white outline-none focus:border-blue-500 transition" 
             required
@@ -126,7 +144,7 @@ const EditListing = ({ token }) => {
           <label className="block text-sm font-medium mb-1 text-slate-400">Description</label>
           <textarea 
             name="description" 
-            value={formData.description || ''} 
+            value={formData.description} 
             onChange={handleChange} 
             className="w-full p-3 bg-slate-900 border border-slate-800 rounded-lg text-white h-28 outline-none focus:border-blue-500 transition resize-none" 
           />
@@ -137,7 +155,7 @@ const EditListing = ({ token }) => {
           <input 
             name="address" 
             type="text"
-            value={formData.address || ''} 
+            value={formData.address} 
             onChange={handleChange} 
             className="w-full p-3 bg-slate-900 border border-slate-800 rounded-lg text-white outline-none focus:border-blue-500 transition" 
           />
@@ -149,7 +167,7 @@ const EditListing = ({ token }) => {
             <input 
               name="price" 
               type="number" 
-              value={formData.price || ''} 
+              value={formData.price} 
               onChange={handleChange} 
               className="w-full p-3 bg-slate-900 border border-slate-800 rounded-lg text-white outline-none focus:border-blue-500 transition" 
             />
@@ -160,7 +178,7 @@ const EditListing = ({ token }) => {
             <input 
               name="beds" 
               type="number" 
-              value={formData.beds || ''} 
+              value={formData.beds} 
               onChange={handleChange} 
               className="w-full p-3 bg-slate-900 border border-slate-800 rounded-lg text-white outline-none focus:border-blue-500 transition" 
             />
@@ -171,7 +189,7 @@ const EditListing = ({ token }) => {
             <input 
               name="baths" 
               type="number" 
-              value={formData.baths || ''} 
+              value={formData.baths} 
               onChange={handleChange} 
               className="w-full p-3 bg-slate-900 border border-slate-800 rounded-lg text-white outline-none focus:border-blue-500 transition" 
             />

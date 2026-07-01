@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from './firebase'; 
@@ -18,9 +18,11 @@ import Settings from './pages/Settings';
 import AuthPage from './pages/AuthPage';
 import PaymentSuccess from './pages/PaymentSuccess'; 
 import Inventory from './components/Inventory';
+import ChatWorkspace from './pages/ChatWorkspace'; // Imported premium/free core communication hub
 
 const DashboardLayout = () => {
   const { user, loading } = useAuth();
+  const location = useLocation();
   const [isAdmin, setIsAdmin] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -28,7 +30,6 @@ const DashboardLayout = () => {
     const checkAdminStatus = async () => {
       if (user && user.email) {
         try {
-          // Sanitizes the email string exactly like the backend to point to the correct document ID
           const sanitizedEmail = user.email.toLowerCase().trim().replace(/[@.]/g, '-');
           const customUserDocId = `kiwi-user-${sanitizedEmail}`;
 
@@ -68,6 +69,8 @@ const DashboardLayout = () => {
     );
   }
 
+  const isChatRoute = location.pathname.startsWith('/chats');
+
   return (
     <div className="flex w-full min-h-screen bg-slate-950 text-white">
       <Sidebar isAdmin={isAdmin} isOpen={mobileMenuOpen} setIsOpen={setMobileMenuOpen} />
@@ -82,8 +85,8 @@ const DashboardLayout = () => {
            </button>
         </div>
 
-        {/* Content Area: Added max-w-2xl and horizontal centering to prevent layout clustering */}
-        <main className="flex-1 w-full max-w-2xl mx-auto pt-8 px-4 md:px-6">
+        {/* Content Area: Widens dynamically on chat view screens for cleaner panel layouts */}
+        <main className={`flex-1 w-full mx-auto pt-8 px-4 md:px-6 ${isChatRoute ? 'max-w-5xl' : 'max-w-2xl'}`}>
           <Routes>
             <Route path="/" element={<MarketplaceFeed token={user.accessToken} />} />
             <Route path="/add" element={<CreateListing token={user.accessToken} />} />
@@ -91,6 +94,7 @@ const DashboardLayout = () => {
             <Route path="/admin" element={isAdmin ? <AdminPortal token={user.accessToken} /> : <Navigate to="/" />} />
             <Route path="/wallet" element={<WalletCard token={user.accessToken} />} />
             <Route path="/settings" element={<Settings token={user.accessToken} />} />
+            <Route path="/chats" element={<ChatWorkspace token={user.accessToken} />} />
             <Route path="/updates" element={<div className="p-4"><AdminUpdates /></div>} />
             <Route path="/success" element={<PaymentSuccess />} />
             <Route path="/inventory" element={<Inventory />} />
@@ -99,13 +103,15 @@ const DashboardLayout = () => {
           </Routes>
         </main>
 
-        {/* Sidebar for Desktop: Only visible on large screens */}
-        <aside className="hidden xl:block w-80 border-l border-slate-800 p-6 shrink-0">
-          <div className="sticky top-8">
-            <h2 className="text-xs font-bold text-slate-400 mb-6 uppercase tracking-wider">KIWI-list Latest</h2>
-            <AdminUpdates />
-          </div>
-        </aside>
+        {/* Sidebar for Desktop: Hidden on chat screens to prioritize widescreen real estate */}
+        {!isChatRoute && (
+          <aside className="hidden xl:block w-80 border-l border-slate-800 p-6 shrink-0">
+            <div className="sticky top-8">
+              <h2 className="text-xs font-bold text-slate-400 mb-6 uppercase tracking-wider">KIWI-list Latest</h2>
+              <AdminUpdates />
+            </div>
+          </aside>
+        )}
       </div>
     </div>
   );

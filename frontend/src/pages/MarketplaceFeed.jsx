@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, SlidersHorizontal, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import ListingCard from '../components/ListingCard';
 import { API_BASE_URL } from '../config';
@@ -7,6 +8,7 @@ import { auth } from '../firebase';
 
 const MarketplaceFeed = ({ token }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeGallery, setActiveGallery] = useState(null);
@@ -85,14 +87,49 @@ const MarketplaceFeed = ({ token }) => {
       if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl; 
       } else {
-        console.error("Payment failed:", data.error);
+        console.error("Payment initialization failed:", data.error);
+        alert(data.error || "Could not process payment.");
       }
     } catch (error) {
       console.error("Connection error:", error);
     }
   };
 
+  const handleChatInitiation = async (listingId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/chats/initialize`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ listingId })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // If it's a premium firewall issue, redirect automatically to handle unlocking flow
+        if (response.status === 403) {
+          if (window.confirm("This is a Premium Asset. Unlock contact and messaging privileges for ₦500?")) {
+            handleUnlockContact(listingId);
+          }
+          return;
+        }
+        throw new Error(data.error || "Chat instantiation failure.");
+      }
+
+      // Move directly to the freshly instantiated chat workspace pane
+      navigate(`/chats?id=${data.chatId}`);
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+
   const handleImageLightboxCapture = (e) => {
+    // Only intercept if the click target is part of the image element view stack
+    if (e.target.tagName !== 'IMG') return;
+    
     const galleryData = e.currentTarget.getAttribute('data-full-gallery');
     if (galleryData) {
       setActiveGallery(JSON.parse(galleryData));
@@ -108,7 +145,6 @@ const MarketplaceFeed = ({ token }) => {
     );
   }
 
-  // FIX: Fixed the hyphenated variable compilation bug cleanly right here
   const cleanUserPassThrough = sanitizedUser ? {
     uid: sanitizedUser.uid,
     email: sanitizedUser.email
@@ -131,12 +167,13 @@ const MarketplaceFeed = ({ token }) => {
               key={listing.id} 
               onClick={handleImageLightboxCapture} 
               data-full-gallery={JSON.stringify((listing.images || []).map(img => img.startsWith('http') ? img : `https://pub-580c3d172e3f4533b065d241e61ee132.r2.dev/${img.replace(/^\//, '')}`))}
-              className="bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 shadow-xl cursor-pointer"
+              className="bg-slate-900 rounded-2xl overflow-hidden border border-slate-800 shadow-xl"
             >
               <ListingCard 
                 listing={listing} 
                 token={token} 
                 onUnlock={() => handleUnlockContact(listing.id)}
+                onChat={() => handleChatInitiation(listing.id)} // Attached explicitly to direct user contact actions
                 currentUser={cleanUserPassThrough}
               />
             </div>

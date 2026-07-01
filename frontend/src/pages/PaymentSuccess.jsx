@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { CheckCircle, ArrowRight, Loader2 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { auth } from '../firebase'; 
-import { onAuthStateChanged } from 'firebase/auth'; // Added for robust session hook tracking
+import { onAuthStateChanged } from 'firebase/auth'; 
 import { API_BASE_URL } from '../config'; 
 
 const PaymentSuccess = () => {
@@ -10,6 +10,9 @@ const PaymentSuccess = () => {
   const navigate = useNavigate();
   const [verifying, setVerifying] = useState(true);
   const reference = searchParams.get('reference');
+  
+  // Execution loop firewall guard flag
+  const hasChecked = useRef(false);
 
   useEffect(() => {
     if (!reference) {
@@ -17,20 +20,18 @@ const PaymentSuccess = () => {
       return;
     }
 
-    // Wrap verification logic inside an active session listener hook 
-    // to prevent premature authorization failure checks during page boot
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        // Session hasn't initialized or user is unauthenticated
-        console.warn("Waiting for authentication session context listener...");
-        return;
-      }
+      // Return early if state is loading, or if execution guard is already locked
+      if (!user || hasChecked.current) return;
 
       try {
-        // Fetch valid runtime authorization Bearer token context
+        hasChecked.current = true;
+        
+        // Securely unhook listener immediately to prevent subsequent session loop ticks
+        unsubscribe();
+
         const token = await user.getIdToken();
 
-        // Query verification against the custom backend API layout
         const response = await fetch(`${API_BASE_URL}/api/payments/verify?reference=${reference}`, {
           method: 'GET',
           headers: {
@@ -49,13 +50,12 @@ const PaymentSuccess = () => {
           navigate('/');
         }
       } catch (err) {
-        console.error("Network error during verification", err);
+        console.error("Network error during verification:", err);
         alert("A network connection error occurred during verification.");
         navigate('/');
       }
     });
 
-    // Cleanup session subscription hook listener
     return () => unsubscribe();
   }, [reference, navigate]);
 
@@ -75,7 +75,7 @@ const PaymentSuccess = () => {
             </div>
             <div>
               <h2 className="text-2xl font-black text-white">Payment Successful!</h2>
-              <p className="text-sm text-slate-400 mt-2">Your premium listing access is now active.</p>
+              <p className="text-sm text-slate-400 mt-2">Your listing unlock status is now live and updated across our data systems.</p>
             </div>
             <button 
               onClick={() => navigate('/')}

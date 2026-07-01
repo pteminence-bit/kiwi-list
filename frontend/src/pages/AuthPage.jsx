@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-// Removed client-side registration/login methods, keeping token sign-in and signOut
-import { signInWithCustomToken, signOut } from 'firebase/auth';
+import { signInWithCustomToken } from 'firebase/auth';
 import { auth } from '../firebase';
 import { LogIn, UserPlus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -9,6 +8,7 @@ import { Navigate } from 'react-router-dom';
 const AuthPage = () => {
   const { user } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
+  const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -28,6 +28,11 @@ const AuthPage = () => {
     const endpoint = isLogin ? '/auth/login' : '/auth/signup';
     const backendUrl = `https://kiwi-list-api.onrender.com${endpoint}`;
 
+    // Build standard body payload to match backend schema requirements
+    const payload = isLogin 
+      ? { email, password } 
+      : { email, password, displayName };
+
     try {
       // 1. Send authentication credentials to your central secure Node.js Render container
       const response = await fetch(backendUrl, {
@@ -35,7 +40,7 @@ const AuthPage = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
@@ -50,6 +55,7 @@ const AuthPage = () => {
         alert("Verification email triggered! Please check your inbox before logging in.");
         
         // Clear active form context and drop back to login card state view
+        setDisplayName('');
         setEmail('');
         setPassword('');
         setIsLogin(true);
@@ -84,6 +90,20 @@ const AuthPage = () => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
+          {!isLogin && (
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Full Name</label>
+              <input 
+                type="text" 
+                required
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder="John Doe" 
+                className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl focus:outline-none focus:border-blue-500 text-sm text-slate-200 transition"
+              />
+            </div>
+          )}
+
           <div>
             <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Email Address</label>
             <input 

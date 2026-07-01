@@ -20,11 +20,10 @@ export const uploadImagesToR2 = async (req, res, next) => {
       });
     }
 
-    // 👇 BULLETPROOF CHECK: Explicitly find out if this is a listing submission
-    // It is ONLY a listing route if the URL contains 'listings' OR if the frontend used the 'images' form key field
+    // ALIGNED CHECK: Explicitly checking if it's a listing submission via endpoint URL or form field key
     const isListingRoute = 
-      (req.originalUrl && req.originalUrl.includes('/listings')) || 
-      (req.files && Array.isArray(req.files) && req.files.length > 0 && req.files[0].fieldname === 'images');
+      (req.originalUrl && req.originalUrl.includes('/listing')) || 
+      (filesToProcess.length > 0 && filesToProcess[0].fieldname === 'images');
 
     // ONLY enforce the 2-image minimum for marketplace gallery listings
     if (isListingRoute && filesToProcess.length < 2) {
@@ -33,7 +32,7 @@ export const uploadImagesToR2 = async (req, res, next) => {
       });
     }
 
-    // Process filesToProcess up to R2
+    // Process files up to Cloudflare R2
     const uploadPromises = filesToProcess.map(async (file) => {
       const fileExtension = file.originalname.split('.').pop();
       const uniqueHash = crypto.randomBytes(4).toString('hex');
@@ -48,14 +47,14 @@ export const uploadImagesToR2 = async (req, res, next) => {
 
       await s3Client.send(command);
       
-      // PERMANENT FIX: Enforce your exact public Cloudflare R2 base URL explicitly
+      // Enforce public Cloudflare R2 base URL explicitly
       const baseUrl = process.env.R2_PUBLIC_URL || 'https://pub-580c3d172e3f4533b065d241e61ee132.r2.dev';
       return `${baseUrl}/${fileName}`;
     });
 
     const uploadedUrls = await Promise.all(uploadPromises);
 
-    // If it came from a single upload or upload payload is a flat element, return object wrapped URL
+    // If it came from a single upload (like KYC or profile pictures), return a single URL object
     if (isSingleUpload || !isListingRoute) {
       return res.json({ 
         success: true, 
@@ -64,10 +63,11 @@ export const uploadImagesToR2 = async (req, res, next) => {
       });
     }
 
+    // For marketplace property uploads, return the array of URLs
     return res.json({ success: true, urls: uploadedUrls });
 
   } catch (error) {
     console.error("R2 Engine Upload Pipeline Breakdown:", error);
-    next(error);
+    return res.status(500).json({ error: "Image upload pipeline error: " + error.message });
   }
 };

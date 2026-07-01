@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
-import { auth } from '../firebase'; // FIX: Dynamically maps straight to your configured client authentication engine instance
-import { LayoutDashboard, Wallet, Building2, ClipboardList, Settings, LogOut, X, PlusCircle, Bell, Package } from 'lucide-react';
+import { auth } from '../firebase'; 
+import { LayoutDashboard, Wallet, Building2, ClipboardList, Settings, LogOut, X, PlusCircle, Bell, Package, MessageSquare } from 'lucide-react';
 
 const Sidebar = ({ isAdmin, isOpen, setIsOpen }) => {
   const location = useLocation();
@@ -20,6 +20,7 @@ const Sidebar = ({ isAdmin, isOpen, setIsOpen }) => {
     { name: 'Marketplace', path: '/', icon: LayoutDashboard },
     { name: 'Create Listing', path: '/add', icon: PlusCircle },
     { name: 'My Listings', path: '/manage', icon: Building2 },
+    { name: 'Inbox', path: '/chats', icon: MessageSquare }, // Added to hook into your secure chats subsystem
     { name: 'My Wallet', path: '/wallet', icon: Wallet },
     { name: 'Inventory', path: '/inventory', icon: Package },
     { name: 'Settings', path: '/settings', icon: Settings },
@@ -36,10 +37,9 @@ const Sidebar = ({ isAdmin, isOpen, setIsOpen }) => {
   const handleLogout = async () => {
     if (window.confirm("Logout of KIWI-list?")) {
       try {
-        // FIX: Triggers explicit token cleanup matching your client app's session state context
         await signOut(auth);
         setIsOpen(false);
-        navigate('/login'); // Redirect directly to your update unified login view
+        navigate('/login'); 
       } catch (error) {
         console.error("Logout runtime error:", error.message);
         alert("Failed to securely tear down login session. Please reload.");

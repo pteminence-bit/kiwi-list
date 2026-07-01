@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Bed, Bath, Eye, AlertTriangle, MapPin, CheckCircle2 } from 'lucide-react';
+import { Bed, Bath, Eye, AlertTriangle, MapPin, CheckCircle2, MessageSquare } from 'lucide-react';
 import PaymentButton from './PaymentButton';
 import { API_BASE_URL } from '../config';
 import { auth } from '../firebase';
 
 const R2_BASE = 'https://pub-580c3d172e3f4533b065d241e61ee132.r2.dev';
 
-const ListingCard = ({ listing, onUnlock, token: propToken, currentUser }) => {
+const ListingCard = ({ listing, onUnlock, onChat, token: propToken, currentUser }) => {
   const [activeToken, setActiveToken] = useState(propToken || null);
 
   useEffect(() => {
@@ -82,7 +82,6 @@ const ListingCard = ({ listing, onUnlock, token: propToken, currentUser }) => {
   }, [listing.id]);
 
   return (
-    // FIX: Added data-listing-id natively to guarantee the DOM contains the identity signature
     <div data-listing-id={listing.id} className="flex flex-col text-slate-200 w-full max-w-md mx-auto bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-800/80 overflow-hidden shadow-2xl transition-all duration-300 hover:border-slate-700/60 mb-5 group">
       {/* Header */}
       <div className="flex items-center justify-between p-4 bg-slate-950/20">
@@ -158,14 +157,18 @@ const ListingCard = ({ listing, onUnlock, token: propToken, currentUser }) => {
           </div>
         </div>
 
-        {/* Payment / Contact Logic */}
-        <div className="pt-1">
-          {isPremium && !isOwner ? (
-            <PaymentButton />
+        {/* Action Blocks Container */}
+        <div className="pt-1" onClick={(e) => e.stopPropagation()}>
+          {isPremium && !isOwner && !listing.isUnlockedByCurrentUser ? (
+            <PaymentButton onClick={onUnlock} />
           ) : (
-            <div className="w-full py-3 bg-slate-800/40 text-slate-300 text-xs text-center font-bold tracking-wide uppercase rounded-xl border border-slate-700/40 shadow-sm backdrop-blur-sm">
-              Contact: <span className="text-indigo-400">{listing.contactDetails?.phone || 'Available'}</span>
-            </div>
+            <button
+              onClick={onChat}
+              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs text-center font-bold tracking-wide uppercase rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+            >
+              <MessageSquare size={14} /> 
+              {isOwner ? "View Client Messages" : "Chat with Agent"}
+            </button>
           )}
         </div>
       </div>

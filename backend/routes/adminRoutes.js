@@ -5,11 +5,26 @@ import { verifyUser } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Middleware to check if user is admin
+// --- HELPER FOR ID SANITIZATION ALIGNMENT ---
+const getKiwiUserId = (email) => {
+  if (!email) return null;
+  const cleanEmail = email.toLowerCase().trim();
+  const sanitizedEmail = cleanEmail.replace(/[@.]/g, '-');
+  return `kiwi-user-${sanitizedEmail}`;
+};
+
+// --- MIDDLEWARE: VERIFY ADMIN ROLE ---
 const verifyAdmin = async (req, res, next) => {
   try {
-    const userRef = await db.collection('users').doc(req.user.uid).get();
-    if (userRef.exists && userRef.data().role === 'admin') {
+    if (!req.user?.email) {
+      return res.status(401).json({ error: "Authentication context missing email." });
+    }
+    
+    // Aligned to check the custom user document ID format instead of req.user.uid
+    const kiwiUserId = getKiwiUserId(req.user.email);
+    const userDoc = await db.collection('users').doc(kiwiUserId).get();
+    
+    if (userDoc.exists && userDoc.data().role === 'admin') {
       next();
     } else {
       res.status(403).json({ error: "Admin access required" });
@@ -22,25 +37,32 @@ const verifyAdmin = async (req, res, next) => {
 // --- ADMINISTRATIVE STATUS DEBUGGER ---
 router.get('/debug-my-status', verifyUser, async (req, res) => {
   try {
-    const userRef = await db.collection('users').doc(req.user.uid).get();
+    if (!req.user?.email) {
+      return res.status(400).json({ error: "User email missing from authentication token." });
+    }
+
+    const kiwiUserId = getKiwiUserId(req.user.email);
+    const userDoc = await db.collection('users').doc(kiwiUserId).get();
     
-    if (!userRef.exists) {
+    if (!userDoc.exists) {
       return res.status(200).json({
         message: "Firebase authentication token is valid, but no corresponding user document was found in your Firestore 'users' collection.",
         authenticated: true,
         firestoreDocumentFound: false,
         uid: req.user.uid,
+        kiwiUserId: kiwiUserId,
         email: req.user.email
       });
     }
 
-    const userData = userRef.data();
+    const userData = userDoc.data();
 
     res.json({
       message: "Authentication and database handshake successful!",
       authenticated: true,
       firestoreDocumentFound: true,
       firebaseUid: req.user.uid,
+      kiwiUserId: kiwiUserId,
       firestoreRole: userData.role || "No role assigned",
       isVerifiedAgent: userData.isVerifiedAgent || false,
       fullFirestorePayload: userData
@@ -50,7 +72,7 @@ router.get('/debug-my-status', verifyUser, async (req, res) => {
   }
 });
 
-// --- GET ALL ADMINISTRATIVE REVIEW QUEUES (PROPERTIES, KYC, USER REVIEWS, & ALL USERS) ---
+// --- GET ALL ADMINISTRATIVE REVIEW QUEUES ---
 router.get('/review-queue', verifyUser, verifyAdmin, async (req, res) => {
   try {
     const flaggedListings = await db.collection('listings').where('isFlagged', '==', true).get();
@@ -70,7 +92,7 @@ router.get('/review-queue', verifyUser, verifyAdmin, async (req, res) => {
     const kycQueue = kycRequests.docs.map(doc => ({
       id: doc.id,
       queueType: 'kyc',
-      userId: doc.id,
+      userId: doc.id, // This is correctly mapped to their kiwiUserId doc name
       ...doc.data()
     }));
 
@@ -99,7 +121,7 @@ router.get('/review-queue', verifyUser, verifyAdmin, async (req, res) => {
 
 // --- COMPREHENSIVE MODERATION DECISION PORTAL ---
 router.post('/moderate', verifyUser, verifyAdmin, async (req, res) => {
-  const { targetId, queueType, action } = req.body;
+  const { targetId, queueType, action } = req.body; // targetId for users must pass the kiwi-user-email string format
 
   try {
     const batch = db.batch();
