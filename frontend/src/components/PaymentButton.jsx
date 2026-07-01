@@ -1,14 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Loader2, Lock, Unlock } from 'lucide-react';
+import { auth } from '../firebase'; // 👈 Direct import to avoid prop-drilling errors
 
 const BACKEND_BASE_URL = 'https://kiwi-list-api.onrender.com';
 
-const PaymentButton = ({ listingId, token, onUnlockSuccess }) => {
+const PaymentButton = ({ listingId, token: propToken, onUnlockSuccess }) => {
   const [loading, setLoading] = useState(false);
+  const [accessToken, setAccessToken] = useState(propToken || null);
+
+  // Fallback observer: If parent component fails to provide a token, look up live auth token status instantly
+  useEffect(() => {
+    if (propToken) {
+      setAccessToken(propToken);
+    } else {
+      const unsubscribe = auth.onAuthStateChanged(async (user) => {
+        if (user) {
+          try {
+            const token = await user.getIdToken();
+            setAccessToken(token);
+          } catch (err) {
+            console.error("Failed to recover live auth session token:", err);
+          }
+        } else {
+          setAccessToken(null);
+        }
+      });
+      return () => unsubscribe();
+    }
+  }, [propToken]);
 
   const handleUnlock = async (e) => {
     e.stopPropagation(); // Prevents card selection or link click bubbling
-    if (loading) return;
+    if (loading || !accessToken) return;
 
     const confirmUnlock = window.confirm("Unlock this contact details? The matching tier transaction debit will be applied to your balance.");
     if (!confirmUnlock) return;
@@ -19,7 +42,7 @@ const PaymentButton = ({ listingId, token, onUnlockSuccess }) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${accessToken}`
         },
         body: JSON.stringify({ listingId })
       });
@@ -43,7 +66,7 @@ const PaymentButton = ({ listingId, token, onUnlockSuccess }) => {
 
   return (
     <button
-      disabled={loading || !token}
+      disabled={loading || !accessToken}
       onClick={handleUnlock}
       className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed text-white text-xs font-bold uppercase py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 tracking-wider border border-transparent disabled:border-slate-800"
     >
@@ -52,7 +75,7 @@ const PaymentButton = ({ listingId, token, onUnlockSuccess }) => {
           <Loader2 className="animate-spin" size={14} />
           Processing...
         </>
-      ) : !token ? (
+      ) : !accessToken ? ( // 👈 Evaluates the localized autonomous state
         <>
           <Lock size={14} />
           Sign In To Unlock
