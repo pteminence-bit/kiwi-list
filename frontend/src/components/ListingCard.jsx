@@ -2,14 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Bed, Bath, Eye, AlertTriangle, MapPin, CheckCircle2 } from 'lucide-react';
 import PaymentButton from './PaymentButton';
 import { API_BASE_URL } from '../config';
-import { auth } from '../firebase'; // Ensure this points correctly to your firebase setup file
+import { auth } from '../firebase';
 
 const R2_BASE = 'https://pub-580c3d172e3f4533b065d241e61ee132.r2.dev';
 
 const ListingCard = ({ listing, onUnlock, token: propToken, currentUser }) => {
   const [activeToken, setActiveToken] = useState(propToken || null);
 
-  // Keep a real-time active subscription to the auth state listener
   useEffect(() => {
     if (propToken) {
       setActiveToken(propToken);
@@ -17,7 +16,7 @@ const ListingCard = ({ listing, onUnlock, token: propToken, currentUser }) => {
       const unsubscribe = auth.onAuthStateChanged(async (user) => {
         if (user) {
           try {
-            const liveToken = await user.getIdToken(true); // Forces refresh if needed
+            const liveToken = await user.getIdToken(true);
             setActiveToken(liveToken);
           } catch (err) {
             console.error("Error fetching live token:", err);
@@ -27,7 +26,7 @@ const ListingCard = ({ listing, onUnlock, token: propToken, currentUser }) => {
         }
       });
       
-      return () => unsubscribe(); // Clean up subscription on unmount
+      return () => unsubscribe();
     }
   }, [propToken]);
 
@@ -36,7 +35,13 @@ const ListingCard = ({ listing, onUnlock, token: propToken, currentUser }) => {
   );
 
   const isPremium = listing.tier === 'premium';
-  const isOwner = currentUser && listing.ownerId === currentUser.uid;
+  
+  // FIX: Multi-layered bulletproof ownership matching check
+  const isOwner = currentUser && (
+    listing.ownerId === currentUser.uid || 
+    listing.ownerId === currentUser.id ||
+    (listing.contactDetails?.email && currentUser.email && listing.contactDetails.email.toLowerCase() === currentUser.email.toLowerCase())
+  );
 
   const handleReport = async (e) => {
     e.stopPropagation(); 
@@ -78,7 +83,6 @@ const ListingCard = ({ listing, onUnlock, token: propToken, currentUser }) => {
   }, [listing.id]);
 
   return (
-    // FIX: Explicitly forces full width sizing on mobile and iOS engines while maintaining maximum container boundaries
     <div className="flex flex-col text-slate-200 w-full max-w-md mx-auto bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-800/80 overflow-hidden shadow-2xl transition-all duration-300 hover:border-slate-700/60 mb-5 group">
       {/* Header */}
       <div className="flex items-center justify-between p-4 bg-slate-950/20">
@@ -114,12 +118,10 @@ const ListingCard = ({ listing, onUnlock, token: propToken, currentUser }) => {
 
       {/* Media Display */}
       {images.length > 0 && (
-        // FIX: Structural 4/3 containment enforcing perfect fluid width coverage without iOS background alignment gaps
         <div className="relative aspect-[4/3] w-full bg-slate-950 overflow-hidden select-none border-y border-slate-900">
           <img 
             src={images[0]} 
             alt="Property"
-            // FIX: "w-full h-full object-cover" ensures native viewport fills without breaking layout structures
             className="w-full h-full object-cover object-center transform scale-100 transition-transform duration-500 group-hover:scale-[1.02] touch-pan-y"
           />
           {images.length > 1 && (
