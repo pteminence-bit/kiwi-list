@@ -1,11 +1,29 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Bed, Bath, Eye, AlertTriangle, MapPin, CheckCircle2 } from 'lucide-react';
 import PaymentButton from './PaymentButton';
 import { API_BASE_URL } from '../config';
+import { auth } from '../firebase'; // 👈 Import the direct firebase authentication instance
 
 const R2_BASE = 'https://pub-580c3d172e3f4533b065d241e61ee132.r2.dev';
 
-const ListingCard = ({ listing, onUnlock, token, currentUser }) => {
+const ListingCard = ({ listing, onUnlock, token: propToken, currentUser }) => {
+  const [activeToken, setActiveToken] = useState(propToken || null);
+
+  // Sync token directly from live instance if prop is missing or delayed
+  useEffect(() => {
+    if (propToken) {
+      setActiveToken(propToken);
+    } else {
+      const getLiveToken = async () => {
+        if (auth.currentUser) {
+          const liveToken = await auth.currentUser.getIdToken();
+          setActiveToken(liveToken);
+        }
+      };
+      getLiveToken();
+    }
+  }, [propToken]);
+
   const images = (listing.images || []).map(img => 
     img.startsWith('http') ? img : `${R2_BASE}/${img.replace(/^\//, '')}`
   );
@@ -23,7 +41,7 @@ const ListingCard = ({ listing, onUnlock, token, currentUser }) => {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
+          'Authorization': `Bearer ${activeToken}` 
         },
         body: JSON.stringify({ reason })
       });
@@ -136,7 +154,7 @@ const ListingCard = ({ listing, onUnlock, token, currentUser }) => {
           {isPremium && !isOwner ? (
             <PaymentButton 
               listingId={listing.id} 
-              token={token} 
+              token={activeToken} // 👈 Now safely populated regardless of prop lifecycle issues
               onUnlockSuccess={() => {
                 if (onUnlock) onUnlock();
               }} 
