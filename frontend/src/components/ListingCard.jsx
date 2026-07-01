@@ -2,25 +2,32 @@ import React, { useEffect, useState } from 'react';
 import { Bed, Bath, Eye, AlertTriangle, MapPin, CheckCircle2 } from 'lucide-react';
 import PaymentButton from './PaymentButton';
 import { API_BASE_URL } from '../config';
-import { auth } from '../firebase'; // 👈 Import the direct firebase authentication instance
+import { auth } from '../firebase'; // Ensure this points correctly to your firebase setup file
 
 const R2_BASE = 'https://pub-580c3d172e3f4533b065d241e61ee132.r2.dev';
 
 const ListingCard = ({ listing, onUnlock, token: propToken, currentUser }) => {
   const [activeToken, setActiveToken] = useState(propToken || null);
 
-  // Sync token directly from live instance if prop is missing or delayed
+  // Keep a real-time active subscription to the auth state listener
   useEffect(() => {
     if (propToken) {
       setActiveToken(propToken);
     } else {
-      const getLiveToken = async () => {
-        if (auth.currentUser) {
-          const liveToken = await auth.currentUser.getIdToken();
-          setActiveToken(liveToken);
+      const unsubscribe = auth.onAuthStateChanged(async (user) => {
+        if (user) {
+          try {
+            const liveToken = await user.getIdToken(true); // Forces refresh if needed
+            setActiveToken(liveToken);
+          } catch (err) {
+            console.error("Error fetching live token:", err);
+          }
+        } else {
+          setActiveToken(null);
         }
-      };
-      getLiveToken();
+      });
+      
+      return () => unsubscribe(); // Clean up subscription on unmount
     }
   }, [propToken]);
 
@@ -154,7 +161,7 @@ const ListingCard = ({ listing, onUnlock, token: propToken, currentUser }) => {
           {isPremium && !isOwner ? (
             <PaymentButton 
               listingId={listing.id} 
-              token={activeToken} // 👈 Now safely populated regardless of prop lifecycle issues
+              token={activeToken} 
               onUnlockSuccess={() => {
                 if (onUnlock) onUnlock();
               }} 
