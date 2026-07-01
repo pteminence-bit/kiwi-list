@@ -9,13 +9,11 @@ const PaymentButton = () => {
   const [accessToken, setAccessToken] = useState(null);
 
   useEffect(() => {
-    // 1. Check persistent localStorage string directly
     const savedToken = localStorage.getItem('token');
     if (savedToken) {
       setAccessToken(savedToken);
     }
 
-    // 2. Real-time Firebase observer fallback
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
         try {
@@ -33,23 +31,15 @@ const PaymentButton = () => {
   }, []);
 
   const handleUnlock = async (e) => {
-    e.stopPropagation(); // Prevents layout bubbling anomalies
+    e.stopPropagation(); 
     if (loading || !accessToken) return;
 
     const confirmUnlock = window.confirm("Unlock this contact details? The matching tier transaction debit will be applied to your balance.");
     if (!confirmUnlock) return;
 
-    // Extracting the context listing ID directly out of the nearest structural interactive card tracking payload
-    const parentCard = e.currentTarget.closest('[data-full-gallery]');
-    let listingId = null;
-    
-    if (parentCard) {
-      // Safely recover the layout identification key relative to the clicked context feed container
-      const key = Object.keys(parentCard.__reactFiber$ || parentCard._reactRootContainer || {}).find(k => k.startsWith('__reactFiber'));
-      if (key && parentCard[key]?.key) {
-        listingId = parentCard[key].key;
-      }
-    }
+    // FIX: Uses standard DOM parsing to reliably extract the attribute we assigned above
+    const parentCard = e.currentTarget.closest('[data-listing-id]');
+    const listingId = parentCard ? parentCard.getAttribute('data-listing-id') : null;
 
     if (!listingId) {
       alert("Error: Unable to verify property reference signature context locally.");
@@ -74,7 +64,7 @@ const PaymentButton = () => {
       }
 
       alert("Contact unlocked successfully!");
-      window.location.reload(); // Instantly displays verified structural state update
+      window.location.reload(); 
       
     } catch (error) {
       console.error("Unlock error:", error.message);

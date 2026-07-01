@@ -36,7 +36,6 @@ const ListingCard = ({ listing, onUnlock, token: propToken, currentUser }) => {
 
   const isPremium = listing.tier === 'premium';
   
-  // FIX: Multi-layered bulletproof ownership matching check
   const isOwner = currentUser && (
     listing.ownerId === currentUser.uid || 
     listing.ownerId === currentUser.id ||
@@ -83,7 +82,8 @@ const ListingCard = ({ listing, onUnlock, token: propToken, currentUser }) => {
   }, [listing.id]);
 
   return (
-    <div className="flex flex-col text-slate-200 w-full max-w-md mx-auto bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-800/80 overflow-hidden shadow-2xl transition-all duration-300 hover:border-slate-700/60 mb-5 group">
+    // FIX: Added data-listing-id natively to guarantee the DOM contains the identity signature
+    <div data-listing-id={listing.id} className="flex flex-col text-slate-200 w-full max-w-md mx-auto bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-800/80 overflow-hidden shadow-2xl transition-all duration-300 hover:border-slate-700/60 mb-5 group">
       {/* Header */}
       <div className="flex items-center justify-between p-4 bg-slate-950/20">
         <div className="flex items-center gap-3">
@@ -161,13 +161,7 @@ const ListingCard = ({ listing, onUnlock, token: propToken, currentUser }) => {
         {/* Payment / Contact Logic */}
         <div className="pt-1">
           {isPremium && !isOwner ? (
-            <PaymentButton 
-              listingId={listing.id} 
-              token={activeToken} 
-              onUnlockSuccess={() => {
-                if (onUnlock) onUnlock();
-              }} 
-            />
+            <PaymentButton />
           ) : (
             <div className="w-full py-3 bg-slate-800/40 text-slate-300 text-xs text-center font-bold tracking-wide uppercase rounded-xl border border-slate-700/40 shadow-sm backdrop-blur-sm">
               Contact: <span className="text-indigo-400">{listing.contactDetails?.phone || 'Available'}</span>
