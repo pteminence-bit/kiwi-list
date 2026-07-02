@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Wallet, ArrowUpRight, X, History } from 'lucide-react';
+import { Wallet, ArrowUpRight, X, History, Plus } from 'lucide-react';
 
 const BACKEND_BASE_URL = 'https://kiwi-list-api.onrender.com';
 
@@ -16,7 +16,9 @@ const WalletCard = ({ token }) => {
   const [selectedTx, setSelectedTx] = useState(null);
 
   const [showModal, setShowModal] = useState(false);
+  const [showFundModal, setShowFundModal] = useState(false);
   const [amount, setAmount] = useState('');
+  const [fundAmount, setFundAmount] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
@@ -97,6 +99,37 @@ const WalletCard = ({ token }) => {
     }
   };
 
+  const handleFunding = async () => {
+    const numericAmount = parseFloat(fundAmount);
+    if (!numericAmount || numericAmount < 1000) { alert('Minimum funding amount is ₦1,000.'); return; }
+
+    setIsProcessing(true);
+    try {
+      const res = await fetch(`${BACKEND_BASE_URL}/api/listings/me/fund`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json', 
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ amount: numericAmount })
+      });
+      
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Funding request failed");
+
+      alert('Funding request initialized. Redirecting to payment...');
+      setShowFundModal(false);
+      setFundAmount('');
+      // Assuming backend returns a checkout_url to redirect to
+      if (result.checkout_url) window.location.href = result.checkout_url;
+      else window.location.reload();
+    } catch (err) {
+      alert(err.message || 'Network communication error.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   if (loading) return <div className="p-6 text-center text-slate-400 min-h-screen w-full flex items-center justify-center bg-slate-950">Accessing secured ledger...</div>;
 
   return (
@@ -121,20 +154,31 @@ const WalletCard = ({ token }) => {
             </div>
           </div>
 
-          {!userProfileData.isVerified ? (
-            <button className="w-full py-3.5 bg-slate-800 text-slate-500 font-semibold rounded-xl cursor-not-allowed text-sm" disabled>Verification Required</button>
-          ) : (
-            <button
-              disabled={userProfileData.isPayoutBlocked || wallet.walletBalance <= 2150}
-              onClick={() => setShowModal(true)}
-              className={`w-full py-3.5 px-6 rounded-xl text-white font-bold tracking-wide transition ${userProfileData.isPayoutBlocked || wallet.walletBalance <= 2150 ? 'bg-slate-800 cursor-not-allowed opacity-50' : 'bg-blue-600 hover:bg-blue-700'}`}
-            >
-              {userProfileData.isPayoutBlocked ? "Withdrawals Paused" : "Withdraw Funds"}
-            </button>
-          )}
+          <div className="flex gap-3">
+            {!userProfileData.isVerified ? (
+              <button className="w-full py-3.5 bg-slate-800 text-slate-500 font-semibold rounded-xl cursor-not-allowed text-sm" disabled>Verification Required</button>
+            ) : (
+              <>
+                <button
+                  disabled={userProfileData.isPayoutBlocked || wallet.walletBalance <= 2150}
+                  onClick={() => setShowModal(true)}
+                  className={`flex-1 py-3.5 px-6 rounded-xl text-white font-bold tracking-wide transition ${userProfileData.isPayoutBlocked || wallet.walletBalance <= 2150 ? 'bg-slate-800 cursor-not-allowed opacity-50' : 'bg-blue-600 hover:bg-blue-700'}`}
+                >
+                  Withdraw
+                </button>
+                <button
+                  onClick={() => setShowFundModal(true)}
+                  className="flex-1 py-3.5 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold tracking-wide transition flex items-center justify-center gap-2"
+                >
+                  <Plus size={18} /> Fund
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
+      {/* Transaction Ledger remains unchanged... */}
       <div className="w-full max-w-md mt-8">
         <h3 className="flex items-center gap-2 text-slate-400 font-bold mb-4 uppercase tracking-wider text-xs border-b pb-2 border-slate-800">
           <History size={16} /> Transaction Ledger
@@ -158,6 +202,7 @@ const WalletCard = ({ token }) => {
         </div>
       </div>
 
+      {/* Modals remain unchanged... */}
       {selectedTx && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
           <div className="bg-slate-900 border border-slate-800 text-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
@@ -188,6 +233,24 @@ const WalletCard = ({ token }) => {
             <input type="number" className="w-full p-3 bg-slate-950 border border-slate-800 rounded-lg mb-6 text-white outline-none focus:border-blue-500 font-mono" placeholder="₦2,000.00" value={amount} onChange={(e) => setAmount(e.target.value)} />
             <button onClick={handleWithdrawal} disabled={isProcessing} className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-lg transition">
               {isProcessing ? 'Processing Transaction...' : 'Confirm'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showFundModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="font-bold text-lg text-white">Fund Wallet</h2>
+              <button onClick={() => setShowFundModal(false)} className="text-slate-400 hover:text-white transition"><X size={20} /></button>
+            </div>
+            <div className="mb-4 text-xs text-slate-400 bg-slate-950 p-3 border border-slate-800 rounded-lg">
+              Add balance to your wallet for platform transactions. A <span className="text-emerald-400 font-bold">₦100 flat fee</span> applies to all deposits.
+            </div>
+            <input type="number" className="w-full p-3 bg-slate-950 border border-slate-800 rounded-lg mb-6 text-white outline-none focus:border-blue-500 font-mono" placeholder="₦1,000.00" value={fundAmount} onChange={(e) => setFundAmount(e.target.value)} />
+            <button onClick={handleFunding} disabled={isProcessing} className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold rounded-lg transition">
+              {isProcessing ? 'Redirecting to Payment...' : 'Proceed to Payment'}
             </button>
           </div>
         </div>
