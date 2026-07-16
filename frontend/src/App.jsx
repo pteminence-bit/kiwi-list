@@ -20,6 +20,7 @@ import PaymentSuccess from './pages/PaymentSuccess';
 import Inventory from './components/Inventory';
 import ChatsPage from './pages/ChatsPage';
 import Dashboard from './pages/Dashboard';
+import GetVerified from './pages/KYC';
 
 const DashboardLayout = () => {
   const { user, loading } = useAuth();
