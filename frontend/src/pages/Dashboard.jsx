@@ -1,15 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Wallet, Building2, Package, Settings, ShieldCheck, MessageSquare, Loader2 } from 'lucide-react';
+import { Wallet, Building2, Package, Settings, ShieldCheck, MessageSquare, Loader2, UserCircle } from 'lucide-react';
 import { auth } from '../firebase';
 import { API_BASE_URL } from '../config';
 
 const Dashboard = () => {
-  const [stats, setStats] = useState({
-    balance: '...',
-    listingsCount: 0,
-    inventoryCount: 0
-  });
+  const [stats, setStats] = useState({ balance: 0, listings: 0, inventory: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -17,74 +13,66 @@ const Dashboard = () => {
       try {
         const user = auth.currentUser;
         if (!user) return;
-        
         const token = await user.getIdToken();
         const response = await fetch(`${API_BASE_URL}/api/users/me/stats`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-
         if (response.ok) {
           const data = await response.json();
-          setStats({
-            balance: `₦${data.balance?.toLocaleString() || 0}`,
-            listingsCount: data.listingsCount || 0,
-            inventoryCount: data.inventoryCount || 0
-          });
+          setStats({ balance: data.balance || 0, listings: data.listingsCount || 0, inventory: data.inventoryCount || 0 });
         }
-      } catch (err) {
-        console.error("Failed to fetch dashboard stats:", err);
-      } finally {
-        setLoading(false);
-      }
+      } catch (err) { console.error("Stats fetch error:", err); }
+      finally { setLoading(false); }
     };
-
     fetchDashboardStats();
   }, []);
 
-  const statItems = [
-    { label: 'Wallet Balance', value: stats.balance, icon: Wallet },
-    { label: 'Active Listings', value: stats.listingsCount, icon: Building2 },
-    { label: 'Inventory Items', value: stats.inventoryCount, icon: Package },
-  ];
-
-  const menuItems = [
-    { name: 'My Listings', path: '/manage', icon: Building2, color: 'text-blue-500' },
-    { name: 'Inventory', path: '/inventory', icon: Package, color: 'text-indigo-500' },
-    { name: 'Wallet', path: '/wallet', icon: Wallet, color: 'text-emerald-500' },
-    { name: 'Messages', path: '/chats', icon: MessageSquare, color: 'text-amber-500' },
-    { name: 'Verification', path: '/kyc', icon: ShieldCheck, color: 'text-purple-500' },
-    { name: 'Settings', path: '/settings', icon: Settings, color: 'text-slate-500' },
+  const navItems = [
+    { name: 'Wallet', path: '/wallet', icon: Wallet, color: 'text-emerald-600', bg: 'bg-emerald-50', stat: `₦${stats.balance.toLocaleString()}` },
+    { name: 'My Listings', path: '/manage', icon: Building2, color: 'text-blue-600', bg: 'bg-blue-50', stat: `${stats.listings} Active` },
+    { name: 'Inventory', path: '/inventory', icon: Package, color: 'text-indigo-600', bg: 'bg-indigo-50', stat: `${stats.inventory} Items` },
+    { name: 'Messages', path: '/chats', icon: MessageSquare, color: 'text-amber-600', bg: 'bg-amber-50' },
+    { name: 'Verification', path: '/kyc', icon: ShieldCheck, color: 'text-purple-600', bg: 'bg-purple-50' },
+    { name: 'Settings', path: '/settings', icon: Settings, color: 'text-slate-600', bg: 'bg-slate-50' },
   ];
 
   return (
-    <div className="p-8 max-w-5xl mx-auto">
-      <h1 className="text-2xl font-black text-slate-900 mb-8">Account Dashboard</h1>
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-        {statItems.map((stat, i) => (
-          <div key={i} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
-              {loading ? <Loader2 className="animate-spin" size={24} /> : <stat.icon size={24} />}
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-400 uppercase">{stat.label}</p>
-              <p className="text-xl font-black text-slate-900">{stat.value}</p>
-            </div>
+    <div className="p-4 md:p-8 max-w-5xl mx-auto">
+      {/* Profile Header */}
+      <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex items-center gap-4">
+          <div className="bg-slate-100 p-4 rounded-full text-slate-400">
+            <UserCircle size={48} />
           </div>
-        ))}
+          <div>
+            <h1 className="text-xl font-black text-slate-900">Account Overview</h1>
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">{auth.currentUser?.email}</p>
+          </div>
+        </div>
+        <div className="px-6 py-2 bg-slate-900 text-white text-[10px] font-black uppercase rounded-full tracking-widest shadow-lg">
+          Member Status: Active
+        </div>
       </div>
 
-      {/* Navigation Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        {menuItems.map((item) => (
+      {/* Action Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        {navItems.map((item) => (
           <Link 
             key={item.name} 
             to={item.path} 
-            className="p-6 bg-white rounded-2xl border border-slate-200 hover:border-blue-500 transition-all shadow-sm hover:shadow-md flex flex-col items-center text-center gap-3"
+            className="group p-6 bg-white rounded-3xl border border-slate-200 hover:border-slate-300 transition-all shadow-sm hover:shadow-lg flex flex-col gap-4"
           >
-            <item.icon className={item.color} size={32} />
-            <span className="font-bold text-slate-800 text-sm">{item.name}</span>
+            <div className={`w-12 h-12 ${item.bg} ${item.color} rounded-2xl flex items-center justify-center`}>
+              <item.icon size={24} />
+            </div>
+            <div>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item.name}</p>
+              {loading ? (
+                <Loader2 className="animate-spin text-slate-300 mt-1" size={16} />
+              ) : (
+                <p className="text-lg font-black text-slate-900">{item.stat || 'Manage'}</p>
+              )}
+            </div>
           </Link>
         ))}
       </div>
