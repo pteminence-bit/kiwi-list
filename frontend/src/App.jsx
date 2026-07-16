@@ -20,7 +20,7 @@ import PaymentSuccess from './pages/PaymentSuccess';
 import Inventory from './components/Inventory';
 import ChatsPage from './pages/ChatsPage';
 import Dashboard from './pages/Dashboard';
-import GetVerified from './pages/KYC';
+import KYC from './pages/KYC';
 
 const DashboardLayout = () => {
   const { user, loading } = useAuth();
@@ -97,7 +97,7 @@ const DashboardLayout = () => {
             <Route path="/edit-listing/:id" element={<EditListing token={user.accessToken} />} />
             <Route path="*" element={<Navigate to="/" replace />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/kyc" element={<KYC token={token} isVerified={user.isVerified} />} />
+            <Route path="/kyc" element={<KYC token={user.accessToken} />} />
           </Routes>
         </main>
 
