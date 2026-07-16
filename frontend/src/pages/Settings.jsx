@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, FileText, UserCheck, Upload, Loader2, CheckCircle, Save, Building2 } from 'lucide-react';
+import { User, Upload, Loader2, CheckCircle, Save, Building2 } from 'lucide-react';
 
 const BACKEND_BASE_URL = 'https://kiwi-list-api.onrender.com';
 

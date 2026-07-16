@@ -30,10 +30,14 @@ const DashboardLayout = () => {
     const checkAdminStatus = async () => {
       if (user?.email) {
         try {
-          const sanitizedEmail = user.email.toLowerCase().trim().replace(/[@.]/g, '-');
-          const customUserDocId = `kiwi-user-${sanitizedEmail}`;
-          const userDocRef = doc(db, 'users', customUserDocId);
+          // --- ALIGNED: Matches backend getKiwiUserId helper ---
+          const cleanEmail = user.email.toLowerCase().trim();
+          const sanitizedEmail = cleanEmail.replace(/[@.]/g, '-');
+          const kiwiFirestoreId = `kiwi-user-${sanitizedEmail}`;
+          
+          const userDocRef = doc(db, 'users', kiwiFirestoreId);
           const userDocSnap = await getDoc(userDocRef);
+          
           if (userDocSnap.exists()) {
             setIsAdmin(userDocSnap.data().role === 'admin');
           }
@@ -42,12 +46,14 @@ const DashboardLayout = () => {
         }
       }
     };
+    
     if (!loading && user) checkAdminStatus();
   }, [user, loading]);
 
   if (loading) return null;
   if (!user) return <Navigate to="/login" replace />; 
 
+  // Note: user.emailVerified is available via Firebase Auth standard user object
   if (!user.emailVerified) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-slate-950 w-full p-6 text-center text-white">
@@ -64,7 +70,6 @@ const DashboardLayout = () => {
     );
   }
 
-  // Detect if we are in any chat-related route
   const isChatRoute = location.pathname.startsWith('/chats') || location.pathname.startsWith('/chat/');
 
   return (
@@ -86,10 +91,8 @@ const DashboardLayout = () => {
             <Route path="/admin" element={isAdmin ? <AdminPortal token={user.accessToken} /> : <Navigate to="/" />} />
             <Route path="/wallet" element={<WalletCard token={user.accessToken} />} />
             <Route path="/settings" element={<Settings token={user.accessToken} />} />
-            {/* Unified Chat Routes */}
             <Route path="/chats" element={<ChatsPage token={user.accessToken} />} />
             <Route path="/chat/:chatId" element={<ChatsPage token={user.accessToken} />} />
-            
             <Route path="/updates" element={<div className="p-4"><AdminUpdates /></div>} />
             <Route path="/success" element={<PaymentSuccess />} />
             <Route path="/inventory" element={<Inventory />} />

@@ -10,43 +10,46 @@ export const verifyUser = async (req, res, next) => {
 
   try {
     const decodedToken = await auth.verifyIdToken(token);
+    
+    // Aligned: Keep the original Firebase UID for Auth tasks
     req.user = decodedToken;
+    req.user.uid = decodedToken.uid;
 
     if (!decodedToken.email) {
       return res.status(400).json({ error: "User email missing from authorization payload token." });
     }
 
-    // Convert raw token email into the matching internal custom string structure
+    // Aligned: Generate the specific Firestore path ID
     const sanitizedEmail = decodedToken.email.toLowerCase().trim().replace(/[@.]/g, '-');
-    const kiwiUserId = `kiwi-user-${sanitizedEmail}`;
+    const kiwiFirestoreId = `kiwi-user-${sanitizedEmail}`;
+    req.user.kiwiFirestoreId = kiwiFirestoreId;
 
-    // Target the customized document ID format instead of the raw decodedToken.uid
-    const userRef = db.collection('users').doc(kiwiUserId);
+    // Target the customized document ID format for Firestore operations
+    const userRef = db.collection('users').doc(kiwiFirestoreId);
     const doc = await userRef.get();
 
     if (!doc.exists) {
-      // Aligned with signup logic and admin control system
       await userRef.set({
-        id: kiwiUserId,
+        id: kiwiFirestoreId,
         email: decodedToken.email.toLowerCase().trim() || "",
         displayName: decodedToken.name || "User",
         walletBalance: 0,
         totalEarned: 0,
         role: 'user',
-        isDisabled: false, // Initialized explicitly to map with adminRoutes.js
-        isPayoutBlocked: false, // Initialized explicitly to map with wallet/admin systems
-        verificationStatus: 'unverified', 
+        isDisabled: false,
+        isPayoutBlocked: false,
+        verificationStatus: 'unverified',
         createdAt: new Date().toISOString()
       }, { merge: true });
     } else {
       const userData = doc.data();
       
-      // Admin suspension check (matches adminRoutes.js 'disable' action)
+      // Admin suspension check
       if (userData.isDisabled === true) {
         return res.status(403).json({ error: "Your account has been suspended by an administrator." });
       }
 
-      // DATA MIGRATION: Auto-repair database structure anomalies for older records
+      // Auto-repair data schema
       if (
         userData.walletBalance === undefined || 
         userData.verificationStatus === undefined || 

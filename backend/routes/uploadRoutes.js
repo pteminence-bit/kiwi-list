@@ -13,17 +13,17 @@ const upload = multer({
 });
 
 // --- USER CONTEXT NORMALIZATION ---
-// Matches the exact lowercase, trim, and sanitation logic used in the wallet route
+// Aligned with the engine: Keeps the Firebase UID standard, 
+// provides a secondary identifier for Firestore operations.
 const ensureUserContext = (req, res, next) => {
   if (req.user?.email) {
     const cleanEmail = req.user.email.toLowerCase().trim();
     const sanitizedEmail = cleanEmail.replace(/[@.]/g, '-');
-    const kiwiUserId = `kiwi-user-${sanitizedEmail}`;
     
-    // Cross-bridge keys so both req.user.id and req.user.uid match the wallet system
-    req.user.uid = kiwiUserId;
-    req.user.id = kiwiUserId;
-  } else if (!req.user) {
+    // The Firebase UID remains the standard auth identifier
+    // We add the specific Firestore path ID for database consistency
+    req.user.kiwiFirestoreId = `kiwi-user-${sanitizedEmail}`;
+  } else {
     return res.status(401).json({ error: "Auth missing identity context." });
   }
   next();
@@ -31,10 +31,10 @@ const ensureUserContext = (req, res, next) => {
 
 // --- ROUTES ---
 
-// Multi-image upload for premium listings (expects 'images' array field, max 4 files)
+// Multi-image upload for premium listings
 router.post('/listings', verifyUser, ensureUserContext, upload.array('images', 4), uploadImagesToR2);
 
-// Single file upload route for KYC documents or general assets (expects 'file' field)
+// Single file upload route for KYC documents or general assets
 router.post('/file', verifyUser, ensureUserContext, upload.single('file'), uploadImagesToR2);
 
 

@@ -11,7 +11,7 @@ const PaymentSuccess = () => {
   const [verifying, setVerifying] = useState(true);
   const reference = searchParams.get('reference');
   
-  // Execution loop firewall guard flag
+  // Execution loop firewall guard flag to prevent redundant network calls
   const hasChecked = useRef(false);
 
   useEffect(() => {
@@ -21,17 +21,18 @@ const PaymentSuccess = () => {
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      // Return early if state is loading, or if execution guard is already locked
+      // Return early if authentication state is loading, or if guard is locked
       if (!user || hasChecked.current) return;
 
       try {
         hasChecked.current = true;
         
-        // Securely unhook listener immediately to prevent subsequent session loop ticks
+        // Securely unhook listener immediately
         unsubscribe();
 
         const token = await user.getIdToken();
 
+        // Perform verification against the backend API
         const response = await fetch(`${API_BASE_URL}/api/payments/verify?reference=${reference}`, {
           method: 'GET',
           headers: {
@@ -75,7 +76,7 @@ const PaymentSuccess = () => {
             </div>
             <div>
               <h2 className="text-2xl font-black text-white">Payment Successful!</h2>
-              <p className="text-sm text-slate-400 mt-2">Your listing unlock status is now live and updated across our data systems.</p>
+              <p className="text-sm text-slate-400 mt-2">Your wallet has been credited and status is updated across our data systems.</p>
             </div>
             <button 
               onClick={() => navigate('/')}

@@ -1,7 +1,7 @@
-// backend/routes/chatRoutes.js
 import express from 'express';
 import { db } from '../config/firebase.js';
 import { verifyUser } from '../middleware/authMiddleware.js';
+import { FieldValue } from 'firebase-admin/firestore';
 
 const router = express.Router();
 
@@ -13,21 +13,28 @@ const getKiwiUserId = (email) => {
   return `kiwi-user-${sanitizedEmail}`;
 };
 
+// --- CHAT ID GENERATOR ---
+const generateChatId = async () => {
+  const counterRef = db.collection('metadata').doc('chat_counter');
+  const counterDoc = await counterRef.get();
+  
+  const currentCount = counterDoc.exists ? counterDoc.data().count : 0;
+  const nextCount = currentCount + 1;
+  
+  await counterRef.set({ count: nextCount });
+  return `kiwi-chat-${nextCount}`;
+};
+
 /**
  * @route   POST /api/chats/initialize
- * @desc    Creates a secure chat room window context between a buyer and owner
- * @access  Protected (Verified Users Only)
  */
 router.post('/initialize', verifyUser, async (req, res) => {
   const { listingId } = req.body;
   
   try {
     if (!listingId) return res.status(400).json({ error: "Listing ID target is required." });
-    if (!req.user?.email) return res.status(400).json({ error: "Auth context missing identity." });
-
     const buyerKiwiId = getKiwiUserId(req.user.email);
 
-    // 1. Fetch the Target Asset Listing Details
     const listingDoc = await db.collection('listings').doc(listingId).get();
     if (!listingDoc.exists) return res.status(404).json({ error: "Target listing not found." });
     
@@ -35,36 +42,39 @@ router.post('/initialize', verifyUser, async (req, res) => {
     const ownerKiwiId = listingData.ownerId;
 
     if (buyerKiwiId === ownerKiwiId) {
-      return res.status(400).json({ error: "You cannot initiate a chat with your own listing." });
+      return res.status(400).json({ error: "Cannot chat with own listing." });
     }
 
-    // 2. Structural Firewall Check: Verify premium unlocks if tier is premium
     if (listingData.tier === 'premium') {
       const unlockDoc = await db.collection('users').doc(buyerKiwiId).collection('unlocks').doc(listingId).get();
       if (!unlockDoc.exists) {
-        return res.status(403).json({ 
-          error: "This is a Premium Listing. You must unlock it via your wallet balance before initiating a chat." 
-        });
+        return res.status(403).json({ error: "Premium listing requires unlock." });
       }
     }
 
-    // 3. Generate a deterministic room identifier to prevent duplicate rooms
-    const chatId = `${listingId}_${buyerKiwiId}`;
-    const chatRef = db.collection('chats').doc(chatId);
-    const chatDoc = await chatRef.get();
+    // Check for existing room to avoid duplicate chats for same listing
+    const existingChat = await db.collection('chats')
+      .where('listingId', '==', listingId)
+      .where('buyerId', '==', buyerKiwiId)
+      .limit(1)
+      .get();
 
-    if (!chatDoc.exists) {
-      await chatRef.set({
-        id: chatId,
-        listingId,
-        listingTitle: listingData.title || "Premium Asset",
-        ownerId: ownerKiwiId,
-        buyerId: buyerKiwiId,
-        createdAt: new Date().toISOString(),
-        lastMessageAt: new Date().toISOString(),
-        lastMessageText: "Chat initialized."
-      });
+    if (!existingChat.empty) {
+      return res.status(200).json({ message: "Chat exists.", chatId: existingChat.docs[0].id });
     }
+
+    // Generate new custom ID
+    const chatId = await generateChatId();
+    await db.collection('chats').doc(chatId).set({
+      id: chatId,
+      listingId,
+      listingTitle: listingData.title || "Premium Asset",
+      ownerId: ownerKiwiId,
+      buyerId: buyerKiwiId,
+      createdAt: new Date().toISOString(),
+      lastMessageAt: new Date().toISOString(),
+      lastMessageText: "Chat initialized."
+    });
 
     return res.status(200).json({ message: "Chat handshake verified.", chatId });
   } catch (error) {
@@ -74,19 +84,15 @@ router.post('/initialize', verifyUser, async (req, res) => {
 
 /**
  * @route   GET /api/chats/inbox
- * @desc    Retrieves all conversation windows where the current user is a buyer or an owner
- * @access  Protected (Verified Users Only)
  */
 router.get('/inbox', verifyUser, async (req, res) => {
   try {
-    if (!req.user?.email) return res.status(400).json({ error: "Auth context missing identity." });
     const kiwiUserId = getKiwiUserId(req.user.email);
 
-    // Query active streams where user acts as either the prospective buyer or asset creator
-    const buyerQuery = db.collection('chats').where('buyerId', '==', kiwiUserId).get();
-    const ownerQuery = db.collection('chats').where('ownerId', '==', kiwiUserId).get();
-
-    const [buyerSnap, ownerSnap] = await Promise.all([buyerQuery, ownerQuery]);
+    const [buyerSnap, ownerSnap] = await Promise.all([
+      db.collection('chats').where('buyerId', '==', kiwiUserId).get(),
+      db.collection('chats').where('ownerId', '==', kiwiUserId).get()
+    ]);
 
     const chats = [
       ...buyerSnap.docs.map(doc => doc.data()),

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { auth } from '../firebase';
-import { signInWithCustomToken } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
@@ -14,41 +14,30 @@ const Login = () => {
   const handleAuth = async (e) => {
     e.preventDefault();
     setIsAuthenticating(true);
-    
-    const endpoint = isRegister ? '/auth/signup' : '/auth/login';
-    // Perfectly aligns against root app.use('/', userRoutes) passthrough engine rules
-    const backendUrl = `https://kiwi-list-api.onrender.com${endpoint}`;
 
     try {
-      const payload = isRegister ? { email, password, displayName } : { email, password };
-      
-      const response = await fetch(backendUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Authentication handshake rejected.');
-      }
-
-      // Secure local store token registration tracking allocation 
-      localStorage.setItem('token', data.token);
-      
-      // Pass the customized customToken containing our custom-formatted UID directly to the Client Auth SDK
-      await signInWithCustomToken(auth, data.token);
-      
       if (isRegister) {
+        // 1. Create User in Firebase
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        await updateProfile(userCredential.user, { displayName });
+
+        // 2. Sync with your Backend to initialize Firestore user doc
+        await fetch(`https://kiwi-list-api.onrender.com/api/auth/signup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, displayName }),
+        });
+        
         alert("Account initialized successfully! Verification email dispatched.");
+      } else {
+        // Sign in via Firebase Client SDK
+        await signInWithEmailAndPassword(auth, email, password);
       }
       
       navigate('/');
     } catch (error) {
-      alert(error.message);
+      console.error("Auth error:", error);
+      alert(error.message || "Authentication failed.");
     } finally {
       setIsAuthenticating(false);
     }
@@ -90,7 +79,7 @@ const Login = () => {
             disabled={isAuthenticating}
             className="w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 disabled:opacity-50 transition text-sm tracking-wide"
           >
-            {isAuthenticating ? 'Authenticating Security context...' : isRegister ? 'Register Account' : 'Sign In'}
+            {isAuthenticating ? 'Authenticating...' : isRegister ? 'Register Account' : 'Sign In'}
           </button>
         </form>
 

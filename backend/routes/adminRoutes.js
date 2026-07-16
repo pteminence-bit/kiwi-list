@@ -1,4 +1,3 @@
-// backend/routes/adminRoutes.js
 import express from 'express';
 import { db } from '../config/firebase.js';
 import { verifyUser } from '../middleware/authMiddleware.js';
@@ -20,7 +19,7 @@ const verifyAdmin = async (req, res, next) => {
       return res.status(401).json({ error: "Authentication context missing email." });
     }
     
-    // Aligned to check the custom user document ID format instead of req.user.uid
+    // Aligned: Targeting the Firestore ID consistently
     const kiwiUserId = getKiwiUserId(req.user.email);
     const userDoc = await db.collection('users').doc(kiwiUserId).get();
     
@@ -46,73 +45,41 @@ router.get('/debug-my-status', verifyUser, async (req, res) => {
     
     if (!userDoc.exists) {
       return res.status(200).json({
-        message: "Firebase authentication token is valid, but no corresponding user document was found in your Firestore 'users' collection.",
+        message: "Auth token valid, but Firestore document not found.",
         authenticated: true,
         firestoreDocumentFound: false,
-        uid: req.user.uid,
         kiwiUserId: kiwiUserId,
         email: req.user.email
       });
     }
 
     const userData = userDoc.data();
-
     res.json({
-      message: "Authentication and database handshake successful!",
+      message: "Handshake successful!",
       authenticated: true,
-      firestoreDocumentFound: true,
-      firebaseUid: req.user.uid,
       kiwiUserId: kiwiUserId,
       firestoreRole: userData.role || "No role assigned",
-      isVerifiedAgent: userData.isVerifiedAgent || false,
       fullFirestorePayload: userData
     });
   } catch (error) {
-    res.status(500).json({ error: "Debug engine route error: " + error.message });
+    res.status(500).json({ error: "Debug error: " + error.message });
   }
 });
 
 // --- GET ALL ADMINISTRATIVE REVIEW QUEUES ---
 router.get('/review-queue', verifyUser, verifyAdmin, async (req, res) => {
   try {
-    const flaggedListings = await db.collection('listings').where('isFlagged', '==', true).get();
-    const pendingListings = await db.collection('listings').where('status', '==', 'needs_review').get();
-    
-    const kycRequests = await db.collection('users').where('verificationStatus', '==', 'pending').get();
-    const flaggedReviews = await db.collection('user_reviews').where('status', '==', 'pending_moderation').get();
-    
-    const allUsersList = await db.collection('users').get();
-
-    const propertiesQueue = [...flaggedListings.docs, ...pendingListings.docs].map(doc => ({
-      id: doc.id,
-      queueType: 'property',
-      ...doc.data()
-    }));
-
-    const kycQueue = kycRequests.docs.map(doc => ({
-      id: doc.id,
-      queueType: 'kyc',
-      userId: doc.id, // This is correctly mapped to their kiwiUserId doc name
-      ...doc.data()
-    }));
-
-    const reviewsQueue = flaggedReviews.docs.map(doc => ({
-      id: doc.id,
-      queueType: 'review',
-      ...doc.data()
-    }));
-
-    const usersQueue = allUsersList.docs.map(doc => ({
-      id: doc.id,
-      queueType: 'user',
-      ...doc.data()
-    }));
+    const [flagged, pending, kyc, flaggedReviews] = await Promise.all([
+      db.collection('listings').where('isFlagged', '==', true).get(),
+      db.collection('listings').where('status', '==', 'needs_review').get(),
+      db.collection('users').where('verificationStatus', '==', 'pending').get(),
+      db.collection('user_reviews').where('status', '==', 'pending_moderation').get()
+    ]);
 
     res.json({
-      properties: propertiesQueue,
-      kyc: kycQueue,
-      reviews: reviewsQueue,
-      users: usersQueue
+      properties: [...flagged.docs, ...pending.docs].map(d => ({ id: d.id, queueType: 'property', ...d.data() })),
+      kyc: kyc.docs.map(d => ({ id: d.id, queueType: 'kyc', userId: d.id, ...d.data() })),
+      reviews: flaggedReviews.docs.map(d => ({ id: d.id, queueType: 'review', ...d.data() }))
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -121,60 +88,44 @@ router.get('/review-queue', verifyUser, verifyAdmin, async (req, res) => {
 
 // --- COMPREHENSIVE MODERATION DECISION PORTAL ---
 router.post('/moderate', verifyUser, verifyAdmin, async (req, res) => {
-  const { targetId, queueType, action } = req.body; // targetId for users must pass the kiwi-user-email string format
+  const { targetId, queueType, action } = req.body; 
 
   try {
     const batch = db.batch();
 
-    if (queueType === 'property') {
-      const docRef = db.collection('listings').doc(targetId);
-      if (action === 'approve') {
-        batch.update(docRef, { isFlagged: false, status: 'active' });
-      } else {
-        batch.delete(docRef);
-      }
-    } 
-    else if (queueType === 'kyc') {
-      const userRef = db.collection('users').doc(targetId);
-      
-      if (action === 'approve') {
-        batch.update(userRef, { 
-          verificationStatus: 'verified', 
-          isVerifiedAgent: true, 
-          role: 'agent',
-          kycReviewedAt: new Date().toISOString()
-        });
-      } else {
-        batch.update(userRef, { 
-          verificationStatus: 'declined',
-          kycReviewedAt: new Date().toISOString()
-        });
-      }
-    } 
-    else if (queueType === 'review') {
-      const reviewRef = db.collection('user_reviews').doc(targetId);
-      if (action === 'approve') {
-        batch.update(reviewRef, { status: 'active' });
-      } else {
-        batch.delete(reviewRef);
-      }
-    }
-    else if (queueType === 'user') {
-      const userRef = db.collection('users').doc(targetId);
-      
-      if (action === 'disable') {
-        batch.update(userRef, { isDisabled: true });
-      } else if (action === 'enable') {
-        batch.update(userRef, { isDisabled: false });
-      } else if (action === 'block_payout') {
-        batch.update(userRef, { isPayoutBlocked: true });
-      } else if (action === 'unblock_payout') {
-        batch.update(userRef, { isPayoutBlocked: false });
-      }
+    switch (queueType) {
+      case 'property':
+        const listingRef = db.collection('listings').doc(targetId);
+        action === 'approve' ? batch.update(listingRef, { isFlagged: false, status: 'active' }) : batch.delete(listingRef);
+        break;
+        
+      case 'kyc':
+        const userRef = db.collection('users').doc(targetId);
+        const statusUpdate = action === 'approve' 
+          ? { verificationStatus: 'verified', isVerifiedAgent: true, role: 'agent', kycReviewedAt: new Date().toISOString() }
+          : { verificationStatus: 'declined', kycReviewedAt: new Date().toISOString() };
+        batch.update(userRef, statusUpdate);
+        break;
+
+      case 'review':
+        const reviewRef = db.collection('user_reviews').doc(targetId);
+        action === 'approve' ? batch.update(reviewRef, { status: 'active' }) : batch.delete(reviewRef);
+        break;
+
+      case 'user':
+        const uRef = db.collection('users').doc(targetId);
+        const userActions = {
+          'disable': { isDisabled: true },
+          'enable': { isDisabled: false },
+          'block_payout': { isPayoutBlocked: true },
+          'unblock_payout': { isPayoutBlocked: false }
+        };
+        if (userActions[action]) batch.update(uRef, userActions[action]);
+        break;
     }
 
     await batch.commit();
-    res.json({ message: `Target entity action executed: ${action} on type: ${queueType}` });
+    res.json({ message: `Action '${action}' performed on '${queueType}' entity.` });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

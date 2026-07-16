@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { ShieldCheck, UploadCloud, AlertCircle, ArrowLeft, Trash2, FileText } from 'lucide-react';
 
-const BACKEND_BASE_URL = window.location.hostname === 'localhost' 
-  ? 'http://localhost:5000' 
-  : 'https://kiwi-list-api.onrender.com';
+// Aligned with backend endpoint structure
+const BACKEND_BASE_URL = 'https://kiwi-list-api.onrender.com';
 
 const KycSubmission = ({ token, onBack }) => {
   const [formData, setFormData] = useState({
@@ -32,7 +31,7 @@ const KycSubmission = ({ token, onBack }) => {
     if (selectedFiles.length === 0) return;
 
     if (documentUrls.length + selectedFiles.length > 2) {
-      setStatus({ type: 'error', message: 'You can upload a maximum of 2 verification documents (e.g., front and back).' });
+      setStatus({ type: 'error', message: 'You can upload a maximum of 2 verification documents.' });
       return;
     }
 
@@ -41,26 +40,24 @@ const KycSubmission = ({ token, onBack }) => {
 
     const uploadData = new FormData();
     selectedFiles.forEach(file => {
-      uploadData.append('files', file); 
+      uploadData.append('file', file); // Matches backend 'file' field expectation
     });
 
     try {
-      const res = await fetch(`${BACKEND_BASE_URL}/upload`, {
+      const res = await fetch(`${BACKEND_BASE_URL}/api/upload/file`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
         body: uploadData
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to stream assets to storage edge.');
+      if (!res.ok) throw new Error(data.error || 'Failed to upload document.');
       
-      const newUrls = Array.isArray(data) ? data.map(item => item.url) : [data.url || data.fileUrl];
-      setDocumentUrls(prev => [...prev, ...newUrls].slice(0, 2));
-      setStatus({ type: 'success', message: 'Document(s) processed and cached successfully!' });
+      const newUrl = data.url || data.imageUrl;
+      setDocumentUrls(prev => [...prev, newUrl].slice(0, 2));
+      setStatus({ type: 'success', message: 'Document processed successfully!' });
     } catch (err) {
-      console.warn("Direct upload endpoint missed, putting fallback asset layout link.");
-      const mockUrls = selectedFiles.map((_, i) => `https://pub-r2-placeholder.cloudflare.com/kyc_${Date.now()}_${i}.jpg`);
-      setDocumentUrls(prev => [...prev, ...mockUrls].slice(0, 2));
+      setStatus({ type: 'error', message: err.message });
     } finally {
       setUploading(false);
     }
@@ -73,14 +70,14 @@ const KycSubmission = ({ token, onBack }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (documentUrls.length === 0) {
-      setStatus({ type: 'error', message: 'Please upload at least one clear copy of your identity verification document.' });
+      setStatus({ type: 'error', message: 'Please upload identity document.' });
       return;
     }
 
     setStatus({ type: null, message: '' });
 
     try {
-      const res = await fetch(`${BACKEND_BASE_URL}/submit-kyc`, {
+      const res = await fetch(`${BACKEND_BASE_URL}/api/users/submit-kyc`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -95,9 +92,9 @@ const KycSubmission = ({ token, onBack }) => {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'KYC pipeline registration failed.');
+      if (!res.ok) throw new Error(data.error || 'Registration failed.');
 
-      setStatus({ type: 'success', message: 'Verification document packet routed to administrative queue safely!' });
+      setStatus({ type: 'success', message: 'KYC packet submitted successfully!' });
     } catch (err) {
       setStatus({ type: 'error', message: err.message });
     }
@@ -105,7 +102,7 @@ const KycSubmission = ({ token, onBack }) => {
 
   return (
     <div className="p-4 md:p-8 bg-slate-50 min-h-screen flex items-center justify-center text-slate-800">
-      <div className="bg-white w-full max-w-xl rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-all">
+      <div className="bg-white w-full max-w-xl rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         
         <div className="bg-slate-900 p-6 text-white relative">
           {onBack && (
@@ -118,113 +115,56 @@ const KycSubmission = ({ token, onBack }) => {
               <ShieldCheck size={28} className="text-emerald-400" />
             </div>
             <h2 className="text-xl font-black tracking-tight">Agent Verification</h2>
-            <p className="text-xs text-slate-400 mt-1 max-w-xs">Submit official identification to clear premium marketplace listing paywalls</p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 md:p-6 space-y-5">
-          
           {status.message && (
             <div className={`p-3.5 border rounded-xl flex gap-2.5 text-xs font-medium ${
               status.type === 'error' ? 'bg-red-50 border-red-200 text-red-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700'
             }`}>
-              <AlertCircle size={16} className={`shrink-0 ${status.type === 'error' ? 'text-red-500' : 'text-emerald-500'}`} />
+              <AlertCircle size={16} />
               <p>{status.message}</p>
             </div>
           )}
 
           <div className="space-y-1.5">
-            <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Full Legal Name</label>
-            <input
-              type="text"
-              name="fullName"
-              required
-              value={formData.fullName}
-              onChange={handleInputChange}
-              placeholder="Eminence Bassey"
-              className="w-full text-xs p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white outline-none transition font-medium"
-            />
+            <label className="text-xs font-bold uppercase text-slate-400">Full Legal Name</label>
+            <input type="text" name="fullName" required value={formData.fullName} onChange={handleInputChange} className="w-full text-xs p-3 border rounded-xl" />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-400">ID Type</label>
-              <select
-                name="idType"
-                value={formData.idType}
-                onChange={handleInputChange}
-                className="w-full text-xs p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white outline-none transition font-medium"
-              >
-                {idOptions.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
+              <label className="text-xs font-bold uppercase text-slate-400">ID Type</label>
+              <select name="idType" value={formData.idType} onChange={handleInputChange} className="w-full text-xs p-3 border rounded-xl">
+                {idOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
               </select>
             </div>
-
             <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-400">ID Serial Number</label>
-              <input
-                type="text"
-                name="idNumber"
-                required
-                value={formData.idNumber}
-                onChange={handleInputChange}
-                placeholder="Ex: 12345678901"
-                className="w-full text-xs p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white outline-none transition font-medium"
-              />
+              <label className="text-xs font-bold uppercase text-slate-400">ID Number</label>
+              <input type="text" name="idNumber" required value={formData.idNumber} onChange={handleInputChange} className="w-full text-xs p-3 border rounded-xl" />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-bold uppercase tracking-wider text-slate-400 font-mono">Upload Identity Capture (1-2 Images)</label>
-            
+            <label className="text-xs font-bold uppercase text-slate-400">Upload Identity</label>
             {documentUrls.length < 2 && (
-              <div className="relative border-2 border-dashed border-slate-200 rounded-xl p-6 bg-slate-50/50 hover:bg-slate-50 transition flex flex-col items-center justify-center text-center cursor-pointer mb-3">
-                <input 
-                  type="file" 
-                  multiple 
-                  accept="image/*,application/pdf" 
-                  onChange={handleFileUpload}
-                  className="absolute inset-0 opacity-0 cursor-pointer" 
-                  disabled={uploading}
-                />
-                
-                <UploadCloud size={32} className={uploading ? "animate-pulse text-blue-500" : "text-slate-400"} />
-                
-                <p className="text-xs font-bold text-slate-700 mt-2">
-                  {uploading ? "Streaming documentation file arrays..." : "Click or drag capture asset here"}
-                </p>
-                <p className="text-[10px] text-slate-400 mt-0.5">Provide clear captures (front & back if applicable). Max 5MB per file.</p>
+              <div className="relative border-2 border-dashed rounded-xl p-6 flex flex-col items-center cursor-pointer hover:border-blue-500">
+                <input type="file" multiple onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" disabled={uploading} />
+                <UploadCloud size={32} className="text-slate-400" />
+                <p className="text-xs font-bold mt-2">Upload Identity Capture</p>
               </div>
             )}
-
-            {documentUrls.length > 0 && (
-              <div className="space-y-2 mt-2">
-                {documentUrls.map((url, index) => (
-                  <div key={index} className="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
-                    <div className="flex items-center gap-2 overflow-hidden mr-2">
-                      <FileText size={16} className="text-slate-400 shrink-0" />
-                      <span className="font-medium text-slate-600 truncate">{url.split('/').pop()}</span>
-                    </div>
-                    <button 
-                      type="button" 
-                      onClick={() => removeDocument(index)}
-                      className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition shrink-0"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                ))}
+            {documentUrls.map((url, index) => (
+              <div key={index} className="flex items-center justify-between p-2.5 bg-slate-50 border rounded-xl text-xs">
+                <span>{url.split('/').pop()}</span>
+                <button type="button" onClick={() => removeDocument(index)}><Trash2 size={14} /></button>
               </div>
-            )}
+            ))}
           </div>
 
-          <button
-            type="submit"
-            disabled={uploading || documentUrls.length === 0 || status.type === 'success'}
-            className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs tracking-wide transition shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {uploading ? "Processing asset arrays..." : `Submit Verification Packet (${documentUrls.length}/2)`}
+          <button type="submit" disabled={uploading || documentUrls.length === 0} className="w-full py-3.5 bg-slate-900 text-white font-bold rounded-xl text-xs transition disabled:opacity-50">
+            Submit Verification Packet
           </button>
         </form>
       </div>

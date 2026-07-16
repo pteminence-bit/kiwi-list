@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { db } from '../config/firebase.js';
 import dotenv from 'dotenv';
+import { randomBytes } from 'crypto';
 
 dotenv.config();
 
@@ -14,6 +15,9 @@ const getKiwiUserId = (email) => {
   return `kiwi-user-${sanitizedEmail}`;
 };
 
+// Aligned: Custom Transaction ID Generator
+const generateTxId = () => `kiwi-tx-${randomBytes(4).toString('hex')}`;
+
 // --- INITIALIZE WALLET DEPOSIT ---
 export const initializePayment = async (req, res) => {
   const amount = Number(req.body.amount); 
@@ -25,27 +29,21 @@ export const initializePayment = async (req, res) => {
   const tx_ref = `kiwi-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
   try {
-    // Request checkout link from Flutterwave for a wallet deposit
     const response = await axios.post(
       'https://api.flutterwave.com/v3/payments',
       {
         tx_ref,
         amount,
         currency: 'NGN',
-        redirect_url: `${process.env.BASE_URL}/success?reference=${tx_ref}`, // Ensure your frontend handles this route
-        customer: {
-          email: userEmail,
-        },
+        redirect_url: `${process.env.BASE_URL}/success?reference=${tx_ref}`,
+        customer: { email: userEmail },
         customizations: {
           title: 'KIWI Wallet Top-up',
           description: `Fund your KIWI wallet with ₦${amount}`,
         },
       },
       {
-        headers: {
-          Authorization: `Bearer ${FLW_SECRET_KEY}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { Authorization: `Bearer ${FLW_SECRET_KEY}`, 'Content-Type': 'application/json' },
       }
     );
 
@@ -59,13 +57,12 @@ export const initializePayment = async (req, res) => {
   }
 };
 
-// --- VERIFY & CREDIT WALLET (FALLBACK / MANUAL RETRIEVAL) ---
+// --- VERIFY & CREDIT WALLET ---
 export const verifyPayment = async (req, res) => {
-  const { reference } = req.query; // This is the tx_ref or transaction_id returned by FLW redirect
+  const { reference } = req.query;
   if (!reference) return res.status(400).json({ error: "Missing transaction reference." });
 
   try {
-    // 1. Verify payment status directly with Flutterwave
     const response = await axios.get(
       `https://api.flutterwave.com/v3/transactions/verify_by_reference?tx_ref=${reference}`,
       { headers: { Authorization: `Bearer ${FLW_SECRET_KEY}` } }
@@ -81,14 +78,12 @@ export const verifyPayment = async (req, res) => {
 
     if (!kiwiUserId) return res.status(400).json({ error: "Customer payload email missing." });
 
-    // 2. Safe ledger matching logic to prevent double spending
     let walletUpdated = false;
 
     await db.runTransaction(async (t) => {
       const txLogRef = db.collection('processed_payments').doc(`flw-${tx_ref}`);
       const txLog = await t.get(txLogRef);
       
-      // If already processed by webhook or previous verify hit, exit early
       if (txLog.exists) return; 
 
       const userRef = db.collection('users').doc(kiwiUserId);
@@ -97,15 +92,15 @@ export const verifyPayment = async (req, res) => {
 
       const currentBalance = userDoc.data().walletBalance ?? 0;
       const depositAmount = parseFloat(amount);
-      const netDeposit = depositAmount - 100; // Deduct the flat ₦100 deposit processing fee
+      const netDeposit = depositAmount - 100;
 
-      if (netDeposit <= 0) throw new Error("Deposit amount too low to cover transaction fees.");
+      if (netDeposit <= 0) throw new Error("Deposit amount too low.");
 
-      // Atomic balance update
       t.update(userRef, { walletBalance: currentBalance + netDeposit });
       t.set(txLogRef, { processedAt: new Date().toISOString(), amount: depositAmount, netAmount: netDeposit });
 
-      const transactionRef = db.collection('users').doc(kiwiUserId).collection('transactions').doc();
+      // Aligned: Using the custom transaction ID helper
+      const transactionRef = db.collection('users').doc(kiwiUserId).collection('transactions').doc(generateTxId());
       t.set(transactionRef, {
         userId: kiwiUserId,
         amount: netDeposit,
@@ -117,11 +112,10 @@ export const verifyPayment = async (req, res) => {
       walletUpdated = true;
     });
 
-    if (walletUpdated) {
-      return res.json({ status: 'verified', message: "Wallet successfully funded." });
-    } else {
-      return res.json({ status: 'verified', message: "Payment was already applied to wallet balance." });
-    }
+    return res.json({ 
+      status: 'verified', 
+      message: walletUpdated ? "Wallet successfully funded." : "Payment already applied." 
+    });
 
   } catch (error) {
     return res.status(500).json({ error: error.message });

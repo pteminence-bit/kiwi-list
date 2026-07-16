@@ -15,15 +15,18 @@ const MarketplaceFeed = ({ token }) => {
   const [galleryIdx, setGalleryIdx] = useState(0);
   const isFetching = useRef(false);
 
-  // Structural sanity wrapper matching your custom normalized string model layout
+  // --- ALIGNED: Consistent ID derivation to match backend helpers ---
   const sanitizedUser = React.useMemo(() => {
     const activeUser = user || auth.currentUser; 
     if (!activeUser || !activeUser.email) return activeUser;
     
-    const sanitizedEmail = activeUser.email.toLowerCase().trim().replace(/[@.]/g, '-');
+    const cleanEmail = activeUser.email.toLowerCase().trim();
+    const sanitizedEmail = cleanEmail.replace(/[@.]/g, '-');
+    
     return {
       ...activeUser,
-      uid: `kiwi-user-${sanitizedEmail}`
+      // Pass the Firestore-compatible ID as a property
+      kiwiFirestoreId: `kiwi-user-${sanitizedEmail}`
     };
   }, [user]);
 
@@ -61,12 +64,10 @@ const MarketplaceFeed = ({ token }) => {
       const threshold = 200;
       const totalHeight = document.documentElement.scrollHeight;
       const currentScroll = window.innerHeight + window.scrollY;
-
       if (totalHeight - currentScroll <= threshold) {
         fetchFeed();
       }
     };
-    
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -81,13 +82,10 @@ const MarketplaceFeed = ({ token }) => {
         },
         body: JSON.stringify({ amount: 500, purpose: 'unlock_contact', listingId })
       });
-      
       const data = await response.json();
-      
       if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl; 
       } else {
-        console.error("Payment initialization failed:", data.error);
         alert(data.error || "Could not process payment.");
       }
     } catch (error) {
@@ -105,11 +103,9 @@ const MarketplaceFeed = ({ token }) => {
         },
         body: JSON.stringify({ listingId })
       });
-
       const data = await response.json();
 
       if (!response.ok) {
-        // If it's a premium firewall issue, redirect automatically to handle unlocking flow
         if (response.status === 403) {
           if (window.confirm("This is a Premium Asset. Unlock contact and messaging privileges for ₦500?")) {
             handleUnlockContact(listingId);
@@ -118,8 +114,6 @@ const MarketplaceFeed = ({ token }) => {
         }
         throw new Error(data.error || "Chat instantiation failure.");
       }
-
-      // Move directly to the freshly instantiated chat workspace pane
       navigate(`/chats?id=${data.chatId}`);
     } catch (error) {
       alert(error.message);
@@ -127,9 +121,7 @@ const MarketplaceFeed = ({ token }) => {
   };
 
   const handleImageLightboxCapture = (e) => {
-    // Only intercept if the click target is part of the image element view stack
     if (e.target.tagName !== 'IMG') return;
-    
     const galleryData = e.currentTarget.getAttribute('data-full-gallery');
     if (galleryData) {
       setActiveGallery(JSON.parse(galleryData));
@@ -147,6 +139,7 @@ const MarketplaceFeed = ({ token }) => {
 
   const cleanUserPassThrough = sanitizedUser ? {
     uid: sanitizedUser.uid,
+    kiwiFirestoreId: sanitizedUser.kiwiFirestoreId,
     email: sanitizedUser.email
   } : null;
 
@@ -173,7 +166,7 @@ const MarketplaceFeed = ({ token }) => {
                 listing={listing} 
                 token={token} 
                 onUnlock={() => handleUnlockContact(listing.id)}
-                onChat={() => handleChatInitiation(listing.id)} // Attached explicitly to direct user contact actions
+                onChat={() => handleChatInitiation(listing.id)}
                 currentUser={cleanUserPassThrough}
               />
             </div>

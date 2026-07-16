@@ -1,4 +1,3 @@
-// backend/controllers/uploadController.js
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { s3Client } from "../config/r2.js";
 import crypto from 'crypto';
@@ -20,9 +19,12 @@ export const uploadImagesToR2 = async (req, res, next) => {
       });
     }
 
-    // ALIGNED CHECK: Explicitly checking if it's a listing submission via endpoint URL or form field key
+    // ALIGNED: Accessing the context set by ensureUserContext middleware
+    const userFirestoreId = req.user?.kiwiFirestoreId;
+
+    // Check for listing route vs file/asset upload
     const isListingRoute = 
-      (req.originalUrl && req.originalUrl.includes('/listing')) || 
+      (req.originalUrl && req.originalUrl.includes('/listings')) || 
       (filesToProcess.length > 0 && filesToProcess[0].fieldname === 'images');
 
     // ONLY enforce the 2-image minimum for marketplace gallery listings
@@ -43,18 +45,20 @@ export const uploadImagesToR2 = async (req, res, next) => {
         Key: fileName,
         Body: file.buffer,
         ContentType: file.mimetype,
+        // Optional: Tagging with userFirestoreId here if you want metadata association in R2
+        Metadata: {
+          uploadedBy: userFirestoreId || "anonymous"
+        }
       });
 
       await s3Client.send(command);
       
-      // Enforce public Cloudflare R2 base URL explicitly
       const baseUrl = process.env.R2_PUBLIC_URL || 'https://pub-580c3d172e3f4533b065d241e61ee132.r2.dev';
       return `${baseUrl}/${fileName}`;
     });
 
     const uploadedUrls = await Promise.all(uploadPromises);
 
-    // If it came from a single upload (like KYC or profile pictures), return a single URL object
     if (isSingleUpload || !isListingRoute) {
       return res.json({ 
         success: true, 
@@ -63,7 +67,6 @@ export const uploadImagesToR2 = async (req, res, next) => {
       });
     }
 
-    // For marketplace property uploads, return the array of URLs
     return res.json({ success: true, urls: uploadedUrls });
 
   } catch (error) {

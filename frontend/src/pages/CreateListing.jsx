@@ -4,7 +4,6 @@ import { API_BASE_URL } from '../config';
 import { Landmark, ShieldCheck } from 'lucide-react';
 
 const CreateListing = ({ token: propsToken }) => {
-  // Fallback check to capture token from storage if the prop payload is un-initialized
   const token = propsToken || localStorage.getItem('token');
 
   const [images, setImages] = useState([]);
@@ -21,7 +20,6 @@ const CreateListing = ({ token: propsToken }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Constraint maintained: 2 to 4 images
     if (images.length < 2 || images.length > 4) {
       alert("Please upload between 2 and 4 images of the property.");
       return;
@@ -34,7 +32,6 @@ const CreateListing = ({ token: propsToken }) => {
 
     setLoading(true);
     try {
-      // Clean, direct payload assembly matching the schema specs
       const listingPayload = {
         title: formData.title,
         description: formData.description,
@@ -50,8 +47,8 @@ const CreateListing = ({ token: propsToken }) => {
         }
       };
 
-      // Aligned with backend base POST endpoint map structure
-      const listingResponse = await fetch(`${API_BASE_URL}/api/listings`, {
+      // --- ALIGNED: Updated to hit /api/listings/create ---
+      const listingResponse = await fetch(`${API_BASE_URL}/api/listings/create`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json', 
@@ -61,10 +58,13 @@ const CreateListing = ({ token: propsToken }) => {
       });
 
       const listingData = await listingResponse.json();
-      if (!listingResponse.ok) throw new Error(listingData.error || "Failed to create listing profile asset.");
+      if (!listingResponse.ok) throw new Error(listingData.error || "Failed to create listing.");
 
-      if (listingResponse.ok) {
-        formData.tier === 'premium' ? initializePremiumPayment(listingData.id) : (alert("Published successfully!"), window.location.href = "/");
+      if (formData.tier === 'premium') {
+        initializePremiumPayment(listingData.id);
+      } else {
+        alert("Published successfully!");
+        window.location.href = "/";
       }
     } catch (err) {
       alert(err.message);
@@ -84,7 +84,7 @@ const CreateListing = ({ token: propsToken }) => {
       if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
       } else {
-        throw new Error(data.error || "Could not spin up payment processor gateway.");
+        throw new Error(data.error || "Could not spin up payment processor.");
       }
     } catch (err) {
       alert(err.message);
@@ -124,7 +124,7 @@ const CreateListing = ({ token: propsToken }) => {
             <div>
               <label className="block text-[11px] font-black uppercase text-slate-500 mb-1.5">Listing Tier</label>
               <select name="tier" onChange={handleInputChange} className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 text-white outline-none transition-colors">
-                <option value="free">Free </option>
+                <option value="free">Free</option>
                 <option value="premium">Premium (₦3,000)</option>
               </select>
             </div>
