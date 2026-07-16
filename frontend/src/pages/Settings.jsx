@@ -68,7 +68,7 @@ const Settings = ({ token, onProfileUpdate }) => {
         </div>
 
         <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
-          <h3 className="flex items-center gap-2 font-bold mb-4"><Building2 size={18} className="text-blue-500" /> Payout Bank Setup</h3>
+          <h3 className="flex items-center gap-2 font-bold mb-4"><Building2 size={18} className="text-blue-500" /> Payout Setup</h3>
           <div className="space-y-4">
             <input className="w-full p-3 bg-slate-950 border border-slate-800 rounded-lg" placeholder="Bank Name" value={profile.bankName} onChange={e => setProfile({...profile, bankName: e.target.value})} />
             <input className="w-full p-3 bg-slate-950 border border-slate-800 rounded-lg" placeholder="Account Number" value={profile.accountNumber} onChange={e => setProfile({...profile, accountNumber: e.target.value})} />
@@ -80,7 +80,7 @@ const Settings = ({ token, onProfileUpdate }) => {
       {/* Danger Zone */}
       <div className="mt-8 pt-8 border-t border-slate-800">
         <button onClick={handleLogout} className="flex items-center gap-2 text-rose-500 font-bold hover:text-rose-400">
-          <LogOut size={18} /> Logout Session
+          <LogOut size={18} /> Logout
         </button>
       </div>
     </div>

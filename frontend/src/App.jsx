@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { Menu } from 'lucide-react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from './firebase'; 
 
@@ -32,7 +31,6 @@ const DashboardLayout = () => {
     const checkAdminStatus = async () => {
       if (user?.uid) {
         try {
-          // --- ALIGNED: Standard Firebase UID usage ---
           const userDocRef = doc(db, 'users', user.uid);
           const userDocSnap = await getDoc(userDocRef);
           
@@ -51,7 +49,6 @@ const DashboardLayout = () => {
   if (loading) return null;
   if (!user) return <Navigate to="/login" replace />; 
 
-  // Firebase Auth standard property
   if (!user.emailVerified) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-slate-950 w-full p-6 text-center text-white">
@@ -74,13 +71,7 @@ const DashboardLayout = () => {
     <div className="flex w-full min-h-screen bg-slate-950 text-white">
       <Sidebar isAdmin={isAdmin} isOpen={mobileMenuOpen} setIsOpen={setMobileMenuOpen} />
 
-      <div className="flex-1 lg:ml-64 flex min-h-screen">
-        <div className="lg:hidden fixed top-4 right-4 z-40">
-           <button onClick={() => setMobileMenuOpen(true)} className="p-2 bg-slate-900 border border-slate-800 rounded-lg shadow-lg">
-             <Menu size={24} />
-           </button>
-        </div>
-
+      <div className="flex-1 lg:ml-64 flex min-h-screen pb-20 lg:pb-0">
         <main className={`flex-1 w-full mx-auto pt-8 px-4 md:px-6 ${isChatRoute ? 'max-w-5xl' : 'max-w-2xl'}`}>
           <Routes>
             <Route path="/" element={<MarketplaceFeed token={user.accessToken} />} />
@@ -95,9 +86,9 @@ const DashboardLayout = () => {
             <Route path="/success" element={<PaymentSuccess />} />
             <Route path="/inventory" element={<Inventory />} />
             <Route path="/edit-listing/:id" element={<EditListing token={user.accessToken} />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/kyc" element={<KYC token={user.accessToken} />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
 
