@@ -2,27 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { Loader2, Lock, Unlock } from 'lucide-react';
 import { auth } from '../firebase';
 
+/**
+ * PaymentButton
+ * Handles secure engagement for premium property assets.
+ * Triggering this initiates the ₦500 'unlock_contact' payment flow.
+ */
 const PaymentButton = ({ onClick }) => {
   const [loading, setLoading] = useState(false);
-  const [accessToken, setAccessToken] = useState(null);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    const savedToken = localStorage.getItem('token');
-    if (savedToken) {
-      setAccessToken(savedToken);
-    }
-
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        try {
-          const liveToken = await user.getIdToken();
-          setAccessToken(liveToken);
-        } catch (err) {
-          console.error("Failed to recover live token session:", err);
-        }
-      } else if (!localStorage.getItem('token')) {
-        setAccessToken(null);
-      }
+    // Monitor auth state to determine if user can initiate payment
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setIsReady(!!user);
     });
 
     return () => unsubscribe();
@@ -30,7 +22,7 @@ const PaymentButton = ({ onClick }) => {
 
   const handleActionIntercept = async (e) => {
     e.stopPropagation();
-    if (loading || !accessToken) return;
+    if (loading || !isReady) return;
 
     setLoading(true);
     try {
@@ -40,29 +32,33 @@ const PaymentButton = ({ onClick }) => {
     } catch (error) {
       console.error("Payment pipeline interception failure:", error);
     } finally {
-      setLoading(false);
+      // Keep loading true if redirecting to payment gateway
     }
   };
 
   return (
     <button
-      disabled={loading || !accessToken}
+      disabled={loading || !isReady}
       onClick={handleActionIntercept}
-      className="w-full bg-amber-500 hover:bg-amber-600 disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed text-slate-950 font-black text-xs uppercase py-3 rounded-xl transition-all flex items-center justify-center gap-2 tracking-wider"
+      className={`w-full font-black text-xs uppercase py-3 rounded-xl transition-all flex items-center justify-center gap-2 tracking-wider ${
+        !isReady 
+          ? 'bg-slate-800 text-slate-500 cursor-not-allowed' 
+          : 'bg-amber-500 hover:bg-amber-600 text-slate-950'
+      }`}
     >
       {loading ? (
         <>
-          <Loader2 className="animate-spin text-slate-950" size={14} />
+          <Loader2 className="animate-spin" size={14} />
           Securing Handshake...
         </>
-      ) : !accessToken ? (
+      ) : !isReady ? (
         <>
-          <Lock size={14} className="text-slate-500" />
+          <Lock size={14} />
           Sign In To Unlock
         </>
       ) : (
         <>
-          <Unlock size={14} className="text-slate-950" />
+          <Unlock size={14} />
           Unlock Contact & Chat (₦500)
         </>
       )}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { signInWithCustomToken } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { auth } from '../firebase';
 import { LogIn, UserPlus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -21,24 +21,26 @@ const AuthPage = () => {
     setError('');
     setLoading(true);
 
-    const backendUrl = `https://kiwi-list-api.onrender.com/auth/${isLogin ? 'login' : 'signup'}`;
-    const payload = isLogin ? { email, password } : { email, password, displayName };
-
     try {
-      const response = await fetch(backendUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Authentication failed');
-
-      if (!isLogin) {
-        alert("Verification email triggered! If you don't see it, check your spam folder. It may take up to 2 minutes.");
-        setIsLogin(true);
+      if (isLogin) {
+        // Firebase handles Login
+        await signInWithEmailAndPassword(auth, email, password);
       } else {
-        await signInWithCustomToken(auth, data.token);
+        // Firebase handles Sign Up
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        await sendEmailVerification(userCredential.user);
+        
+        // POST to backend to trigger Firestore document creation
+        const response = await fetch(`https://kiwi-list-api.onrender.com/auth/signup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, displayName }),
+        });
+
+        if (!response.ok) throw new Error("Account created, but database sync failed.");
+        
+        alert("Verification email sent! Please check your inbox and refresh after verifying.");
+        setIsLogin(true);
       }
     } catch (err) {
       setError(err.message);

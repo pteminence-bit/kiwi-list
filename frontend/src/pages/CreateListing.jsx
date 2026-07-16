@@ -3,9 +3,7 @@ import ImageUploader from '../components/ImageUploader';
 import { API_BASE_URL } from '../config';
 import { Landmark, ShieldCheck } from 'lucide-react';
 
-const CreateListing = ({ token: propsToken }) => {
-  const token = propsToken || localStorage.getItem('token');
-
+const CreateListing = ({ token }) => {
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -20,8 +18,9 @@ const CreateListing = ({ token: propsToken }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (images.length < 2 || images.length > 4) {
-      alert("Please upload between 2 and 4 images of the property.");
+    // Note: The R2 upload component (uploadImagesToR2) enforces this minimum
+    if (images.length < 2) {
+      alert("Marketplace gallery listings require a minimum of 2 images to display effectively.");
       return;
     }
 
@@ -47,7 +46,6 @@ const CreateListing = ({ token: propsToken }) => {
         }
       };
 
-      // --- ALIGNED: Updated to hit /api/listings/create ---
       const listingResponse = await fetch(`${API_BASE_URL}/api/listings/create`, {
         method: 'POST',
         headers: { 
@@ -157,7 +155,7 @@ const CreateListing = ({ token: propsToken }) => {
           </div>
 
           <div className="space-y-3">
-            <label className="block text-[11px] font-black uppercase text-slate-500">Property Images (2-4 required)</label>
+            <label className="block text-[11px] font-black uppercase text-slate-500">Property Images (2+ required)</label>
             <ImageUploader onImagesSelected={setImages} />
           </div>
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase'; 
-import { LayoutDashboard, Wallet, Building2, ClipboardList, Settings, LogOut, X, PlusCircle, Bell, Package, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, Wallet, Building2, ClipboardList, Settings, LogOut, X, PlusCircle, Bell, Package, MessageSquare, ShieldCheck } from 'lucide-react';
 
 const Sidebar = ({ isAdmin, isOpen, setIsOpen }) => {
   const location = useLocation();
@@ -20,9 +20,10 @@ const Sidebar = ({ isAdmin, isOpen, setIsOpen }) => {
     { name: 'Marketplace', path: '/', icon: LayoutDashboard },
     { name: 'Create Listing', path: '/add', icon: PlusCircle },
     { name: 'My Listings', path: '/manage', icon: Building2 },
-    { name: 'Inbox', path: '/chats', icon: MessageSquare }, // Added to hook into your secure chats subsystem
+    { name: 'Inbox', path: '/chats', icon: MessageSquare },
     { name: 'My Wallet', path: '/wallet', icon: Wallet },
     { name: 'Inventory', path: '/inventory', icon: Package },
+    { name: 'Verification', path: '/kyc', icon: ShieldCheck },
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
 
@@ -81,4 +82,5 @@ const Sidebar = ({ isAdmin, isOpen, setIsOpen }) => {
     </>
   );
 };
+
 export default Sidebar;

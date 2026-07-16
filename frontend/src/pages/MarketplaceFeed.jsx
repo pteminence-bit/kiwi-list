@@ -4,7 +4,6 @@ import { Search, SlidersHorizontal, X, ChevronLeft, ChevronRight } from 'lucide-
 import ListingCard from '../components/ListingCard';
 import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
-import { auth } from '../firebase';
 
 const MarketplaceFeed = ({ token }) => {
   const { user } = useAuth();
@@ -14,21 +13,6 @@ const MarketplaceFeed = ({ token }) => {
   const [activeGallery, setActiveGallery] = useState(null);
   const [galleryIdx, setGalleryIdx] = useState(0);
   const isFetching = useRef(false);
-
-  // --- ALIGNED: Consistent ID derivation to match backend helpers ---
-  const sanitizedUser = React.useMemo(() => {
-    const activeUser = user || auth.currentUser; 
-    if (!activeUser || !activeUser.email) return activeUser;
-    
-    const cleanEmail = activeUser.email.toLowerCase().trim();
-    const sanitizedEmail = cleanEmail.replace(/[@.]/g, '-');
-    
-    return {
-      ...activeUser,
-      // Pass the Firestore-compatible ID as a property
-      kiwiFirestoreId: `kiwi-user-${sanitizedEmail}`
-    };
-  }, [user]);
 
   const fetchFeed = async () => {
     if (isFetching.current) return;
@@ -137,10 +121,10 @@ const MarketplaceFeed = ({ token }) => {
     );
   }
 
-  const cleanUserPassThrough = sanitizedUser ? {
-    uid: sanitizedUser.uid,
-    kiwiFirestoreId: sanitizedUser.kiwiFirestoreId,
-    email: sanitizedUser.email
+  // --- ALIGNED: Using standard Firebase user object properties ---
+  const cleanUserPassThrough = user ? {
+    uid: user.uid,
+    email: user.email
   } : null;
 
   return (

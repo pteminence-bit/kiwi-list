@@ -60,7 +60,7 @@ const WalletCard = ({ token }) => {
 
   const handleWithdrawal = async () => {
     const numericAmount = parseFloat(amount);
-    const totalDeduction = numericAmount + 150; // Aligned with the ₦150 backend flat fee calculation
+    const totalDeduction = numericAmount + 150; 
 
     if (!numericAmount || numericAmount <= 0) { alert('Please enter a valid amount.'); return; }
     if (numericAmount < 2000) { alert('Minimum withdrawal amount is ₦2,000.'); return; }
@@ -117,10 +117,6 @@ const WalletCard = ({ token }) => {
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Funding request failed");
 
-      alert('Funding request initialized. Redirecting to payment...');
-      setShowFundModal(false);
-      setFundAmount('');
-      // Assuming backend returns a checkout_url to redirect to
       if (result.checkout_url) window.location.href = result.checkout_url;
       else window.location.reload();
     } catch (err) {
@@ -133,8 +129,8 @@ const WalletCard = ({ token }) => {
   if (loading) return <div className="p-6 text-center text-slate-400 min-h-screen w-full flex items-center justify-center bg-slate-950">Accessing secured ledger...</div>;
 
   return (
-    <div className="p-4 md:p-8 bg-slate-950 min-h-screen w-full flex flex-col items-center justify-start">
-      <div className="w-full max-w-md mt-4">
+    <div className="w-full flex flex-col items-center">
+      <div className="w-full max-w-md">
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-white shadow-xl w-full">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
@@ -178,7 +174,6 @@ const WalletCard = ({ token }) => {
         </div>
       </div>
 
-      {/* Transaction Ledger remains unchanged... */}
       <div className="w-full max-w-md mt-8">
         <h3 className="flex items-center gap-2 text-slate-400 font-bold mb-4 uppercase tracking-wider text-xs border-b pb-2 border-slate-800">
           <History size={16} /> Transaction Ledger
@@ -202,7 +197,6 @@ const WalletCard = ({ token }) => {
         </div>
       </div>
 
-      {/* Modals remain unchanged... */}
       {selectedTx && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
           <div className="bg-slate-900 border border-slate-800 text-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">

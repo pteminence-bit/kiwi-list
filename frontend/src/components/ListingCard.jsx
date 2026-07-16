@@ -36,6 +36,12 @@ const ListingCard = ({ listing, onUnlock, onChat, token: propToken, currentUser 
 
   const isPremium = listing.tier === 'premium';
   
+  // A listing is unlocked if it's free, or if the current user owns it, 
+  // or if the backend explicitly marked it as unlocked for this session
+  const isUnlocked = !isPremium || 
+                     (currentUser && (listing.ownerId === currentUser.uid || listing.ownerId === currentUser.id)) || 
+                     listing.isUnlockedByCurrentUser;
+
   const isOwner = currentUser && (
     listing.ownerId === currentUser.uid || 
     listing.ownerId === currentUser.id ||
@@ -86,15 +92,15 @@ const ListingCard = ({ listing, onUnlock, onChat, token: propToken, currentUser 
       {/* Header */}
       <div className="flex items-center justify-between p-4 bg-slate-950/20">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-600 to-violet-500 shadow-md flex items-center justify-center font-bold text-white text-sm shrink-0">
-            K
+          <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-500 shadow-md flex items-center justify-center font-bold text-white text-sm shrink-0">
+            {listing.ownerName ? listing.ownerName.charAt(0).toUpperCase() : 'K'}
           </div>
           <div className="space-y-0.5">
             <div className="flex items-center gap-1.5">
-              <p className="text-xs font-bold text-slate-100 tracking-wide flex items-center gap-1">
-                KIWI-list Agent 
+              <p className="text-xs font-bold text-slate-100 tracking-wide">
+                {listing.ownerName || 'Verified Agent'} 
               </p>
-              <CheckCircle2 size={12} className="text-indigo-400 fill-indigo-400/10" />
+              <CheckCircle2 size={12} className="text-blue-400 fill-blue-400/10" />
               {isPremium && (
                 <span className="bg-gradient-to-r from-amber-500 to-amber-600 text-[9px] px-1.5 py-0.5 rounded-md text-slate-950 font-black tracking-wider uppercase shadow-sm">
                   Premium
@@ -144,7 +150,7 @@ const ListingCard = ({ listing, onUnlock, onChat, token: propToken, currentUser 
         </div>
         
         <div className="space-y-1">
-          <p className="text-[10px] text-indigo-400 font-extrabold uppercase tracking-widest">{listing.title}</p>
+          <p className="text-[10px] text-blue-400 font-extrabold uppercase tracking-widest">{listing.title}</p>
           <p className="text-xs text-slate-300 leading-relaxed font-normal break-words">{listing.description}</p>
         </div>
         
@@ -157,9 +163,9 @@ const ListingCard = ({ listing, onUnlock, onChat, token: propToken, currentUser 
           </div>
         </div>
 
-        {/* Action Blocks Container */}
+        {/* Action Blocks */}
         <div className="pt-1" onClick={(e) => e.stopPropagation()}>
-          {isPremium && !isOwner && !listing.isUnlockedByCurrentUser ? (
+          {!isUnlocked ? (
             <PaymentButton onClick={onUnlock} />
           ) : (
             <button

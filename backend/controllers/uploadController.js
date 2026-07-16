@@ -19,8 +19,8 @@ export const uploadImagesToR2 = async (req, res, next) => {
       });
     }
 
-    // ALIGNED: Accessing the context set by ensureUserContext middleware
-    const userFirestoreId = req.user?.kiwiFirestoreId;
+    // Aligned: Accessing the standard Firebase UID
+    const uid = req.user?.uid;
 
     // Check for listing route vs file/asset upload
     const isListingRoute = 
@@ -45,9 +45,8 @@ export const uploadImagesToR2 = async (req, res, next) => {
         Key: fileName,
         Body: file.buffer,
         ContentType: file.mimetype,
-        // Optional: Tagging with userFirestoreId here if you want metadata association in R2
         Metadata: {
-          uploadedBy: userFirestoreId || "anonymous"
+          uploadedBy: uid || "anonymous"
         }
       });
 

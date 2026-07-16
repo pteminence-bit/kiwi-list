@@ -24,6 +24,7 @@ const Settings = ({ token, isVerified, onProfileUpdate }) => {
     if (!token) return;
     const fetchProfileData = async () => {
       try {
+        // Aligned: Routes now use /api/users/me
         const res = await fetch(`${BACKEND_BASE_URL}/api/users/me`, { 
           headers: { 'Authorization': `Bearer ${token}` } 
         });

@@ -7,13 +7,6 @@ import { randomBytes } from 'crypto';
 const router = express.Router();
 
 // --- SYSTEM HELPER MAPPING ---
-const getKiwiUserId = (email) => {
-  if (!email) return null;
-  const cleanEmail = email.toLowerCase().trim();
-  const sanitizedEmail = cleanEmail.replace(/[@.]/g, '-');
-  return `kiwi-user-${sanitizedEmail}`;
-};
-
 const generateTxId = () => `kiwi-tx-${randomBytes(4).toString('hex')}`;
 
 // --- CREATE LISTING ---
@@ -21,8 +14,7 @@ router.post('/create', verifyUser, async (req, res) => {
   const { title, description, price, tier, images, contactDetails, address, beds, baths } = req.body;
 
   try {
-    if (!req.user?.email) return res.status(400).json({ error: "Auth missing identity context." });
-    const kiwiUserId = getKiwiUserId(req.user.email);
+    const uid = req.user.uid;
     const isPremium = tier === 'premium';
     const premiumCost = 3000;
 
@@ -32,8 +24,14 @@ router.post('/create', verifyUser, async (req, res) => {
     });
 
     const listingData = {
-      ownerId: kiwiUserId,
-      title, title, description, price, address, beds, baths, tier,
+      ownerId: uid,
+      title, 
+      description, 
+      price, 
+      address, 
+      beds, 
+      baths, 
+      tier,
       images: sanitizedImages,
       contactDetails,
       status: isPremium ? 'pending_payment' : 'active',
@@ -47,7 +45,7 @@ router.post('/create', verifyUser, async (req, res) => {
       let generatedId = null;
 
       await db.runTransaction(async (t) => {
-        const userRef = db.collection('users').doc(kiwiUserId);
+        const userRef = db.collection('users').doc(uid);
         const userDoc = await t.get(userRef);
         if (!userDoc.exists) throw new Error("Account context not found.");
 
@@ -56,10 +54,9 @@ router.post('/create', verifyUser, async (req, res) => {
 
         t.update(userRef, { walletBalance: currentBalance - premiumCost });
 
-        // Aligned: Using custom transaction ID generator
-        const transactionRef = db.collection('users').doc(kiwiUserId).collection('transactions').doc(generateTxId());
+        const transactionRef = db.collection('users').doc(uid).collection('transactions').doc(generateTxId());
         t.set(transactionRef, {
-          userId: kiwiUserId,
+          userId: uid,
           amount: -premiumCost,
           description: `Premium Listing Placement Fee for: ${title}`,
           type: 'premium_listing',
@@ -107,8 +104,7 @@ router.get('/feed', async (req, res) => {
 // --- GET USER OWNED LISTINGS ---
 router.get('/my-listings', verifyUser, async (req, res) => {
   try {
-    const kiwiUserId = getKiwiUserId(req.user.email);
-    const snapshots = await db.collection('listings').where('ownerId', '==', kiwiUserId).get();
+    const snapshots = await db.collection('listings').where('ownerId', '==', req.user.uid).get();
     return res.json(snapshots.docs.map(doc => ({ id: doc.id, ...doc.data() })));
   } catch (error) {
     return res.status(500).json({ error: error.message });
@@ -134,10 +130,9 @@ router.get('/:id', async (req, res) => {
 // --- UPDATE LISTING ---
 router.put('/:id', verifyUser, async (req, res) => {
   try {
-    const kiwiUserId = getKiwiUserId(req.user.email);
     const listingRef = db.collection('listings').doc(req.params.id);
     const doc = await listingRef.get();
-    if (!doc.exists || doc.data().ownerId !== kiwiUserId) return res.status(403).json({ error: "Unauthorized" });
+    if (!doc.exists || doc.data().ownerId !== req.user.uid) return res.status(403).json({ error: "Unauthorized" });
     
     const { ownerId, tier, ...updates } = req.body;
     await listingRef.update(updates);
@@ -150,10 +145,9 @@ router.put('/:id', verifyUser, async (req, res) => {
 // --- DELETE LISTING ---
 router.delete('/:id', verifyUser, async (req, res) => {
   try {
-    const kiwiUserId = getKiwiUserId(req.user.email);
     const listingRef = db.collection('listings').doc(req.params.id);
     const doc = await listingRef.get();
-    if (!doc.exists || doc.data().ownerId !== kiwiUserId) return res.status(403).json({ error: "Unauthorized" });
+    if (!doc.exists || doc.data().ownerId !== req.user.uid) return res.status(403).json({ error: "Unauthorized" });
     
     await listingRef.delete();
     return res.json({ message: "Removed successfully" });
@@ -168,7 +162,7 @@ router.patch('/:id/report', verifyUser, async (req, res) => {
     await db.collection('listings').doc(req.params.id).update({
       isFlagged: true,
       reportReason: req.body.reason || "No reason",
-      reportedBy: getKiwiUserId(req.user.email),
+      reportedBy: req.user.uid,
       reportedAt: new Date().toISOString()
     });
     return res.json({ message: "Reported." });

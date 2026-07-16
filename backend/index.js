@@ -37,8 +37,8 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // --- ROUTES ---
 app.get('/', (req, res) => res.json({ status: "active", engine: "Kiwi-List Core API" }));
 
-// Standalone Auth (Signup/Login)
-app.use('/', userRoutes); 
+// Auth Routes (Signup/Login)
+app.use('/auth', userRoutes); 
 
 // Core Engine Routers
 app.use('/api/listings', listingRoutes);

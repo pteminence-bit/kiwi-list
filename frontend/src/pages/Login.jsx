@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { auth } from '../firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
@@ -20,21 +20,30 @@ const Login = () => {
         // 1. Create User in Firebase
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(userCredential.user, { displayName });
+        
+        // 2. Dispatch Verification Email
+        await sendEmailVerification(userCredential.user);
 
-        // 2. Sync with your Backend to initialize Firestore user doc
+        // 3. Sync with your Backend to initialize Firestore user doc
         await fetch(`https://kiwi-list-api.onrender.com/api/auth/signup`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password, displayName }),
         });
         
-        alert("Account initialized successfully! Verification email dispatched.");
+        alert("Account initialized successfully! Verification email dispatched. Please verify before signing in.");
+        setIsRegister(false); // Force switch to login view
       } else {
         // Sign in via Firebase Client SDK
-        await signInWithEmailAndPassword(auth, email, password);
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        
+        if (!userCredential.user.emailVerified) {
+          alert("Please verify your email address before accessing the dashboard.");
+          return;
+        }
+        
+        navigate('/');
       }
-      
-      navigate('/');
     } catch (error) {
       console.error("Auth error:", error);
       alert(error.message || "Authentication failed.");

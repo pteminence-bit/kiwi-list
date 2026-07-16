@@ -11,26 +11,19 @@ export const verifyUser = async (req, res, next) => {
   try {
     const decodedToken = await auth.verifyIdToken(token);
     
-    // Aligned: Keep the original Firebase UID for Auth tasks
-    req.user = decodedToken;
-    req.user.uid = decodedToken.uid;
+    // Use standard Firebase UID throughout the engine
+    req.user = {
+      uid: decodedToken.uid,
+      email: decodedToken.email
+    };
 
-    if (!decodedToken.email) {
-      return res.status(400).json({ error: "User email missing from authorization payload token." });
-    }
-
-    // Aligned: Generate the specific Firestore path ID
-    const sanitizedEmail = decodedToken.email.toLowerCase().trim().replace(/[@.]/g, '-');
-    const kiwiFirestoreId = `kiwi-user-${sanitizedEmail}`;
-    req.user.kiwiFirestoreId = kiwiFirestoreId;
-
-    // Target the customized document ID format for Firestore operations
-    const userRef = db.collection('users').doc(kiwiFirestoreId);
+    // Target the standard Firebase UID for Firestore operations
+    const userRef = db.collection('users').doc(req.user.uid);
     const doc = await userRef.get();
 
     if (!doc.exists) {
       await userRef.set({
-        id: kiwiFirestoreId,
+        uid: req.user.uid,
         email: decodedToken.email.toLowerCase().trim() || "",
         displayName: decodedToken.name || "User",
         walletBalance: 0,

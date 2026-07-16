@@ -12,31 +12,15 @@ const upload = multer({
   limits: { fileSize: 15 * 1024 * 1024 } // 15MB file size limit
 });
 
-// --- USER CONTEXT NORMALIZATION ---
-// Aligned with the engine: Keeps the Firebase UID standard, 
-// provides a secondary identifier for Firestore operations.
-const ensureUserContext = (req, res, next) => {
-  if (req.user?.email) {
-    const cleanEmail = req.user.email.toLowerCase().trim();
-    const sanitizedEmail = cleanEmail.replace(/[@.]/g, '-');
-    
-    // The Firebase UID remains the standard auth identifier
-    // We add the specific Firestore path ID for database consistency
-    req.user.kiwiFirestoreId = `kiwi-user-${sanitizedEmail}`;
-  } else {
-    return res.status(401).json({ error: "Auth missing identity context." });
-  }
-  next();
-};
-
 // --- ROUTES ---
 
-// Multi-image upload for premium listings
-router.post('/listings', verifyUser, ensureUserContext, upload.array('images', 4), uploadImagesToR2);
+// Multi-image upload for listings
+// Uses req.user.uid provided by the verifyUser middleware (Firebase standard)
+router.post('/listings', verifyUser, upload.array('images', 4), uploadImagesToR2);
 
 // Single file upload route for KYC documents or general assets
-router.post('/file', verifyUser, ensureUserContext, upload.single('file'), uploadImagesToR2);
-
+// Uses req.user.uid provided by the verifyUser middleware (Firebase standard)
+router.post('/file', verifyUser, upload.single('file'), uploadImagesToR2);
 
 // --- GLOBAL ERROR INTERCEPTION LAYER ---
 router.use((err, req, res, next) => {

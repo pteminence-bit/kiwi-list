@@ -4,24 +4,11 @@ import { verifyUser } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// --- HELPER FOR ID SANITIZATION ALIGNMENT ---
-const getKiwiUserId = (email) => {
-  if (!email) return null;
-  const cleanEmail = email.toLowerCase().trim();
-  const sanitizedEmail = cleanEmail.replace(/[@.]/g, '-');
-  return `kiwi-user-${sanitizedEmail}`;
-};
-
 // --- MIDDLEWARE: VERIFY ADMIN ROLE ---
 const verifyAdmin = async (req, res, next) => {
   try {
-    if (!req.user?.email) {
-      return res.status(401).json({ error: "Authentication context missing email." });
-    }
-    
-    // Aligned: Targeting the Firestore ID consistently
-    const kiwiUserId = getKiwiUserId(req.user.email);
-    const userDoc = await db.collection('users').doc(kiwiUserId).get();
+    // Aligned: Targeting the Firestore ID consistently using Firebase UID
+    const userDoc = await db.collection('users').doc(req.user.uid).get();
     
     if (userDoc.exists && userDoc.data().role === 'admin') {
       next();
@@ -36,20 +23,14 @@ const verifyAdmin = async (req, res, next) => {
 // --- ADMINISTRATIVE STATUS DEBUGGER ---
 router.get('/debug-my-status', verifyUser, async (req, res) => {
   try {
-    if (!req.user?.email) {
-      return res.status(400).json({ error: "User email missing from authentication token." });
-    }
-
-    const kiwiUserId = getKiwiUserId(req.user.email);
-    const userDoc = await db.collection('users').doc(kiwiUserId).get();
+    const userDoc = await db.collection('users').doc(req.user.uid).get();
     
     if (!userDoc.exists) {
       return res.status(200).json({
         message: "Auth token valid, but Firestore document not found.",
         authenticated: true,
         firestoreDocumentFound: false,
-        kiwiUserId: kiwiUserId,
-        email: req.user.email
+        uid: req.user.uid
       });
     }
 
@@ -57,7 +38,7 @@ router.get('/debug-my-status', verifyUser, async (req, res) => {
     res.json({
       message: "Handshake successful!",
       authenticated: true,
-      kiwiUserId: kiwiUserId,
+      uid: req.user.uid,
       firestoreRole: userData.role || "No role assigned",
       fullFirestorePayload: userData
     });

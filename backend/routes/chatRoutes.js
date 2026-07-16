@@ -5,24 +5,19 @@ import { FieldValue } from 'firebase-admin/firestore';
 
 const router = express.Router();
 
-// --- HELPER FOR ID SANITIZATION ALIGNMENT ---
-const getKiwiUserId = (email) => {
-  if (!email) return null;
-  const cleanEmail = email.toLowerCase().trim();
-  const sanitizedEmail = cleanEmail.replace(/[@.]/g, '-');
-  return `kiwi-user-${sanitizedEmail}`;
-};
-
 // --- CHAT ID GENERATOR ---
 const generateChatId = async () => {
   const counterRef = db.collection('metadata').doc('chat_counter');
-  const counterDoc = await counterRef.get();
   
-  const currentCount = counterDoc.exists ? counterDoc.data().count : 0;
-  const nextCount = currentCount + 1;
-  
-  await counterRef.set({ count: nextCount });
-  return `kiwi-chat-${nextCount}`;
+  // Use a transaction to ensure atomic incrementing
+  return await db.runTransaction(async (t) => {
+    const counterDoc = await t.get(counterRef);
+    const currentCount = counterDoc.exists ? counterDoc.data().count : 0;
+    const nextCount = currentCount + 1;
+    
+    t.set(counterRef, { count: nextCount });
+    return `kiwi-chat-${nextCount}`;
+  });
 };
 
 /**
@@ -30,32 +25,32 @@ const generateChatId = async () => {
  */
 router.post('/initialize', verifyUser, async (req, res) => {
   const { listingId } = req.body;
+  const buyerUid = req.user.uid;
   
   try {
     if (!listingId) return res.status(400).json({ error: "Listing ID target is required." });
-    const buyerKiwiId = getKiwiUserId(req.user.email);
 
     const listingDoc = await db.collection('listings').doc(listingId).get();
     if (!listingDoc.exists) return res.status(404).json({ error: "Target listing not found." });
     
     const listingData = listingDoc.data();
-    const ownerKiwiId = listingData.ownerId;
+    const ownerUid = listingData.ownerId;
 
-    if (buyerKiwiId === ownerKiwiId) {
+    if (buyerUid === ownerUid) {
       return res.status(400).json({ error: "Cannot chat with own listing." });
     }
 
     if (listingData.tier === 'premium') {
-      const unlockDoc = await db.collection('users').doc(buyerKiwiId).collection('unlocks').doc(listingId).get();
+      const unlockDoc = await db.collection('users').doc(buyerUid).collection('unlocks').doc(listingId).get();
       if (!unlockDoc.exists) {
         return res.status(403).json({ error: "Premium listing requires unlock." });
       }
     }
 
-    // Check for existing room to avoid duplicate chats for same listing
+    // Check for existing room
     const existingChat = await db.collection('chats')
       .where('listingId', '==', listingId)
-      .where('buyerId', '==', buyerKiwiId)
+      .where('buyerId', '==', buyerUid)
       .limit(1)
       .get();
 
@@ -69,8 +64,8 @@ router.post('/initialize', verifyUser, async (req, res) => {
       id: chatId,
       listingId,
       listingTitle: listingData.title || "Premium Asset",
-      ownerId: ownerKiwiId,
-      buyerId: buyerKiwiId,
+      ownerId: ownerUid,
+      buyerId: buyerUid,
       createdAt: new Date().toISOString(),
       lastMessageAt: new Date().toISOString(),
       lastMessageText: "Chat initialized."
@@ -87,11 +82,11 @@ router.post('/initialize', verifyUser, async (req, res) => {
  */
 router.get('/inbox', verifyUser, async (req, res) => {
   try {
-    const kiwiUserId = getKiwiUserId(req.user.email);
+    const uid = req.user.uid;
 
     const [buyerSnap, ownerSnap] = await Promise.all([
-      db.collection('chats').where('buyerId', '==', kiwiUserId).get(),
-      db.collection('chats').where('ownerId', '==', kiwiUserId).get()
+      db.collection('chats').where('buyerId', '==', uid).get(),
+      db.collection('chats').where('ownerId', '==', uid).get()
     ]);
 
     const chats = [

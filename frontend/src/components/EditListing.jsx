@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
-import { Landmark, Loader2, ArrowLeft } from 'lucide-react';
+import { Landmark, Loader2, ArrowLeft, Save } from 'lucide-react';
 
 const EditListing = ({ token }) => {
   const { id } = useParams();
@@ -18,7 +18,6 @@ const EditListing = ({ token }) => {
     baths: ''
   });
 
-  // Fetch current listing data
   useEffect(() => {
     if (!token || !id) return;
     
@@ -54,10 +53,7 @@ const EditListing = ({ token }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
@@ -66,7 +62,6 @@ const EditListing = ({ token }) => {
     setError(null);
     
     try {
-      // Clean up inputs to pass native primitives rather than string states
       const updatePayload = {
         title: formData.title.trim(),
         description: formData.description.trim(),
@@ -85,11 +80,10 @@ const EditListing = ({ token }) => {
         body: JSON.stringify(updatePayload)
       });
       
-      const data = await response.json();
-
       if (response.ok) {
         navigate("/manage");
       } else {
+        const data = await response.json();
         throw new Error(data.error || "Update failed");
       }
     } catch (err) {
@@ -102,110 +96,67 @@ const EditListing = ({ token }) => {
     return (
       <div className="flex min-h-[400px] flex-col items-center justify-center text-slate-400 gap-3">
         <Loader2 className="animate-spin text-blue-500" size={32} />
-        <p className="text-sm font-medium tracking-wide">Loading listing details...</p>
+        <p className="text-sm font-bold tracking-widest uppercase">Fetching details...</p>
       </div>
     );
   }
 
   return (
-    <div className="p-8 max-w-2xl mx-auto text-white bg-slate-950 rounded-2xl border border-slate-900 mt-6 shadow-xl">
-      <div className="flex items-center justify-between mb-6 border-b border-slate-900 pb-4">
-        <h2 className="text-xl font-black flex items-center gap-2">
-          <Landmark className="w-6 h-6 text-blue-500" /> Edit Listing
-        </h2>
-        <button 
-          onClick={() => navigate('/manage')}
-          className="flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-white transition-colors"
-        >
-          <ArrowLeft size={14} /> Back to Management
-        </button>
-      </div>
-
-      {error && (
-        <div className="mb-6 p-4 bg-red-950/40 border border-red-900/50 rounded-xl text-red-400 text-sm font-medium leading-relaxed">
-          {error}
-        </div>
-      )}
-      
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-1 text-slate-400">Title</label>
-          <input 
-            name="title" 
-            type="text"
-            value={formData.title} 
-            onChange={handleChange} 
-            className="w-full p-3 bg-slate-900 border border-slate-800 rounded-lg text-white outline-none focus:border-blue-500 transition" 
-            required
-          />
+    <div className="p-4 md:p-8 max-w-2xl mx-auto">
+      <div className="bg-white border border-slate-200 rounded-3xl shadow-sm p-6 md:p-8">
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-2xl font-black text-slate-950 flex items-center gap-3">
+            <Landmark className="w-8 h-8 text-blue-600 bg-blue-50 p-1.5 rounded-xl" /> Edit Property
+          </h2>
+          <button 
+            onClick={() => navigate('/manage')}
+            className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors"
+          >
+            <ArrowLeft size={16} /> Cancel
+          </button>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1 text-slate-400">Description</label>
-          <textarea 
-            name="description" 
-            value={formData.description} 
-            onChange={handleChange} 
-            className="w-full p-3 bg-slate-900 border border-slate-800 rounded-lg text-white h-28 outline-none focus:border-blue-500 transition resize-none" 
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1 text-slate-400">Address</label>
-          <input 
-            name="address" 
-            type="text"
-            value={formData.address} 
-            onChange={handleChange} 
-            className="w-full p-3 bg-slate-900 border border-slate-800 rounded-lg text-white outline-none focus:border-blue-500 transition" 
-          />
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl text-red-600 text-xs font-bold">
+            {error}
+          </div>
+        )}
+        
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium mb-1 text-slate-400">Price (NGN)</label>
-            <input 
-              name="price" 
-              type="number" 
-              value={formData.price} 
-              onChange={handleChange} 
-              className="w-full p-3 bg-slate-900 border border-slate-800 rounded-lg text-white outline-none focus:border-blue-500 transition" 
-            />
+            <label className="block text-[10px] font-black uppercase text-slate-400 mb-1.5 tracking-wider">Listing Title</label>
+            <input name="title" type="text" value={formData.title} onChange={handleChange} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-semibold focus:border-blue-500 outline-none transition" required />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1 text-slate-400">Beds</label>
-            <input 
-              name="beds" 
-              type="number" 
-              value={formData.beds} 
-              onChange={handleChange} 
-              className="w-full p-3 bg-slate-900 border border-slate-800 rounded-lg text-white outline-none focus:border-blue-500 transition" 
-            />
+            <label className="block text-[10px] font-black uppercase text-slate-400 mb-1.5 tracking-wider">Description</label>
+            <textarea name="description" value={formData.description} onChange={handleChange} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium h-32 focus:border-blue-500 outline-none transition resize-none" />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1 text-slate-400">Baths</label>
-            <input 
-              name="baths" 
-              type="number" 
-              value={formData.baths} 
-              onChange={handleChange} 
-              className="w-full p-3 bg-slate-900 border border-slate-800 rounded-lg text-white outline-none focus:border-blue-500 transition" 
-            />
+            <label className="block text-[10px] font-black uppercase text-slate-400 mb-1.5 tracking-wider">Location Address</label>
+            <input name="address" type="text" value={formData.address} onChange={handleChange} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-semibold focus:border-blue-500 outline-none transition" />
           </div>
-        </div>
 
-        <div className="pt-4 border-t border-slate-900 flex justify-end">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {['price', 'beds', 'baths'].map((field) => (
+              <div key={field}>
+                <label className="block text-[10px] font-black uppercase text-slate-400 mb-1.5 tracking-wider capitalize">{field}</label>
+                <input name={field} type="number" value={formData[field]} onChange={handleChange} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-semibold focus:border-blue-500 outline-none transition" />
+              </div>
+            ))}
+          </div>
+
           <button 
             type="submit" 
             disabled={saving}
-            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-6 py-3 rounded-lg font-bold transition flex items-center gap-2"
+            className="w-full mt-4 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white p-4 rounded-2xl font-black uppercase tracking-widest text-xs transition flex items-center justify-center gap-2"
           >
-            {saving && <Loader2 className="animate-spin" size={16} />} Save Changes
+            {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />} 
+            {saving ? 'Updating...' : 'Save Changes'}
           </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 };

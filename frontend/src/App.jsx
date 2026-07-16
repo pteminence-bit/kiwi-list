@@ -28,14 +28,10 @@ const DashboardLayout = () => {
 
   useEffect(() => {
     const checkAdminStatus = async () => {
-      if (user?.email) {
+      if (user?.uid) {
         try {
-          // --- ALIGNED: Matches backend getKiwiUserId helper ---
-          const cleanEmail = user.email.toLowerCase().trim();
-          const sanitizedEmail = cleanEmail.replace(/[@.]/g, '-');
-          const kiwiFirestoreId = `kiwi-user-${sanitizedEmail}`;
-          
-          const userDocRef = doc(db, 'users', kiwiFirestoreId);
+          // --- ALIGNED: Standard Firebase UID usage ---
+          const userDocRef = doc(db, 'users', user.uid);
           const userDocSnap = await getDoc(userDocRef);
           
           if (userDocSnap.exists()) {
@@ -53,7 +49,7 @@ const DashboardLayout = () => {
   if (loading) return null;
   if (!user) return <Navigate to="/login" replace />; 
 
-  // Note: user.emailVerified is available via Firebase Auth standard user object
+  // Firebase Auth standard property
   if (!user.emailVerified) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-slate-950 w-full p-6 text-center text-white">

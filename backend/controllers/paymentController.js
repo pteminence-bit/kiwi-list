@@ -7,14 +7,6 @@ dotenv.config();
 
 const FLW_SECRET_KEY = process.env.FLW_SECRET_KEY;
 
-// Helper to match custom user document format
-const getKiwiUserId = (email) => {
-  if (!email) return null;
-  const cleanEmail = email.toLowerCase().trim();
-  const sanitizedEmail = cleanEmail.replace(/[@.]/g, '-');
-  return `kiwi-user-${sanitizedEmail}`;
-};
-
 // Aligned: Custom Transaction ID Generator
 const generateTxId = () => `kiwi-tx-${randomBytes(4).toString('hex')}`;
 
@@ -60,7 +52,10 @@ export const initializePayment = async (req, res) => {
 // --- VERIFY & CREDIT WALLET ---
 export const verifyPayment = async (req, res) => {
   const { reference } = req.query;
+  const uid = req.user?.uid;
+  
   if (!reference) return res.status(400).json({ error: "Missing transaction reference." });
+  if (!uid) return res.status(400).json({ error: "Auth context missing." });
 
   try {
     const response = await axios.get(
@@ -73,11 +68,7 @@ export const verifyPayment = async (req, res) => {
       return res.status(400).json({ error: 'Transaction was not successful' });
     }
 
-    const { tx_ref, amount, customer } = flwData;
-    const kiwiUserId = getKiwiUserId(customer?.email);
-
-    if (!kiwiUserId) return res.status(400).json({ error: "Customer payload email missing." });
-
+    const { tx_ref, amount } = flwData;
     let walletUpdated = false;
 
     await db.runTransaction(async (t) => {
@@ -86,7 +77,7 @@ export const verifyPayment = async (req, res) => {
       
       if (txLog.exists) return; 
 
-      const userRef = db.collection('users').doc(kiwiUserId);
+      const userRef = db.collection('users').doc(uid);
       const userDoc = await t.get(userRef);
       if (!userDoc.exists) throw new Error("Target user profile not found.");
 
@@ -100,9 +91,9 @@ export const verifyPayment = async (req, res) => {
       t.set(txLogRef, { processedAt: new Date().toISOString(), amount: depositAmount, netAmount: netDeposit });
 
       // Aligned: Using the custom transaction ID helper
-      const transactionRef = db.collection('users').doc(kiwiUserId).collection('transactions').doc(generateTxId());
+      const transactionRef = db.collection('users').doc(uid).collection('transactions').doc(generateTxId());
       t.set(transactionRef, {
-        userId: kiwiUserId,
+        userId: uid,
         amount: netDeposit,
         description: `Flutterwave Deposit (Ref: ${tx_ref}) - ₦100 fee applied`,
         type: 'deposit',
