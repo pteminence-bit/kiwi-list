@@ -19,6 +19,7 @@ import AuthPage from './pages/AuthPage';
 import PaymentSuccess from './pages/PaymentSuccess'; 
 import Inventory from './components/Inventory';
 import ChatsPage from './pages/ChatsPage';
+import Dashboard from './pages/Dashboard';
 
 const DashboardLayout = () => {
   const { user, loading } = useAuth();
@@ -94,6 +95,7 @@ const DashboardLayout = () => {
             <Route path="/inventory" element={<Inventory />} />
             <Route path="/edit-listing/:id" element={<EditListing token={user.accessToken} />} />
             <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="/dashboard" element={<Dashboard />} />
           </Routes>
         </main>
 
