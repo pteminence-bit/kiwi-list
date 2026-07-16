@@ -24,7 +24,7 @@ const ImageUploader = ({ onImagesSelected, initialImages = [] }) => {
 
     const currentUser = auth.currentUser;
     if (!currentUser) {
-      alert("Session expired. Please log in again to continue uploading.");
+      alert("Session expired. Please log in again.");
       return;
     }
 
@@ -33,25 +33,25 @@ const ImageUploader = ({ onImagesSelected, initialImages = [] }) => {
     try {
       const token = await currentUser.getIdToken(true);
 
-      // Optimistic UI update for previews
+      // Optimistic UI update
       const newPreviews = newFiles.map(file => URL.createObjectURL(file));
       setPreviews(prev => [...prev, ...newPreviews]);
 
       const uploadPromises = newFiles.map(async (file) => {
-  const formData = new FormData();
-        formData.append('images', file);
+        const formData = new FormData();
+        formData.append('file', file); // Ensure this matches what your backend expects
         
-        const res = await fetch(`${BACKEND_BASE_URL}/api/uploads`, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${token}` },
-    body: formData
-  });
+        const res = await fetch(`${BACKEND_BASE_URL}/api/upload`, { // FIXED: Changed back to /api/upload
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData
+        });
 
-  const result = await res.json();
-  if (!res.ok) throw new Error(result.error || 'Upload failed.');
-  
-  return result.url || result.imageUrl;
-});
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.error || 'Upload failed.');
+        
+        return result.url || result.imageUrl;
+      });
 
       const processedUrls = await Promise.all(uploadPromises);
       const updatedUrls = [...uploadedUrls, ...processedUrls];
@@ -61,7 +61,7 @@ const ImageUploader = ({ onImagesSelected, initialImages = [] }) => {
 
     } catch (error) {
       console.error("Image pipeline failure:", error);
-      alert(error.message || "An error occurred while uploading. Please check your connection.");
+      alert(error.message || "An error occurred during upload.");
       // Rollback previews on failure
       setPreviews(uploadedUrls);
     } finally {
