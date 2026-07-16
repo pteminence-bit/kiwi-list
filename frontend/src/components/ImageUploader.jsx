@@ -38,20 +38,20 @@ const ImageUploader = ({ onImagesSelected, initialImages = [] }) => {
       setPreviews(prev => [...prev, ...newPreviews]);
 
       const uploadPromises = newFiles.map(async (file) => {
-        const formData = new FormData();
-        formData.append('file', file);
+  const formData = new FormData();
+        formData.append('images', file);
         
-        const res = await fetch(`${BACKEND_BASE_URL}/api/listings`, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` },
-          body: formData
-        });
+        const res = await fetch(`${BACKEND_BASE_URL}/api/uploads`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+    body: formData
+  });
 
-        const result = await res.json();
-        if (!res.ok) throw new Error(result.error || 'Upload failed.');
-        
-        return result.url || result.imageUrl;
-      });
+  const result = await res.json();
+  if (!res.ok) throw new Error(result.error || 'Upload failed.');
+  
+  return result.url || result.imageUrl;
+});
 
       const processedUrls = await Promise.all(uploadPromises);
       const updatedUrls = [...uploadedUrls, ...processedUrls];

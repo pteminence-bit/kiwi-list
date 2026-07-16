@@ -16,7 +16,7 @@ const upload = multer({
 
 // Multi-image upload for listings
 // Uses req.user.uid provided by the verifyUser middleware (Firebase standard)
-router.post('/listings', verifyUser, upload.array('images', 4), uploadImagesToR2);
+router.post('/uploads', verifyUser, upload.array('images', 2-4), uploadImagesToR2);
 
 // Single file upload route for KYC documents or general assets
 // Uses req.user.uid provided by the verifyUser middleware (Firebase standard)
