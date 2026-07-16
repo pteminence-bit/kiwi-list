@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { signOut } from 'firebase/auth';
-import { auth } from '../firebase'; 
-import { LayoutDashboard, X, LogOut, PlusCircle, MessageSquare, LayoutGrid, ClipboardList, Bell } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { LayoutDashboard, X, PlusCircle, MessageSquare, LayoutGrid, ClipboardList, Bell } from 'lucide-react';
+import { useScrollVisibility } from '../hooks/useScrollVisibility';
 
 const Sidebar = ({ isAdmin, isOpen, setIsOpen }) => {
   const location = useLocation();
-  const navigate = useNavigate();
+  const isVisible = useScrollVisibility();
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 1024 : false);
 
   useEffect(() => {
@@ -25,10 +24,12 @@ const Sidebar = ({ isAdmin, isOpen, setIsOpen }) => {
   if (isAdmin) navigationItems.push({ name: 'Admin Portal', path: '/admin', icon: ClipboardList });
   if (isMobile) navigationItems.push({ name: 'Admin Updates', path: '/updates', icon: Bell });
 
+  const shouldHide = isMobile && !isVisible && !isOpen;
+
   return (
     <>
       {isOpen && <div className="fixed inset-0 bg-slate-900/50 z-40 lg:hidden" onClick={() => setIsOpen(false)} />}
-      <aside className={`fixed left-0 top-0 z-50 h-screen w-64 bg-slate-900 border-r border-slate-800 p-6 flex flex-col justify-between transition-transform lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed left-0 top-0 z-50 h-screen w-64 bg-slate-900 border-r border-slate-800 p-6 flex flex-col transition-all duration-300 ease-in-out lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'} ${shouldHide ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         <div>
           <div className="flex items-center justify-between mb-8">
             <span className="text-lg font-black text-white flex items-center gap-2">
@@ -48,9 +49,6 @@ const Sidebar = ({ isAdmin, isOpen, setIsOpen }) => {
             })}
           </nav>
         </div>
-        <button onClick={() => signOut(auth).then(() => navigate('/login'))} className="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-red-400 text-xs font-bold uppercase transition">
-          <LogOut size={16} /> Logout
-        </button>
       </aside>
     </>
   );
