@@ -22,6 +22,7 @@ router.post('/listings', verifyUser, upload.array('images', 4), uploadImagesToR2
 // Uses req.user.uid provided by the verifyUser middleware (Firebase standard)
 router.post('/file', verifyUser, upload.single('file'), uploadImagesToR2);
 
+
 // --- GLOBAL ERROR INTERCEPTION LAYER ---
 router.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {

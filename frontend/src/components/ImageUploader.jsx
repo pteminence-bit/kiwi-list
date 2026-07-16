@@ -41,7 +41,7 @@ const ImageUploader = ({ onImagesSelected, initialImages = [] }) => {
         const formData = new FormData();
         formData.append('file', file);
         
-        const res = await fetch(`${BACKEND_BASE_URL}/api/upload`, {
+        const res = await fetch(`${BACKEND_BASE_URL}/api/listings`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` },
           body: formData
