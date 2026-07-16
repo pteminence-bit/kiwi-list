@@ -96,6 +96,7 @@ const DashboardLayout = () => {
             <Route path="/edit-listing/:id" element={<EditListing token={user.accessToken} />} />
             <Route path="*" element={<Navigate to="/" replace />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/kyc" element={<KYC token={token} isVerified={user.isVerified} />} />
           </Routes>
         </main>
 
