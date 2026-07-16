@@ -1,8 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import admin from 'firebase-admin'; // Ensure this is initialized correctly
 
-import { db } from './config/firebase.js';
+// Import Routes
 import adminRoutes from './routes/adminRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import listingRoutes from './routes/listingRoutes.js';
@@ -11,6 +12,11 @@ import paymentRoutes from './routes/paymentRoutes.js';
 import chatRoutes from './routes/chatRoutes.js'; 
 
 dotenv.config();
+
+// Initialize Firebase Admin (Only if not already initialized in ./config/firebase.js)
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
 
 const app = express();
 
@@ -21,11 +27,12 @@ const allowedOrigins = [
 ];
 
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    const isAllowed = allowedOrigins.includes(origin) || /^http:\/\/(192|10)\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d+$/.test(origin);
-    if (isAllowed) callback(null, true);
-    else callback(new Error('Not allowed by CORS policy'));
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin) || /^http:\/\/(192|10)\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d+$/.test(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS policy'));
+    }
   },
   credentials: true
 }));
@@ -37,10 +44,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // --- ROUTES ---
 app.get('/', (req, res) => res.json({ status: "active", engine: "Kiwi-List Core API" }));
 
-// Auth Routes (Signup/Login)
 app.use('/auth', userRoutes); 
-
-// Core Engine Routers
 app.use('/api/listings', listingRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/admin', adminRoutes);
@@ -59,4 +63,4 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Kiwi-List Engine live on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Kiwi-List Engine live on port ${PORT}`));
